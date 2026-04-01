@@ -112,7 +112,7 @@ export default function TrendHarsatUtama() {
             className="absolute z-50 pointer-events-none"
             style={{ left: tooltip.x + 14, top: tooltip.y - 56 }}
           >
-            <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 min-w-[120px]">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 min-w-30">
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tooltip.color }} />
                 <p className="text-[11px] text-gray-400 font-medium">{tooltip.category} ({tooltip.year})</p>
