@@ -1,32 +1,10 @@
 'use client';
 
 import { TrendUpIcon, TrendDownIcon } from '@phosphor-icons/react';
+import mockData from '@/data/mock-data.json';
 
-const PROFITABILITY_DATA = [
-  { name: 'Tol Semarang Seksi 3', pct: '15%' },
-  { name: 'Bendungan Citarum', pct: '12%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-];
-
-const OVERRUN_DATA = [
-  { name: 'Tol Semarang Seksi 3', pct: '15%' },
-  { name: 'Bendungan Citarum', pct: '12%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-  { name: 'RS Regional Surabaya', pct: '10%' },
-];
+const PROFITABILITY_DATA = mockData.profitability;
+const OVERRUN_DATA = mockData.overrun;
 
 export default function ParetoTables() {
   return (

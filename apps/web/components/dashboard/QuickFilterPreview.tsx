@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { CaretDown } from '@phosphor-icons/react';
+import { CaretDownIcon } from '@phosphor-icons/react';
+import mockData from '@/data/mock-data.json';
 
 type FilterState = {
   sbu: string;
@@ -10,27 +11,29 @@ type FilterState = {
   partnership: string;
 };
 
-const FILTER_OPTIONS: Record<keyof FilterState, { label: string; options: string[] }> = {
-  sbu: { label: 'SBU', options: ['All', 'Gedung RS', 'Jembatan', 'Sanitasi'] },
-  owner: { label: 'Owner', options: ['All', 'Swasta', 'BUMN', 'Pemerintah'] },
-  contract: { label: 'Contract', options: ['All', 'Gedung RS', 'Jembatan', 'Sanitasi'] },
-  partnership: { label: 'Partnership', options: ['All', 'Non JO', 'JO'] },
-};
+const FILTER_OPTIONS = mockData.filterOptions as Record<keyof FilterState, { label: string; options: string[] }>;
 
-export default function QuickFilterPreview() {
-  const [filters, setFilters] = useState<FilterState>({
-    sbu: 'Gedung RS',
-    owner: 'All',
-    contract: 'Gedung RS',
-    partnership: 'Non JO',
-  });
+const EMPTY_FILTERS: FilterState = { sbu: '', owner: '', contract: '', partnership: '' };
+
+interface QuickFilterPreviewProps {
+  onSearch: (filters: FilterState) => void;
+  onReset: () => void;
+}
+
+export default function QuickFilterPreview({ onSearch, onReset }: QuickFilterPreviewProps) {
+  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
 
   const updateFilter = (key: keyof FilterState, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const handleReset = () => {
-    setFilters({ sbu: 'All', owner: 'All', contract: 'All', partnership: 'All' });
+    setFilters(EMPTY_FILTERS);
+    onReset();
+  };
+
+  const handleSearch = () => {
+    onSearch(filters);
   };
 
   return (
@@ -45,6 +48,7 @@ export default function QuickFilterPreview() {
             key={key}
             label={FILTER_OPTIONS[key].label}
             value={filters[key]}
+            placeholder={`Select ${FILTER_OPTIONS[key].label}`}
             options={FILTER_OPTIONS[key].options}
             onChange={(v) => updateFilter(key, v)}
           />
@@ -53,6 +57,7 @@ export default function QuickFilterPreview() {
 
       <div className="flex items-center gap-4">
         <button
+          onClick={handleSearch}
           className="flex items-center justify-center bg-primary-blue text-white text-[13px] font-bold rounded-lg hover:brightness-110 transition-all"
           style={{ width: '93px', height: '31px' }}
         >
@@ -73,11 +78,13 @@ export default function QuickFilterPreview() {
 function FilterPill({
   label,
   value,
+  placeholder,
   options,
   onChange,
 }: {
   label: string;
   value: string;
+  placeholder: string;
   options: string[];
   onChange: (v: string) => void;
 }) {
@@ -92,11 +99,12 @@ function FilterPill({
         onChange={(e) => onChange(e.target.value)}
         className="appearance-none bg-transparent text-[12px] font-medium text-[#1B1C1F] pr-6 pl-0 focus:outline-none cursor-pointer"
       >
-        {options.map(opt => (
+        <option value="">{placeholder}</option>
+        {options.filter(opt => opt !== 'All').map(opt => (
           <option key={opt} value={opt}>{opt}</option>
         ))}
       </select>
-      <CaretDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+      <CaretDownIcon size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
     </div>
   );
 }

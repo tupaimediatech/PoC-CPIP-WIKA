@@ -1,20 +1,11 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import mockData from '@/data/mock-data.json';
 
-const YEARS = ['2020', '2021', '2022', '2023', '2024', '2025'];
-
-const CATEGORIES = [
-  { key: 'besi', label: 'Besi', color: '#CA6939' },
-  { key: 'jembatan', label: 'Jembatan', color: '#EBAC2F' },
-  { key: 'beton', label: 'Beton', color: '#53AD59' },
-];
-
-const MOCK_DATA: Record<string, number[]> = {
-  besi:     [290, 70, 250, 270, 310, 200],
-  jembatan: [200, 410, 300, 320, 170, 280],
-  beton:    [320, 380, 330, 400, 410, 410],
-};
+const YEARS = mockData.trendHarsat.years;
+const CATEGORIES = mockData.trendHarsat.categories;
+const MOCK_DATA: Record<string, number[]> = mockData.trendHarsat.data;
 
 const MAX_VALUE = 500;
 const Y_TICKS = [0, 100, 200, 300, 400, 500];

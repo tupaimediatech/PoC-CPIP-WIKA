@@ -1,10 +1,8 @@
 'use client';
 
-const SEGMENTS = [
-  { label: 'Bandara', value: 20, color: '#7DBDB4' },
-  { label: 'Gedung RS', value: 35, color: '#4EA5DA' },
-  { label: 'Lainnya', value: 45, color: '#3573B3' },
-];
+import mockData from '@/data/mock-data.json';
+
+const SEGMENTS = mockData.sebaranSBU;
 
 const MAX_VALUE = Math.max(...SEGMENTS.map(s => s.value));
 const TOTAL = SEGMENTS.reduce((acc, s) => acc + s.value, 0);
