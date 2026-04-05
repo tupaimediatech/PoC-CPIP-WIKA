@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, ChevronDown } from 'lucide-react';
+import { MagnifyingGlass, CaretDown } from '@phosphor-icons/react';
 
 type Props = {
   search: string;
@@ -57,7 +57,7 @@ export default function ProjectListHeader({
             borderStyle: 'solid',
           }}
         />
-        <Search
+        <MagnifyingGlass
           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
           size={16}
         />
@@ -80,7 +80,7 @@ export default function ProjectListHeader({
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
-            <ChevronDown
+            <CaretDown
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
               size={14}
             />
@@ -98,7 +98,7 @@ export default function ProjectListHeader({
               <option key={d.value} value={d.value}>{d.label}</option>
             ))}
           </select>
-          <ChevronDown
+          <CaretDown
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
             size={14}
           />

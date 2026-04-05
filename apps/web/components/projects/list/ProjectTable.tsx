@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from 'lucide-react';
+  ArrowsDownUp,
+  CaretLeft,
+  CaretRight,
+  CaretDoubleLeft,
+  CaretDoubleRight,
+} from '@phosphor-icons/react';
 import { formatCurrency, formatKpi } from '@/lib/utils';
 import type { Project, ProjectStatus } from '@/types/project';
 
@@ -66,7 +66,7 @@ export default function ProjectTable({ projects, sortBy, sortDir, onSort }: Prop
                 <div className="flex items-center gap-1">
                   Project Name
                   <button onClick={() => onSort('project_name')}>
-                    <ArrowUpDown size={12} className={sortBy === 'project_name' ? 'text-blue-600' : 'text-gray-300'} />
+                    <ArrowsDownUp size={12} className={sortBy === 'project_name' ? 'text-blue-600' : 'text-gray-300'} />
                   </button>
                 </div>
               </th>
@@ -78,7 +78,7 @@ export default function ProjectTable({ projects, sortBy, sortDir, onSort }: Prop
                 <div className="flex items-center gap-1 justify-end">
                   CPI
                   <button onClick={() => onSort('cpi')}>
-                    <ArrowUpDown size={12} className={sortBy === 'cpi' ? 'text-blue-600' : 'text-gray-300'} />
+                    <ArrowsDownUp size={12} className={sortBy === 'cpi' ? 'text-blue-600' : 'text-gray-300'} />
                   </button>
                 </div>
               </th>
@@ -86,7 +86,7 @@ export default function ProjectTable({ projects, sortBy, sortDir, onSort }: Prop
                 <div className="flex items-center gap-1 justify-end">
                   SPI
                   <button onClick={() => onSort('spi')}>
-                    <ArrowUpDown size={12} className={sortBy === 'spi' ? 'text-blue-600' : 'text-gray-300'} />
+                    <ArrowsDownUp size={12} className={sortBy === 'spi' ? 'text-blue-600' : 'text-gray-300'} />
                   </button>
                 </div>
               </th>
@@ -132,11 +132,11 @@ export default function ProjectTable({ projects, sortBy, sortDir, onSort }: Prop
         <div className="flex items-center gap-2">
           <button onClick={() => goToPage(1)} disabled={currentPage === 1}
             className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors">
-            <ChevronsLeft size={18} className="text-gray-400" />
+            <CaretDoubleLeft size={18} className="text-gray-400" />
           </button>
           <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}
             className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors">
-            <ChevronLeft size={18} className="text-gray-400" />
+            <CaretLeft size={18} className="text-gray-400" />
           </button>
           <div className="flex items-center gap-1 px-2">
             {[...Array(totalPages)].map((_, i) => (
@@ -148,11 +148,11 @@ export default function ProjectTable({ projects, sortBy, sortDir, onSort }: Prop
           </div>
           <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0}
             className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors">
-            <ChevronRight size={18} className="text-[#1B1C1F]" />
+            <CaretRight size={18} className="text-[#1B1C1F]" />
           </button>
           <button onClick={() => goToPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0}
             className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors">
-            <ChevronsRight size={18} className="text-[#1B1C1F]" />
+            <CaretDoubleRight size={18} className="text-[#1B1C1F]" />
           </button>
         </div>
       </div>
