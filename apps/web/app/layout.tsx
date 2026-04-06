@@ -1,6 +1,6 @@
 // app/layout.tsx
 import './globals.css';
-import Sidebar from '@/components/layout/Sidebar';
+import SidebarProvider from '@/components/';
 import DynamicHeader from '@/components/layout/DynamicHeader'; // Impor pembungkus client kita
 
 export const metadata = {
