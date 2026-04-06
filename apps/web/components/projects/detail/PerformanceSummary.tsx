@@ -3,11 +3,11 @@
 import {
   Info,
   Calculator,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-} from "lucide-react";
+  CalendarBlank,
+  CurrencyDollar,
+  TrendUp,
+  TrendDown,
+} from "@phosphor-icons/react";
 import type { Project } from "@/types/project";
 import { formatKpi, formatCurrency } from "@/lib/utils";
 
@@ -57,7 +57,7 @@ function MetricCard({
         <div
           className={`flex items-center gap-1 text-[11px] font-bold ${isUp ? "text-green-600" : "text-red-600"}`}
         >
-          {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+          {isUp ? <TrendUp size={12} /> : <TrendDown size={12} />}
           <span>{trendLabel}</span>
           <span className="text-gray-400 font-medium ml-0.5">vs Last Year</span>
         </div>
@@ -132,7 +132,7 @@ export default function PerformanceHistory({ project }: Props) {
           }
           trendLabel="-0.02"
           isUp={false}
-          icon={Calendar}
+          icon={CalendarBlank}
         />
         <MetricCard
           label="Cost Variance"
@@ -148,7 +148,7 @@ export default function PerformanceHistory({ project }: Props) {
           }
           trendLabel="+3"
           isUp={true}
-          icon={DollarSign}
+          icon={CurrencyDollar}
         />
         <MetricCard
           label="Schedule Delay"
@@ -162,7 +162,7 @@ export default function PerformanceHistory({ project }: Props) {
           }
           trendLabel="4%"
           isUp={scheduleDelay <= 0}
-          icon={Calendar}
+          icon={CalendarBlank}
         />
       </div>
     </div>
