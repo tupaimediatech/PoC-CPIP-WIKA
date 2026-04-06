@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Wallet, CalendarDays, FileText } from "lucide-react";
+import { ReadCvLogoIcon, MoneyWavyIcon, CalendarBlankIcon } from "@phosphor-icons/react";
 import { useState, useRef } from "react";
 import { formatKpi } from "@/lib/utils";
 import type { SummaryResponse } from "@/types/project";
@@ -9,26 +9,24 @@ type Props = {
   data: SummaryResponse;
 };
 
-function MiniKpiCard({ label, value, sub, icon: Icon }: any) {
+function MiniKpiCard({ label, value, sub, icon: Icon }: { label: string; value: string; sub: string; icon: React.ElementType }) {
   return (
     <div
-      className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex flex-col justify-between"
-      style={{ width: "254px", height: "120px" }}
+      className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex flex-col justify-between w-full"
+      style={{ height: "120px" }}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-1.5">
+        <p className="text-[14px] text-gray-800 font-medium">{sub}</p>
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-primary-blue rounded-md">
+          <div className="flex items-center justify-center bg-primary-blue rounded-md" style={{ width: "26px", height: "26px" }}>
             <Icon size={14} className="text-white" />
           </div>
-          <span className="text-[12px] font-semibold text-[#1B1C1F]">
+          <span className="text-[14px] font-semibold text-gray-500">
             {label}
           </span>
         </div>
       </div>
-      <div>
-        <h3 className="text-[24px] font-bold text-[#1B1C1F]">{value}</h3>
-        <p className="text-[11px] text-gray-400 font-medium">{sub}</p>
-      </div>
+      <h3 className="text-[24px] font-bold text-[#1B1C1F]">{value}</h3>
     </div>
   );
 }
@@ -80,9 +78,6 @@ export default function DivisionChart({ data }: Props) {
 
   function moveTooltip(
     e: React.MouseEvent,
-    label: string,
-    value: string,
-    color: string,
   ) {
     const rect = chartRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -100,7 +95,7 @@ export default function DivisionChart({ data }: Props) {
   return (
     <div
       className="bg-white"
-      style={{ width: "1203px", height: "493px", padding: "18px 32px" }}
+      style={{ padding: "18px 32px" }}
     >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-[18px] font-bold text-[#1B1C1F]">
@@ -111,25 +106,21 @@ export default function DivisionChart({ data }: Props) {
       <div
         className="flex items-start"
         style={{
-          width: "1139px",
-          height: "412px",
           gap: "33px",
-          opacity: 1,
         }}
       >
         <div
-          className="flex flex-col items-center gap-3"
-          style={{ width: "553px" }}
+          className="flex flex-col items-center gap-3 flex-1 min-w-0"
         >
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#1D3A8A]" />
+              <div className="w-3 h-3 rounded-full bg-[#CA6939]" />
               <span className="text-[12px] font-semibold text-gray-500">
                 Cost Performance Index
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#A8BADA]" />
+              <div className="w-3 h-3 rounded-full bg-[#EBAC2F]" />
               <span className="text-[12px] font-semibold text-gray-500">
                 Schedule Performance Index
               </span>
@@ -138,9 +129,8 @@ export default function DivisionChart({ data }: Props) {
 
           <div
             ref={chartRef}
-            className="relative bg-white border border-gray-100 rounded-2xl"
+            className="relative bg-white border border-gray-100 rounded-2xl w-full"
             style={{
-              width: "553px",
               height: "380px",
               padding: "24px 28px 20px 16px",
             }}
@@ -216,24 +206,16 @@ export default function DivisionChart({ data }: Props) {
                               e,
                               "Cost Performance Index",
                               formatKpi(divData.avg_cpi),
-                              "#1D3A8A",
+                              "#CA6939",
                             )
                           }
-                          onMouseMove={(e) =>
-                            moveTooltip(
-                              e,
-                              "Cost Performance Index",
-                              formatKpi(divData.avg_cpi),
-                              "#1D3A8A",
-                            )
-                          }
+                          onMouseMove={moveTooltip}
                           onMouseLeave={hideTooltip}
                         >
                           <div
                             className="w-full h-full transition-all duration-1000 hover:opacity-90"
                             style={{
-                              backgroundImage:
-                                "linear-gradient(to bottom, #2D52C4, #0D1B49)",
+                              backgroundColor: "#CA6939",
                               borderRadius: "6px 6px 0 0",
                             }}
                           />
@@ -250,24 +232,16 @@ export default function DivisionChart({ data }: Props) {
                               e,
                               "Schedule Performance Index",
                               formatKpi(divData.avg_spi),
-                              "#A8BADA",
+                              "#EBAC2F",
                             )
                           }
-                          onMouseMove={(e) =>
-                            moveTooltip(
-                              e,
-                              "Schedule Performance Index",
-                              formatKpi(divData.avg_spi),
-                              "#A8BADA",
-                            )
-                          }
+                          onMouseMove={moveTooltip}
                           onMouseLeave={hideTooltip}
                         >
                           <div
                             className="w-full h-full transition-all duration-1000 hover:opacity-90"
                             style={{
-                              backgroundImage:
-                                "linear-gradient(to bottom, #C5D0E8 0%, #8FA3CC 50%, #152868 100%)",
+                              backgroundColor: "#EBAC2F",
                               borderRadius: "6px 6px 0 0",
                             }}
                           />
@@ -293,60 +267,54 @@ export default function DivisionChart({ data }: Props) {
         </div>
 
         <div
-          className="flex flex-col"
+          className="flex flex-col flex-1 min-w-0"
           style={{
-            width: "553px",
-            height: "412px",
             gap: "18px",
           }}
         >
-          <div className="grid grid-cols-2 gap-4.5 w-full">
-            {divisions.map(([division, divData]) => (
-              <div key={division} className="contents">
+          {divisions.map(([division, divData]) => (
+            <div key={division}>
+              {/* <p className="text-[12px] font-semibold text-gray-500 mb-2">{division}</p> */}
+              <div className="grid grid-cols-2 gap-4.5 w-full">
                 <MiniKpiCard
-                  label="CPI (Cost Index)"
+                  label="Cost Performance Index"
                   value={formatKpi(divData.avg_cpi)}
                   sub={division}
-                  icon={Wallet}
+                  icon={MoneyWavyIcon}
                 />
                 <MiniKpiCard
-                  label="SPI (Schedule Index)"
+                  label="Schedule Performance Index"
                   value={formatKpi(divData.avg_spi)}
                   sub={division}
-                  icon={CalendarDays}
+                  icon={CalendarBlankIcon}
                 />
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
 
           <div
-            className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm flex flex-col min-h-0"
+            className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm flex flex-col min-h-0"
             style={{
               width: "100%",
-              height: "136px",
               flexGrow: 1,
             }}
           >
             <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 bg-primary-blue rounded-md shrink-0">
-                <FileText size={16} className="text-white" />
+              <div className="flex items-center justify-center bg-primary-blue rounded-md" style={{ width: "26px", height: "26px" }}>
+                <ReadCvLogoIcon size={14} className="text-white" />
               </div>
-              <span className="text-[14px] font-bold text-[#1B1C1F]">
-                Summary Analysis
+              <span className="text-[16px] font-bold text-[#1B1C1F]">
+                Summary
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto pr-2">
               <p className="text-[13px] leading-relaxed text-gray-600">
                 <span className="text-primary-blue font-extrabold text-[14px]">
                   Building outperforms Infrastructure
-                </span>{" "}
-                dalam kontrol biaya (CPI). Berdasarkan data performa saat ini,
-                kedua divisi masih memiliki tantangan pada jadwal proyek di mana{" "}
-                <span className="font-bold text-gray-800 underline decoration-red-200 decoration-2">
-                  Infrastructure
-                </span>{" "}
-                menunjukkan angka SPI yang lebih rendah.
+                </span>
+                , especially in cost control. Both divisions
+                are behind schedule, but the delay is more critical in Infrastructure.
               </p>
             </div>
           </div>

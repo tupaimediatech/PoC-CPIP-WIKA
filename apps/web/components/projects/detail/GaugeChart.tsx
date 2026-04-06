@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { DollarSign, Calendar } from "lucide-react";
+import { CurrencyDollar, CalendarBlank } from "@phosphor-icons/react";
 
 type Props = {
   label: string;
@@ -34,9 +34,9 @@ export default function GaugeChart({ label, value, type = "cost" }: Props) {
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 bg-blue-700 rounded-md flex items-center justify-center shrink-0">
           {type === "cost" ? (
-            <DollarSign size={16} color="white" />
+            <CurrencyDollar size={16} color="white" />
           ) : (
-            <Calendar size={16} color="white" />
+            <CalendarBlank size={16} color="white" />
           )}
         </div>
         <span className="text-sm font-bold text-gray-700">{label}</span>

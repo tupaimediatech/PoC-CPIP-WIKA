@@ -1,22 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import { projectApi } from '@/lib/api';
-import type { SummaryResponse, Project } from '@/types/project';
-import DashboardHeader from '@/components/layout/DynamicHeader';
+import type { SummaryResponse, Project, Division } from '@/types/project';
+import type { DashboardFilters } from '@/types/project';
+import QuickFilterPreview from '@/components/dashboard/QuickFilterPreview';
 import KpiCards from '@/components/dashboard/KpiCards';
 import DivisionChart from '@/components/dashboard/DivisionChart';
+import TrendHarsatUtama from '@/components/dashboard/TrendHarsatUtama';
+import SebaranSBUChart from '@/components/dashboard/SebaranSBUChart';
+import ParetoTables from '@/components/dashboard/ParetoTables';
 import RiskProjectTable from '@/components/dashboard/RiskProjectTable';
-import type { DashboardFilters } from '@/types/project';
+import Snackbar from '@/components/ui/Snackbar';
+import mockData from '@/data/mock-data.json';
+
+const MOCK_SUMMARY = mockData.summary as SummaryResponse;
+const MOCK_PROJECTS = mockData.projects as Project[];
 
 export default function DashboardSummary() {
-  const router = useRouter();
-
   const [summary,  setSummary]  = useState<SummaryResponse | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState('');
+  const [searchApplied, setSearchApplied] = useState(false);
+  const [snackbar, setSnackbar] = useState(false);
 
   const [filters, setFilters] = useState<DashboardFilters>({
     division: '',
@@ -30,10 +36,18 @@ export default function DashboardSummary() {
       projectApi.list(),
     ])
       .then(([summaryData, listData]) => {
-        setSummary(summaryData);
-        setProjects(listData.data);
+        if (summaryData.total_projects > 0) {
+          setSummary(summaryData);
+          setProjects(listData.data);
+        } else {
+          setSummary(MOCK_SUMMARY);
+          setProjects(MOCK_PROJECTS);
+        }
       })
-      .catch(() => setError('Gagal memuat data. Pastikan Laravel server berjalan.'))
+      .catch(() => {
+        setSummary(MOCK_SUMMARY);
+        setProjects(MOCK_PROJECTS);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -47,6 +61,19 @@ export default function DashboardSummary() {
     return true;
   });
 
+  const handleSearch = useCallback(() => {
+    setSearchApplied(true);
+    setSnackbar(true);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setSearchApplied(false);
+  }, []);
+
+  const handleSnackbarClose = useCallback(() => {
+    setSnackbar(false);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 gap-3 text-gray-400">
@@ -56,35 +83,33 @@ export default function DashboardSummary() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="card border border-red-200 bg-red-50 text-red-700 text-sm p-5">
-        {error}
-      </div>
-    );
-  }
-
-  if (!summary || summary.total_projects === 0) {
-    return (
-      <div className="card text-center py-16 space-y-3">
-        <p className="text-gray-400 text-lg">Belum ada data project</p>
-        <button onClick={() => router.push('/upload')} className="btn-primary">
-          Upload Excel Sekarang
-        </button>
-      </div>
-    );
-  }
+  if (!summary) return null;
 
   return (
     <div className="bg-[#F9FAFB] min-h-screen">
-      <KpiCards 
-        data={summary} 
-        filters={filters} 
-        onChange={setFilters} 
+      <QuickFilterPreview onSearch={handleSearch} onReset={handleReset} />
+
+      <KpiCards
+        data={summary}
+        filters={filters}
+        onChange={setFilters}
       />
-      
-        <DivisionChart data={summary} />
-        <RiskProjectTable projects={filteredProjects} />
+      <DivisionChart data={summary} />
+
+      <div className="bg-white flex gap-8 w-full" style={{ padding: '18px 32px' }}>
+        <TrendHarsatUtama />
+        <SebaranSBUChart />
+      </div>
+
+      <ParetoTables />
+      {searchApplied && <RiskProjectTable projects={filteredProjects} />}
+
+      <Snackbar
+        title="Success!"
+        message={`Filters applied. Showing ${filteredProjects.length} projects`}
+        visible={snackbar}
+        onClose={handleSnackbarClose}
+      />
     </div>
   );
 }

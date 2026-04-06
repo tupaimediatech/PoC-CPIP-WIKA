@@ -4,7 +4,7 @@ import { useState, useRef, DragEvent, ChangeEvent } from "react";
 import { projectApi } from "@/lib/api";
 import type { UploadResponse, FileUploadResult } from "@/types/project";
 import IngestionHistory from "@/components/upload/IngestionHistory";
-import { MonitorUp, Sheet, Upload } from "lucide-react";
+import { MonitorArrowUp, Table, UploadSimple } from "@phosphor-icons/react";
 import { STATUS_CONFIG } from "@/lib/constants/status";
 
 type UploadState = "idle" | "dragging" | "uploading" | "done" | "error";
@@ -299,7 +299,7 @@ export default function UploadExcel() {
 
           <div className="flex justify-center">
             <div className="w-12 h-12 flex items-center justify-center">
-              <MonitorUp />
+              <MonitorArrowUp />
             </div>
           </div>
 
@@ -373,7 +373,7 @@ export default function UploadExcel() {
                 <div key={sf.id} className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                      <Sheet />
+                      <Table />
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -498,7 +498,7 @@ export default function UploadExcel() {
               onClick={handleUpload}
               className="flex items-center gap-2 px-6 py-2.5 bg-blue-700 text-white text-xs font-semibold rounded-lg hover:bg-blue-800 active:scale-95 transition-all shadow-sm"
             >
-              <Upload size={16} />
+              <UploadSimple size={16} />
               <span>
                 Upload {validFiles.length}{" "}
                 {validFiles.length === 1 ? "File" : "Files"}
@@ -529,9 +529,9 @@ export default function UploadExcel() {
                 className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${uploadResponse.success ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
               >
                 {uploadResponse.success ? (
-                  <Upload size={20} />
+                  <UploadSimple size={20} />
                 ) : (
-                  <MonitorUp size={20} />
+                  <MonitorArrowUp size={20} />
                 )}
               </div>
               <div>
