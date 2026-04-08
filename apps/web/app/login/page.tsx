@@ -41,7 +41,7 @@ export default function LoginPage() {
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
-        Object.values(err?.response?.data?.errors ?? {})?.[0]?.[0] ||
+        (Object.values(err?.response?.data?.errors ?? {}) as string[][])?.[0]?.[0] ||
         "Terjadi kesalahan. Coba lagi.";
       setError(msg as string);
     } finally {

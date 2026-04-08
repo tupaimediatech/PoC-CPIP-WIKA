@@ -27,8 +27,8 @@ export default function RiskProjectTable({ projects }: Props) {
       .filter(p => p.project_name.toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => {
         if (!sortConfig) return 0;
-        const valA = parseFloat(a[sortConfig.key]);
-        const valB = parseFloat(b[sortConfig.key]);
+        const valA = parseFloat(a[sortConfig.key] ?? '0');
+        const valB = parseFloat(b[sortConfig.key] ?? '0');
         return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
       });
   }, [projects, searchTerm, sortConfig]);

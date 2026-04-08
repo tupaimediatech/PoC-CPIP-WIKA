@@ -73,8 +73,8 @@ function MetricCard({
 }
 
 export default function PerformanceHistory({ project }: Props) {
-  const cpi = parseFloat(project.cpi);
-  const spi = parseFloat(project.spi);
+  const cpi = parseFloat(project.cpi ?? '0');
+  const spi = parseFloat(project.spi ?? '0');
   const plannedCost = parseFloat(project.planned_cost);
   const actualCost = parseFloat(project.actual_cost);
   const scheduleDelay = project.actual_duration - project.planned_duration;

@@ -146,18 +146,19 @@ export default function IngestionDataPanel({ projectId }: Props) {
           return;
         }
 
-        setPeriods(periodRes.data);
-        setProgressCurves(curveRes.data);
+        setPeriods(periodRes.data as unknown as ProjectPeriod[]);
+        setProgressCurves(curveRes.data as unknown as ProjectProgressCurve[]);
         setError("");
-        if (periodRes.data.length === 0) {
+        if ((periodRes.data as unknown as ProjectPeriod[]).length === 0) {
           setLoadingDetails(false);
         }
+        const periodsArr = periodRes.data as unknown as ProjectPeriod[];
         setActivePeriodId((current) => {
-          if (current && periodRes.data.some((period) => period.id === current)) {
+          if (current && periodsArr.some((period) => period.id === current)) {
             return current;
           }
 
-          return periodRes.data[0]?.id ?? null;
+          return periodsArr[0]?.id ?? null;
         });
       })
       .catch(() => {
@@ -194,11 +195,11 @@ export default function IngestionDataPanel({ projectId }: Props) {
           return;
         }
 
-        setWorkItems(workRes.data);
-        setMaterials(materialRes.data);
-        setEquipment(equipmentRes.data);
-        setMaterialMeta(materialRes.meta);
-        setEquipmentMeta(equipmentRes.meta);
+        setWorkItems(workRes.data as unknown as ProjectWorkItem[]);
+        setMaterials(materialRes.data as unknown as ProjectMaterialLog[]);
+        setEquipment(equipmentRes.data as unknown as ProjectEquipmentLog[]);
+        setMaterialMeta(materialRes.meta as any);
+        setEquipmentMeta(equipmentRes.meta as any);
         setError("");
       })
       .catch(() => {
