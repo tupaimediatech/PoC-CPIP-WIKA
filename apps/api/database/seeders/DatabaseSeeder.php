@@ -21,5 +21,6 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(ColumnAliasSeeder::class);
+        $this->call(CompleteProjectSeeder::class);
     }
 }
