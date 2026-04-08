@@ -7,6 +7,8 @@ import PageHeader from '@/components/analytics/PageHeader';
 import BackButton from '@/components/analytics/BackButton';
 import { periodApi } from '@/lib/api';
 import type { WorkItemLevel4, WorkItemLevel4ListResponse } from '@/types/project';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 
 function formatRupiah(value: number): string {
   return `Rp${value.toLocaleString('id-ID')}`;
@@ -28,6 +30,11 @@ export default function Level4Page() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setData(mockData.level4 as unknown as WorkItemLevel4ListResponse['data']);
+      setLoading(false);
+      return;
+    }
     periodApi.workItems(tahapId)
       .then((res) => setData(res.data))
       .catch(console.error)

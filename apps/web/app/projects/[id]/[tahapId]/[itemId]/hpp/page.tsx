@@ -6,8 +6,10 @@ import { ChartBarIcon, ChatTextIcon } from '@phosphor-icons/react';
 import PageHeader from '@/components/analytics/PageHeader';
 import ActionButton from '@/components/analytics/ActionButton';
 import BackButton from '@/components/analytics/BackButton';
-import { projectApi } from '@/lib/api';
-import type { InsightResponse, ProjectPhaseListResponse } from '@/types/project';
+import { projectApi, periodApi } from '@/lib/api';
+import type { InsightResponse, ProjectPhaseListResponse, WorkItemLevel4 } from '@/types/project';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 
 function formatM(value: number): string {
   return `Rp${(value / 1_000_000).toFixed(1)} M`;
@@ -17,26 +19,40 @@ export default function Level6Page() {
   const params = useParams();
   const projectId = Number(params.id);
   const tahapId   = Number(params.tahapId);
+  const itemId    = Number(params.itemId);
 
   const [insight, setInsight]   = useState<InsightResponse | null>(null);
   const [periods, setPeriods]   = useState<ProjectPhaseListResponse['data'] | null>(null);
+  const [workItem, setWorkItem] = useState<WorkItemLevel4 | null>(null);
   const [cpi, setCpi]           = useState<number | null>(null);
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setCpi(mockData.level6.cpiValue);
+      setPeriods(mockData.level3 as unknown as ProjectPhaseListResponse['data']);
+      setInsight({ summary: mockData.level6.summaryInsight, recommendations: [] } as unknown as InsightResponse);
+      const items = (mockData.level4 as unknown as { items: WorkItemLevel4[] }).items;
+      setWorkItem(items.find(i => i.id === itemId) ?? items[0] ?? null);
+      setLoading(false);
+      return;
+    }
     Promise.all([
       projectApi.insight(projectId),
       projectApi.detail(projectId),
       projectApi.periods(projectId),
+      periodApi.workItems(tahapId),
     ])
-      .then(([insightRes, detailRes, periodsRes]) => {
+      .then(([insightRes, detailRes, periodsRes, workItemsRes]) => {
         setInsight(insightRes);
         setCpi(parseFloat(detailRes.data.cpi ?? '0'));
         setPeriods(periodsRes.data);
+        const found = workItemsRes.data.items.find(i => i.id === itemId);
+        setWorkItem(found ?? null);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [projectId]);
+  }, [projectId, tahapId, itemId]);
 
   if (loading) return (
     <div className="flex items-center justify-center py-24 gap-3 text-gray-400">
@@ -71,9 +87,10 @@ export default function Level6Page() {
     <div className="bg-white min-h-screen" style={{ padding: '24px 32px' }}>
       <PageHeader
         title={`Level 6 Analisa HPP & CPI - ${periods?.project_name ?? 'Project'}`}
-        pills={phase ? [
-          { label: 'Tahap', value: phase.name },
-        ] : []}
+        pills={[
+          ...(phase ? [{ label: 'Tahap', value: phase.name }] : []),
+          ...(workItem ? [{ label: 'Item', value: workItem.name }] : []),
+        ]}
         onExport={() => {}}
       />
 

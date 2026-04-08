@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { projectApi } from '@/lib/api';
-import type { SummaryResponse, Project, ParetoItem } from '@/types/project';
+import type { SummaryResponse, Project } from '@/types/project';
 import type { DashboardFilters } from '@/types/project';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 import QuickFilterPreview from '@/components/dashboard/QuickFilterPreview';
 import KpiCards from '@/components/dashboard/KpiCards';
 import DivisionChart from '@/components/dashboard/DivisionChart';
@@ -27,6 +29,12 @@ export default function DashboardSummary() {
   });
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setSummary(mockData.summary as unknown as SummaryResponse);
+      setProjects(mockData.projects as unknown as Project[]);
+      setLoading(false);
+      return;
+    }
     Promise.all([
       projectApi.summary(),
       projectApi.list(),

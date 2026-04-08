@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { projectApi } from '@/lib/api';
 import type { SbuDistributionItem } from '@/types/project';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 
 const COLORS = ['#7DBDB4', '#4EA5DA', '#3573B3', '#F4A261', '#E76F51', '#2A9D8F'];
 
@@ -10,6 +12,10 @@ export default function SebaranSBUChart() {
   const [segments, setSegments] = useState<SbuDistributionItem[]>([]);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setSegments(mockData.sbuDistribution as SbuDistributionItem[]);
+      return;
+    }
     projectApi.sbuDistribution()
       .then((res) => { if (res.data.length > 0) setSegments(res.data); })
       .catch(console.error);

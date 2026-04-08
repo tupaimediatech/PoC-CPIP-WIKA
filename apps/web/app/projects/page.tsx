@@ -8,17 +8,22 @@ import Snackbar from '@/components/ui/Snackbar';
 import { projectApi } from '@/lib/api';
 import type { Project, FilterOptionsResponse } from '@/types/project';
 import { formatKpi, kpiColor } from '@/lib/utils';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 
-const FILTER_GRID: { key: string; label: string; optionKey: keyof FilterOptionsResponse; hasCalendar?: boolean }[] = [
-  { key: 'sbu',            label: 'SBU',            optionKey: 'sbu' },
-  { key: 'contract_type',  label: 'Contract Type',  optionKey: 'contract_type' },
-  { key: 'payment_method', label: 'Payment Method', optionKey: 'payment_method' },
-  { key: 'owner',          label: 'Project Owner',  optionKey: 'owner' },
-  { key: 'division',       label: 'Division',       optionKey: 'division' },
-  { key: 'partnership',    label: 'Partnership',    optionKey: 'partnership' },
-  { key: 'funding_source', label: 'Funding Source', optionKey: 'funding_source' },
-  { key: 'location',       label: 'Location',       optionKey: 'location' },
-  { key: 'year',           label: 'Year',           optionKey: 'year', hasCalendar: true },
+const FILTER_GRID: { key: string; label: string; optionKey?: keyof FilterOptionsResponse; hasCalendar?: boolean }[] = [
+  { key: 'sbu',              label: 'SBU',              optionKey: 'sbu' },
+  { key: 'contract_type',    label: 'Contract Type',    optionKey: 'contract_type' },
+  { key: 'payment_method',   label: 'Payment Method',   optionKey: 'payment_method' },
+  { key: 'owner',            label: 'Project Owner',    optionKey: 'owner' },
+  { key: 'division',         label: 'Division',         optionKey: 'division' },
+  { key: 'partnership',      label: 'Partnership',      optionKey: 'partnership' },
+  { key: 'funding_source',   label: 'Funding Source',   optionKey: 'funding_source' },
+  { key: 'location',         label: 'Location',         optionKey: 'location' },
+  { key: 'year',             label: 'Year',             optionKey: 'year', hasCalendar: true },
+  { key: 'consultant',       label: 'Consultant' },
+  { key: 'profit_center',    label: 'Profit Center' },
+  { key: 'project_duration', label: 'Project Duration' },
 ];
 
 export default function ProjectsPage() {
@@ -31,10 +36,28 @@ export default function ProjectsPage() {
   const [snackbar, setSnackbar] = useState(false);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setFilterOptions(mockData.filterOptions as unknown as FilterOptionsResponse);
+      return;
+    }
     projectApi.filterOptions().then(setFilterOptions).catch(console.error);
   }, []);
 
   const handleSearch = () => {
+    if (DEMO_MODE) {
+      const filtered = (mockData.projects as unknown as Project[]).filter(p => {
+        for (const [k, v] of Object.entries(filters)) {
+          if (!v) continue;
+          const val = (p as unknown as Record<string, unknown>)[k];
+          if (val !== undefined && String(val) !== v) return false;
+        }
+        return true;
+      });
+      setProjects(filtered);
+      setSearchApplied(true);
+      setSnackbar(true);
+      return;
+    }
     setLoading(true);
     const params: Record<string, string | number> = {};
     Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });
@@ -57,8 +80,10 @@ export default function ProjectsPage() {
 
   const handleSnackbarClose = useCallback(() => setSnackbar(false), []);
 
-  const getOptions = (optionKey: keyof FilterOptionsResponse): string[] =>
-    filterOptions ? (filterOptions[optionKey] as (string | number)[]).map(String) : [];
+  const getOptions = (optionKey?: keyof FilterOptionsResponse): string[] => {
+    if (!optionKey || !filterOptions) return [];
+    return (filterOptions[optionKey] as (string | number)[]).map(String);
+  };
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: '24px 32px' }}>

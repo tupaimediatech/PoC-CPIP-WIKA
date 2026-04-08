@@ -7,6 +7,8 @@ import BackButton from '@/components/analytics/BackButton';
 import ActionButton from '@/components/analytics/ActionButton';
 import { periodApi } from '@/lib/api';
 import type { MaterialLogLevel5 } from '@/types/project';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 
 function InfoRow({ label, value, valueClass }: { label: string; value: string | null; valueClass?: string }) {
   return (
@@ -26,6 +28,12 @@ export default function Level5Page() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      const materials = mockData.level5 as unknown as MaterialLogLevel5[];
+      setMaterial(materials.find(m => m.id === itemId) ?? materials[0] ?? null);
+      setLoading(false);
+      return;
+    }
     periodApi.materials(tahapId)
       .then((res) => {
         const found = res.data.find((m) => m.id === itemId) ?? res.data[0] ?? null;

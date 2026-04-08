@@ -6,6 +6,8 @@ import PageHeader from '@/components/analytics/PageHeader';
 import SCurveChart from '@/components/analytics/SCurveChart';
 import { projectApi } from '@/lib/api';
 import type { ProjectRisk, ProgressCurveResponse } from '@/types/project';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 
 const SEVERITY_COLOR: Record<string, string> = {
   critical: 'text-red-600',
@@ -24,6 +26,12 @@ export default function Level7Page() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setRisks(mockData.level7.risks as unknown as ProjectRisk[]);
+      setCurve(mockData.level7.progressCurve as unknown as ProgressCurveResponse['data']);
+      setLoading(false);
+      return;
+    }
     Promise.all([
       projectApi.risks(projectId),
       projectApi.progressCurve(projectId),
