@@ -28,6 +28,8 @@
 | 13 | Nama Mitra | `projects` | `partner_name` | varchar(255) | Filled only if partnership = JO |
 | 14 | Division | `projects` | `division` | varchar(100) | Infrastructure, Building |
 
+//ignore line 14 ya mas
+
 ---
 
 ## 7-Level Flow Mapping
@@ -43,16 +45,17 @@
 **Columns Used:**
 ```php
 // For filter options
-- division         // Infrastructure, Building
 - sbu              // Gedung RS, Jembatan, etc.
 - owner            // Pemerintah, Swasta, BUMN, Danantara
 - contract_type    // Unit Price, Lumpsum, Gabungan (Tipe Kontrak)
 - type_of_contract // Konvensional, Design & Build, EPCC (Jenis Kontrak)
 - payment_method   // Monthly Progress, Milestone, CPF
 - partnership      // JO, Non JO
+- partner_name     // Google, or anything
 - funding_source   // APBN, APBD, Swasta, Loan
 - location         // Project location
 - project_year     // Year filter
+- division         // Infrastructure, Building
 
 // For display in results
 - id               // Project ID for navigation
