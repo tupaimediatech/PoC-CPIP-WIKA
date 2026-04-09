@@ -359,7 +359,158 @@ ingestion_files (1) ──── (N) project_periods
 
 ---
 
-## Database Schema Summary
+## ERD (Entity Relationship Diagram)
+
+### Complete Database Schema with Levels
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              DATABASE TABLES BY LEVEL                             │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                   │
+│  ┌───────────────────────────────────────────────────────────────────────────┐    │
+│  │  LEVEL 1-2: projects                                                        │    │
+│  │  ──────────────────────────────────────────────────────────────────────── │    │
+│  │  PK: id                                                                   │    │
+│  │  Columns: project_code, project_name, division, sbu, owner,             │    │
+│  │           profit_center, type_of_contract, contract_type,               │    │
+│  │           payment_method, partnership, partner_name,                     │    │
+│  │           consultant_name, funding_source, location,                     │    │
+│  │           contract_value, planned_cost, actual_cost,                     │    │
+│  │           planned_duration, actual_duration, progress_pct,               │    │
+│  │           gross_profit_pct, project_year, start_date,                     │    │
+│  │           cpi (calc), spi (calc), status (calc)                          │    │
+│  └───────────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                         │    │
+│                                      │ 1                                     │    │
+│                                      ▼                                       │    │
+│  ┌───────────────────────────────────────────────────────────────────────────┐    │
+│  │  LEVEL 3: project_periods                                                   │    │
+│  │  ──────────────────────────────────────────────────────────────────────── │    │
+│  │  PK: id                                                                   │    │
+│  │  FK: project_id → projects.id                                            │    │
+│  │  FK: ingestion_file_id → ingestion_files.id (nullable)                    │    │
+│  │  Columns: period, client_name, project_manager, report_source,           │    │
+│  │           progress_prev_pct, progress_this_pct, progress_total_pct,       │    │
+│  │           contract_value, addendum_value, total_pagu (BQ External),       │    │
+│  │           hpp_plan_total (RAB Internal), hpp_actual_total,                │    │
+│  │           hpp_deviation, deviasi_pct (calc)                               │    │
+│  └───────────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                         │    │
+│                                      │ N                                     │    │
+│                                      ▼                                       │    │
+│  ┌───────────────────────────────────────────────────────────────────────────┐    │
+│  │  LEVEL 3-4: project_work_items (self-referencing)                         │    │
+│  │  ──────────────────────────────────────────────────────────────────────── │    │
+│  │  PK: id                                                                   │    │
+│  │  FK: period_id → project_periods.id                                      │    │
+│  │  FK: parent_id → project_work_items.id (nullable, self-ref)              │    │
+│  │  Columns: level (0=category, 1=sub-item, 2=detail),                        │    │
+│  │           item_no, item_name, volume, satuan, harsat_internal,              │    │
+│  │           sort_order, budget_awal, addendum, total_budget,                 │    │
+│  │           realisasi, deviasi, deviasi_pct, is_total_row                    │    │
+│  └───────────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                         │    │
+│              ┌───────────────────────┼───────────────────────┐                    │
+│              │ N                     │ N                     │                    │
+│              ▼                       ▼                       ▼                    │
+│  ┌───────────────────────┐ ┌───────────────────────┐ ┌───────────────────────┐  │
+│  │ project_material_logs │ │ project_equipment_logs│ │ project_progress_     │  │
+│  │ LEVEL 5               │ │ LEVEL 5               │ │ curves (LEVEL 7B)     │  │
+│  │ ─────────────────────│ │ ─────────────────────│ │ ────────────────────│  │
+│  │ PK: id               │ │ PK: id               │ │ PK: id                │  │
+│  │ FK: period_id        │ │ FK: period_id        │ │ FK: project_id        │  │
+│  │ FK: work_item_id (opt)│ │ FK: work_item_id (opt)│ │       → projects.id  │  │
+│  │ Columns: supplier_name│ │ Columns: vendor_name │ │ Columns: week_number,  │  │
+│  │           tahun_perolehan,│ │           equipment_  │ │           week_date,     │  │
+│  │           lokasi_vendor,│ │           name,       │ │           rencana_pct,   │  │
+│  │           rating_performa,│ │           jam_kerja,  │ │           realisasi_pct, │  │
+│  │           material_type,│ │           rate_per_jam,│ │           deviasi_pct,  │  │
+│  │           qty, satuan,   │ │           total_biaya,│ │           keterangan     │  │
+│  │           harga_satuan,  │ │           payment_    │                       │  │
+│  │           total_tagihan, │ │           status     │                       │  │
+│  │           realisasi_    │ │           source_row  │                       │  │
+│  │           pengiriman,   │ │                      │                       │  │
+│  │           deviasi_harga_│ │                      │                       │  │
+│  │           market,       │ │                      │                       │  │
+│  │           catatan_      │ │                      │                       │  │
+│  │           monitoring,   │ │                      │                       │  │
+│  │           is_discount    │ │                      │                       │  │
+│  └───────────────────────┘ └───────────────────────┘ └───────────────────────┘  │
+│                                                                               │
+│  ┌───────────────────────────────────────────────────────────────────────────┐│
+│  │  LEVEL 7A: project_risks                                                   ││
+│  │  ──────────────────────────────────────────────────────────────────────── ││
+│  │  PK: id                                                                   ││
+│  │  FK: project_id → projects.id                                            ││
+│  │  Columns: risk_code, risk_title, risk_description, category,              ││
+│  │           financial_impact_idr, probability, impact,                      ││
+│  │           severity (calc), mitigation, status, owner,                      ││
+│  │           identified_at, target_resolved_at                               ││
+│  └───────────────────────────────────────────────────────────────────────────┘│
+│                                                                               │
+│  ┌───────────────────────────────────────────────────────────────────────────┐│
+│  │  SUPPORT TABLES                                                           ││
+│  │  ──────────────────────────────────────────────────────────────────────── ││
+│  │                                                                           ││
+│  │  ingestion_files (Excel upload tracking)                                  ││
+│  │  PK: id                                                                   ││
+│  │  Columns: original_name, stored_path, disk, status, total_rows,           ││
+│  │           imported_rows, skipped_rows, errors, processed_at              ││
+│  │                                                                           ││
+│  │  column_aliases (Dynamic column mapping)                                  ││
+│  │  PK: id                                                                   ││
+│  │  FK: created_by → users.id (nullable)                                    ││
+│  │  Unique: (alias, context)                                                 ││
+│  │  Columns: alias, target_field, context, is_active                        ││
+│  │                                                                           ││
+│  │  harsat_histories (Historical unit prices)                                ││
+│  │  PK: id                                                                   ││
+│  │  Unique: (category_key, year)                                             ││
+│  │  Columns: category, category_key, year, value, unit                       ││
+│  └───────────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Table-to-Level Mapping
+
+| Table | Level(s) | Description |
+|-------|-----------|-------------|
+| `projects` | Level 1, 2 | Main project data, filters, KPIs |
+| `project_periods` | Level 3 | Monthly/period reports (BQ vs RAB) |
+| `project_work_items` | Level 3, 4 | Work breakdown structure, HPP items |
+| `project_material_logs` | Level 5 | Material/vendor tracking |
+| `project_equipment_logs` | Level 5 | Equipment/vendor tracking |
+| `project_progress_curves` | Level 7B | Weekly S-curve timeline data |
+| `project_risks` | Level 7A | Risk register |
+
+### Foreign Key Relationships
+
+| From Table | From Column | To Table | To Column | Relationship |
+|------------|------------|----------|-----------|--------------|
+| `project_periods` | `project_id` | `projects` | `id` | Many-to-One |
+| `project_periods` | `ingestion_file_id` | `ingestion_files` | `id` | Many-to-One |
+| `project_work_items` | `period_id` | `project_periods` | `id` | Many-to-One |
+| `project_work_items` | `parent_id` | `project_work_items` | `id` | Self-referencing |
+| `project_material_logs` | `period_id` | `project_periods` | `id` | Many-to-One |
+| `project_material_logs` | `work_item_id` | `project_work_items` | `id` | Many-to-One (opt) |
+| `project_equipment_logs` | `period_id` | `project_periods` | `id` | Many-to-One |
+| `project_equipment_logs` | `work_item_id` | `project_work_items` | `id` | Many-to-One (opt) |
+| `project_progress_curves` | `project_id` | `projects` | `id` | Many-to-One |
+| `project_risks` | `project_id` | `projects` | `id` | Many-to-One |
+| `projects` | `ingestion_file_id` | `ingestion_files` | `id` | Many-to-One (opt) |
+| `column_aliases` | `created_by` | `users` | `id` | Many-to-One (opt) |
+
+### Unique Constraints
+
+| Table | Columns | Description |
+|-------|---------|-------------|
+| `projects` | `project_code` | Unique project code |
+| `project_periods` | `project_id + period` | One period per project per month |
+| `project_progress_curves` | `project_id + week_number` | One curve per project per week |
+| `column_aliases` | `alias + context` | One alias per context |
+
+---
 
 ### Core Tables
 
@@ -427,6 +578,9 @@ GET    /api/periods/{periodId}/equipment  - Equipment for period
 |------|---------|---------|
 | 2024-04-08 | 1.0 | Initial documentation with 7-level flow mapping |
 | 2024-04-08 | 1.1 | Updated filter mapping (14 filters) with new columns |
+| 2024-04-08 | 1.2 | Added `deviasi_pct` to project_periods (Level 3) |
+| 2024-04-08 | 1.3 | Added `volume`, `satuan`, `harsat_internal` to project_work_items (Level 4) |
+| 2024-04-08 | 1.4 | Added ERD (Entity Relationship Diagram) section |
 
 ---
 
