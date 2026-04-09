@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { harsatApi } from '@/lib/api';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 
 const FALLBACK_COLORS = ['#CA6939', '#EBAC2F', '#53AD59', '#4EA5DA', '#E76F51', '#2A9D8F'];
 
@@ -46,6 +48,10 @@ export default function TrendHarsatUtama() {
   });
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setTrendData(mockData.trendHarsat as TrendData);
+      return;
+    }
     harsatApi.trend()
       .then((res) => {
         if (res.data) {

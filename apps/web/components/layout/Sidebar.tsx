@@ -4,15 +4,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
-  House as HouseIcon,
-  ChartBar as ChartBarIcon,
-  ProjectorScreenChart as ProjectorScreenChartIcon,
-  Files as FilesIcon,
-  Bell as BellIcon,
-  GearSix as GearSixIcon,
-  SignOut as SignOutIcon,
-  CaretDoubleLeft as CaretDoubleLeftIcon,
-  CaretDown as CaretDownIcon,
+  HouseIcon,
+  ChartBarIcon,
+  ProjectorScreenChartIcon,
+  FilesIcon,
+  BellIcon,
+  GearSixIcon,
+  SignOutIcon,
+  CaretDoubleLeftIcon,
+  CaretDownIcon,
 } from '@phosphor-icons/react';
 import { useSidebar } from '@/components/layout/SidebarContext';
 
@@ -82,7 +82,7 @@ export default function Sidebar() {
               )}
               <nav className="space-y-1">
                 {group.items.map((item) => {
-                  const isActive = pathname === item.href;
+                  const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
                   return (
                   <Link
                       key={item.href}

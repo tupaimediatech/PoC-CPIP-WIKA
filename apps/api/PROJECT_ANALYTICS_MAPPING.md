@@ -45,13 +45,14 @@
 **Columns Used:**
 ```php
 // For filter options
+- project_name     // Project Name
+- partner_name     // Google, or anything
 - sbu              // Gedung RS, Jembatan, etc.
 - owner            // Pemerintah, Swasta, BUMN, Danantara
 - contract_type    // Unit Price, Lumpsum, Gabungan (Tipe Kontrak)
 - type_of_contract // Konvensional, Design & Build, EPCC (Jenis Kontrak)
 - payment_method   // Monthly Progress, Milestone, CPF
 - partnership      // JO, Non JO
-- partner_name     // Google, or anything
 - funding_source   // APBN, APBD, Swasta, Loan
 - location         // Project location
 - project_year     // Year filter
@@ -106,37 +107,17 @@
 **Columns Used - projects:**
 ```php
 - id               // For navigation
-- project_code     // Display
-- project_name     // Display
-- division         // Display
-- sbu              // Display
-- owner            // Display
-- location         // Display
-- contract_value   // Display
-- cpi              // KPI display
-- spi              // KPI display
-- status           // Status badge
 ```
 
 **Columns Used - project_periods:**
 ```php
 - id               // Period ID for navigation (tahapId)
 - project_id       // FK to projects
-- period           // YYYY-MM format
-- client_name      // Client name for the period
-- project_manager  // PM name
-- progress_total_pct // Cumulative progress
-- contract_value   // Contract value at period
-- total_pagu       // Total pagu (contract + addendum)
-- hpp_plan_total   // Planned HPP
-- hpp_actual_total // Actual HPP
-- hpp_deviation    // HPP deviation
+- period           // Will change to Item WBS Soon
+- total_pagu       // as BQ External
+- hpp_plan_total   // as RAB Internal
+- deviasi_pct      // as Deviasi
 ```
-
-**Display Data:**
-- BQ External vs RAB Internal comparison
-- Deviasi (%) calculation
-- Action button to navigate to Level 4
 
 ---
 
@@ -152,26 +133,17 @@
 ```php
 - id               // tahapId
 - project_id       // For navigation
-- period           // Display period
-- progress_total_pct // Progress display
 ```
 
 **Columns Used - project_work_items:**
 ```php
 - id               // Item ID for navigation (itemId)
 - period_id        // FK to project_periods
-- parent_id        // Self-reference for hierarchy
-- level            // 0=category, 1=sub-item, 2=detail
-- item_no          // Item number (I., 1.1, 2.2, etc.)
-- item_name        // "NAMA TAHAP PEKERJAAN" or "Nama Item"
-- sort_order       // Display order
-- budget_awal      // Initial budget
-- addendum         // Addendum value
-- total_budget     // Total budget (awal + addendum)
-- realisasi        // ITD realization
-- deviasi          // Budget deviation
-- deviasi_pct      // Deviation percentage
-- is_total_row     // Flag for summary rows
+- item_name        // Display Item sumber daya
+- volume           // Display volume
+- satuan           // Display satuan
+- harsat_internal  // Display harsat internal
+- total_budget     // Display total biaya
 ```
 
 **Display Data:**

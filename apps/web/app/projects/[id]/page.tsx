@@ -7,6 +7,8 @@ import PageHeader from '@/components/analytics/PageHeader';
 import BackButton from '@/components/analytics/BackButton';
 import { projectApi } from '@/lib/api';
 import type { ProjectPhaseListResponse } from '@/types/project';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 
 function formatRupiah(value: number): string {
   return `Rp${value.toLocaleString('id-ID')}`;
@@ -21,6 +23,11 @@ export default function Level3Page() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setData(mockData.level3 as unknown as ProjectPhaseListResponse['data']);
+      setLoading(false);
+      return;
+    }
     projectApi.periods(projectId)
       .then((res) => setData(res.data))
       .catch(console.error)

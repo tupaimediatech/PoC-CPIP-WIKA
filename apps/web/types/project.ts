@@ -188,6 +188,9 @@ export interface FilterOptionsResponse {
   funding_source: string[];
   location: string[];
   year: number[];
+  consultant: string[];
+  profit_center: string[];
+  project_duration: string[];
 }
 
 export interface SummaryResponse {

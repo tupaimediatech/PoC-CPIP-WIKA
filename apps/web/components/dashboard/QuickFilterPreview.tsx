@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { CaretDownIcon } from '@phosphor-icons/react';
 import { projectApi } from '@/lib/api';
 import type { FilterOptionsResponse } from '@/types/project';
+import { DEMO_MODE } from '@/lib/demo';
+import mockData from '@/data/mock-data.json';
 
 type FilterState = {
   sbu: string;
@@ -24,6 +26,10 @@ export default function QuickFilterPreview({ onSearch, onReset }: QuickFilterPre
   const [options, setOptions] = useState<FilterOptionsResponse | null>(null);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setOptions(mockData.filterOptions as unknown as FilterOptionsResponse);
+      return;
+    }
     projectApi.filterOptions().then(setOptions).catch(console.error);
   }, []);
 

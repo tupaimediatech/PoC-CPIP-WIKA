@@ -41,8 +41,8 @@ export default function ProjectDetail({ id }: Props) {
     );
   }
 
-  const cpi = parseFloat(project.cpi);
-  const spi = parseFloat(project.spi);
+  const cpi = parseFloat(project.cpi ?? '0');
+  const spi = parseFloat(project.spi ?? '0');
 
   return (
     <div className="space-y-6">

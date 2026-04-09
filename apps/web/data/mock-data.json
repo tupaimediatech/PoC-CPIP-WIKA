@@ -11,48 +11,54 @@
       "Infrastructure": { "total": 120, "avg_cpi": 0.92, "avg_spi": 0.87, "overbudget_count": 12, "delay_count": 15 },
       "Building": { "total": 90, "avg_cpi": 0.98, "avg_spi": 0.91, "overbudget_count": 6, "delay_count": 7 }
     },
-    "status_breakdown": { "good": 150, "warning": 42, "critical": 18 }
+    "status_breakdown": { "good": 150, "warning": 42, "critical": 18 },
+    "profitability": [
+      { "name": "Tol Semarang Seksi 3", "pct": "15%" },
+      { "name": "Bendungan Citarum", "pct": "12%" },
+      { "name": "RS Regional Surabaya", "pct": "10%" },
+      { "name": "Gedung Perkantoran BUMN", "pct": "9%" },
+      { "name": "IPAL Industri Cikarang", "pct": "8%" },
+      { "name": "Flyover Makassar", "pct": "7%" },
+      { "name": "RS Kasih Ibu Extension", "pct": "6%" },
+      { "name": "Jembatan Kalimantan", "pct": "5%" },
+      { "name": "SPAM Regional Umbulan", "pct": "4%" },
+      { "name": "Bandara Singkawang", "pct": "3%" }
+    ],
+    "overrun": [
+      { "name": "Jembatan Kalimantan", "pct": "23%" },
+      { "name": "Tol Semarang Seksi 3", "pct": "21%" },
+      { "name": "Jembatan Pulau Balang", "pct": "18%" },
+      { "name": "Terminal 4 Soekarno Hatta", "pct": "15%" },
+      { "name": "Bandara Dhoho Kediri", "pct": "12%" },
+      { "name": "Gedung Perkantoran BUMN", "pct": "10%" },
+      { "name": "WTP Karian Serpong", "pct": "8%" },
+      { "name": "Flyover Makassar", "pct": "6%" },
+      { "name": "RS Kasih Ibu Extension", "pct": "4%" },
+      { "name": "Bendungan Citarum", "pct": "3%" }
+    ]
   },
   "projects": [
-    { "id": 1, "project_code": "P001", "project_name": "Tol Semarang Seksi 3", "division": "Infrastructure", "owner": "BUMN", "contract_value": "850", "planned_cost": "800", "actual_cost": "970", "planned_duration": 24, "actual_duration": 30, "progress_pct": "75", "project_year": 2024, "cpi": "0.82", "spi": "0.75", "status": "critical", "ingestion_file_id": null, "created_at": "", "updated_at": "" },
-    { "id": 2, "project_code": "P002", "project_name": "Bendungan Citarum", "division": "Infrastructure", "owner": "Swasta", "contract_value": "620", "planned_cost": "600", "actual_cost": "630", "planned_duration": 18, "actual_duration": 17, "progress_pct": "90", "project_year": 2024, "cpi": "0.95", "spi": "1.02", "status": "warning", "ingestion_file_id": null, "created_at": "", "updated_at": "" },
-    { "id": 3, "project_code": "P003", "project_name": "RS Regional Surabaya", "division": "Building", "owner": "BUMN", "contract_value": "450", "planned_cost": "430", "actual_cost": "425", "planned_duration": 12, "actual_duration": 11, "progress_pct": "95", "project_year": 2025, "cpi": "1.01", "spi": "1.05", "status": "good", "ingestion_file_id": null, "created_at": "", "updated_at": "" },
-    { "id": 4, "project_code": "P004", "project_name": "Gedung Perkantoran BUMN", "division": "Building", "owner": "BUMN", "contract_value": "300", "planned_cost": "280", "actual_cost": "290", "planned_duration": 15, "actual_duration": 16, "progress_pct": "80", "project_year": 2025, "cpi": "0.97", "spi": "0.89", "status": "warning", "ingestion_file_id": null, "created_at": "", "updated_at": "" },
-    { "id": 5, "project_code": "P005", "project_name": "Jembatan Kalimantan", "division": "Infrastructure", "owner": "Swasta", "contract_value": "700", "planned_cost": "680", "actual_cost": "840", "planned_duration": 20, "actual_duration": 25, "progress_pct": "60", "project_year": 2024, "cpi": "0.81", "spi": "0.76", "status": "critical", "ingestion_file_id": null, "created_at": "", "updated_at": "" },
-    { "id": 6, "project_code": "P006", "project_name": "Jembatan Kalimantan", "division": "Infrastructure", "owner": "Swasta", "contract_value": "700", "planned_cost": "680", "actual_cost": "840", "planned_duration": 20, "actual_duration": 25, "progress_pct": "60", "project_year": 2024, "cpi": "0.81", "spi": "0.76", "status": "critical", "ingestion_file_id": null, "created_at": "", "updated_at": "" },
-    { "id": 7, "project_code": "P007", "project_name": "Jembatan Kalimantan", "division": "Infrastructure", "owner": "Swasta", "contract_value": "700", "planned_cost": "680", "actual_cost": "840", "planned_duration": 20, "actual_duration": 25, "progress_pct": "60", "project_year": 2024, "cpi": "0.81", "spi": "0.76", "status": "critical", "ingestion_file_id": null, "created_at": "", "updated_at": "" },
-    { "id": 8, "project_code": "P008", "project_name": "Jembatan Kalimantan", "division": "Infrastructure", "owner": "Swasta", "contract_value": "700", "planned_cost": "680", "actual_cost": "840", "planned_duration": 20, "actual_duration": 25, "progress_pct": "60", "project_year": 2024, "cpi": "0.81", "spi": "0.76", "status": "critical", "ingestion_file_id": null, "created_at": "", "updated_at": "" },
-    { "id": 9, "project_code": "P009", "project_name": "RS Kasih Ibu Extension", "division": "Building", "owner": "Swasta", "contract_value": "380", "planned_cost": "350", "actual_cost": "360", "planned_duration": 10, "actual_duration": 10, "progress_pct": "88", "project_year": 2025, "cpi": "0.97", "spi": "1.00", "status": "warning", "ingestion_file_id": null, "created_at": "", "updated_at": "" },
-    { "id": 10, "project_code": "P010", "project_name": "Flyover Makassar", "division": "Infrastructure", "owner": "BUMN", "contract_value": "520", "planned_cost": "500", "actual_cost": "510", "planned_duration": 16, "actual_duration": 17, "progress_pct": "70", "project_year": 2024, "cpi": "0.98", "spi": "0.94", "status": "warning", "ingestion_file_id": null, "created_at": "", "updated_at": "" }
+    { "id": 1, "project_code": "P001", "project_name": "Tol Semarang Seksi 3", "division": "Infrastructure", "sbu": "Jembatan", "owner": "BUMN", "contract_type": "Lumpsum", "payment_method": "Termin Progress", "partnership": "Non JO", "funding_source": "APBN", "location": "Surabaya, Jawa Timur", "contract_value": "850", "planned_cost": "800", "actual_cost": "970", "planned_duration": 24, "actual_duration": 30, "progress_pct": "75", "gross_profit_pct": "15.0", "project_year": 2024, "start_date": "2023-01-15", "cpi": "0.82", "spi": "0.75", "status": "critical", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 2, "project_code": "P002", "project_name": "Bendungan Citarum", "division": "Infrastructure", "sbu": "Sanitasi", "owner": "Swasta", "contract_type": "Gedung RS", "payment_method": "Milestone", "partnership": "Join Operation (JO)", "funding_source": "APBD", "location": "Bandung", "contract_value": "620", "planned_cost": "600", "actual_cost": "630", "planned_duration": 18, "actual_duration": 17, "progress_pct": "90", "gross_profit_pct": "12.0", "project_year": 2024, "start_date": "2023-06-01", "cpi": "0.95", "spi": "1.02", "status": "warning", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 3, "project_code": "P003", "project_name": "RS Regional Surabaya", "division": "Building", "sbu": "Gedung RS", "owner": "BUMN", "contract_type": "Lumpsum", "payment_method": "Termin Progress", "partnership": "Non JO", "funding_source": "APBN", "location": "Surabaya, Jawa Timur", "contract_value": "450", "planned_cost": "430", "actual_cost": "425", "planned_duration": 12, "actual_duration": 11, "progress_pct": "95", "gross_profit_pct": "10.0", "project_year": 2025, "start_date": "2024-03-01", "cpi": "1.01", "spi": "1.05", "status": "good", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 4, "project_code": "P004", "project_name": "Gedung Perkantoran BUMN", "division": "Building", "sbu": "Gedung RS", "owner": "BUMN", "contract_type": "Lumpsum", "payment_method": "Lumpsum", "partnership": "Non JO", "funding_source": "Swasta", "location": "Jakarta", "contract_value": "300", "planned_cost": "280", "actual_cost": "290", "planned_duration": 15, "actual_duration": 16, "progress_pct": "80", "gross_profit_pct": "9.0", "project_year": 2025, "start_date": "2024-01-15", "cpi": "0.97", "spi": "0.89", "status": "warning", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 5, "project_code": "P005", "project_name": "Jembatan Kalimantan", "division": "Infrastructure", "sbu": "Jembatan", "owner": "Swasta", "contract_type": "Jembatan", "payment_method": "Termin Progress", "partnership": "Join Operation (JO)", "funding_source": "APBN", "location": "Surabaya, Jawa Timur", "contract_value": "700", "planned_cost": "680", "actual_cost": "840", "planned_duration": 20, "actual_duration": 25, "progress_pct": "60", "gross_profit_pct": "5.0", "project_year": 2024, "start_date": "2023-03-01", "cpi": "0.81", "spi": "0.76", "status": "critical", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 6, "project_code": "P006", "project_name": "RS Kasih Ibu Extension", "division": "Building", "sbu": "Gedung RS", "owner": "Swasta", "contract_type": "Lumpsum", "payment_method": "Milestone", "partnership": "Non JO", "funding_source": "Swasta", "location": "Jakarta", "contract_value": "380", "planned_cost": "350", "actual_cost": "360", "planned_duration": 10, "actual_duration": 10, "progress_pct": "88", "gross_profit_pct": "6.0", "project_year": 2025, "start_date": "2024-06-01", "cpi": "0.97", "spi": "1.00", "status": "warning", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 7, "project_code": "P007", "project_name": "Flyover Makassar", "division": "Infrastructure", "sbu": "Jembatan", "owner": "BUMN", "contract_type": "Jembatan", "payment_method": "Termin Progress", "partnership": "Non JO", "funding_source": "APBD", "location": "Surabaya, Jawa Timur", "contract_value": "520", "planned_cost": "500", "actual_cost": "510", "planned_duration": 16, "actual_duration": 17, "progress_pct": "70", "gross_profit_pct": "7.0", "project_year": 2024, "start_date": "2023-09-01", "cpi": "0.98", "spi": "0.94", "status": "warning", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 8, "project_code": "P008", "project_name": "IPAL Komunal Denpasar", "division": "Infrastructure", "sbu": "Sanitasi", "owner": "Pemerintah", "contract_type": "Sanitasi", "payment_method": "Milestone", "partnership": "Non JO", "funding_source": "APBN", "location": "Surabaya, Jawa Timur", "contract_value": "280", "planned_cost": "260", "actual_cost": "245", "planned_duration": 12, "actual_duration": 11, "progress_pct": "92", "gross_profit_pct": "15.4", "project_year": 2024, "start_date": "2023-04-01", "cpi": "1.15", "spi": "1.10", "status": "good", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 9, "project_code": "P009", "project_name": "WTP Karian Serpong", "division": "Infrastructure", "sbu": "Sanitasi", "owner": "BUMN", "contract_type": "Sanitasi", "payment_method": "Termin Progress", "partnership": "Join Operation (JO)", "funding_source": "APBD", "location": "Jakarta", "contract_value": "350", "planned_cost": "330", "actual_cost": "340", "planned_duration": 14, "actual_duration": 15, "progress_pct": "78", "gross_profit_pct": "11.0", "project_year": 2023, "start_date": "2022-08-01", "cpi": "0.97", "spi": "0.92", "status": "warning", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 10, "project_code": "P010", "project_name": "SPAM Regional Umbulan", "division": "Infrastructure", "sbu": "Sanitasi", "owner": "Pemerintah", "contract_type": "Sanitasi", "payment_method": "Lumpsum", "partnership": "Non JO", "funding_source": "APBN", "location": "Surabaya, Jawa Timur", "contract_value": "420", "planned_cost": "400", "actual_cost": "390", "planned_duration": 18, "actual_duration": 17, "progress_pct": "85", "gross_profit_pct": "13.2", "project_year": 2025, "start_date": "2024-02-01", "cpi": "1.05", "spi": "1.00", "status": "good", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 11, "project_code": "P011", "project_name": "Bandara Dhoho Kediri", "division": "Infrastructure", "sbu": "Bandara", "owner": "BUMN", "contract_type": "Lumpsum", "payment_method": "Termin Progress", "partnership": "Join Operation (JO)", "funding_source": "APBN", "location": "Surabaya, Jawa Timur", "contract_value": "1200", "planned_cost": "1100", "actual_cost": "1250", "planned_duration": 30, "actual_duration": 34, "progress_pct": "65", "gross_profit_pct": "6.5", "project_year": 2024, "start_date": "2022-06-01", "cpi": "0.82", "spi": "0.88", "status": "critical", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 12, "project_code": "P012", "project_name": "Terminal 4 Soekarno Hatta", "division": "Infrastructure", "sbu": "Bandara", "owner": "BUMN", "contract_type": "Lumpsum", "payment_method": "Milestone", "partnership": "Join Operation (JO)", "funding_source": "APBN", "location": "Jakarta", "contract_value": "2500", "planned_cost": "2300", "actual_cost": "2600", "planned_duration": 36, "actual_duration": 42, "progress_pct": "55", "gross_profit_pct": "5.8", "project_year": 2023, "start_date": "2021-01-01", "cpi": "0.85", "spi": "0.78", "status": "critical", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 13, "project_code": "P013", "project_name": "Bandara Singkawang", "division": "Infrastructure", "sbu": "Bandara", "owner": "Pemerintah", "contract_type": "Lumpsum", "payment_method": "Termin Progress", "partnership": "Non JO", "funding_source": "APBD", "location": "Bandung", "contract_value": "800", "planned_cost": "750", "actual_cost": "720", "planned_duration": 24, "actual_duration": 23, "progress_pct": "90", "gross_profit_pct": "9.7", "project_year": 2025, "start_date": "2023-07-01", "cpi": "1.08", "spi": "1.02", "status": "good", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 14, "project_code": "P014", "project_name": "RS Regional Palu", "division": "Building", "sbu": "Gedung RS", "owner": "Pemerintah", "contract_type": "Lumpsum", "payment_method": "Termin Progress", "partnership": "Non JO", "funding_source": "APBN", "location": "Bandung", "contract_value": "320", "planned_cost": "300", "actual_cost": "295", "planned_duration": 12, "actual_duration": 12, "progress_pct": "82", "gross_profit_pct": "11.8", "project_year": 2023, "start_date": "2022-10-01", "cpi": "1.03", "spi": "0.94", "status": "warning", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" },
+    { "id": 15, "project_code": "P015", "project_name": "IPAL Industri Cikarang", "division": "Infrastructure", "sbu": "Sanitasi", "owner": "Swasta", "contract_type": "Sanitasi", "payment_method": "Lumpsum", "partnership": "Non JO", "funding_source": "Swasta", "location": "Jakarta", "contract_value": "190", "planned_cost": "175", "actual_cost": "165", "planned_duration": 8, "actual_duration": 7, "progress_pct": "95", "gross_profit_pct": "16.1", "project_year": 2025, "start_date": "2024-09-01", "cpi": "1.12", "spi": "1.08", "status": "good", "ingestion_file_id": null, "created_at": "2024-01-15T00:00:00Z", "updated_at": "2024-01-15T00:00:00Z" }
   ],
-  "profitability": [
-    { "name": "Tol Semarang Seksi 3", "pct": "15%" },
-    { "name": "Bendungan Citarum", "pct": "12%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" }
-  ],
-  "overrun": [
-    { "name": "Tol Semarang Seksi 3", "pct": "15%" },
-    { "name": "Bendungan Citarum", "pct": "12%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" },
-    { "name": "RS Regional Surabaya", "pct": "10%" }
-  ],
-  "sebaranSBU": [
-    { "label": "Bandara", "value": 20, "color": "#7DBDB4" },
-    { "label": "Gedung RS", "value": 35, "color": "#4EA5DA" },
-    { "label": "Lainnya", "value": 45, "color": "#3573B3" }
+  "sbuDistribution": [
+    { "label": "Gedung RS", "value": 35 },
+    { "label": "Jembatan", "value": 25 },
+    { "label": "Sanitasi", "value": 20 },
+    { "label": "Bandara", "value": 20 }
   ],
   "trendHarsat": {
     "years": ["2020", "2021", "2022", "2023", "2024", "2025"],
@@ -68,83 +74,69 @@
     }
   },
   "filterOptions": {
-    "sbu": { "label": "SBU", "options": ["All", "Gedung RS", "Jembatan", "Sanitasi"] },
+    "division": ["Infrastructure", "Building"],
+    "sbu": ["Gedung RS", "Jembatan", "Sanitasi", "Bandara"],
+    "owner": ["Swasta", "BUMN", "Pemerintah"],
+    "contract_type": ["Lumpsum", "Jembatan", "Sanitasi", "Gedung RS"],
+    "payment_method": ["Termin Progress", "Lumpsum", "Milestone"],
+    "partnership": ["Join Operation (JO)", "Non JO"],
+    "funding_source": ["APBN", "APBD", "Swasta"],
+    "location": ["Surabaya, Jawa Timur", "Jakarta", "Bandung"],
+    "year": [2023, 2024, 2025],
+    "consultant": ["PT Virama Karya", "PT Indah Karya", "PT Yodya Karya", "PT Bina Karya"],
+    "profit_center": ["PC-1000", "PC-2000", "PC-3000", "PC-4000"],
+    "project_duration": ["< 6 Bulan", "6-12 Bulan", "1-2 Tahun", "> 2 Tahun"]
+  },
+  "dashboardFilterOptions": {
+    "sbu": { "label": "SBU", "options": ["All", "Gedung RS", "Jembatan", "Sanitasi", "Bandara"] },
     "owner": { "label": "Owner", "options": ["All", "Swasta", "BUMN", "Pemerintah"] },
-    "contract": { "label": "Contract", "options": ["All", "Gedung RS", "Jembatan", "Sanitasi"] },
-    "partnership": { "label": "Partnership", "options": ["All", "Non JO", "JO"] }
+    "contract": { "label": "Contract", "options": ["All", "Lumpsum", "Jembatan", "Sanitasi"] },
+    "partnership": { "label": "Partnership", "options": ["All", "Non JO", "Join Operation (JO)"] }
   },
   "divisionSummaryText": "Building outperforms Infrastructure, especially in cost control. Both divisions are behind schedule, but the delay is more critical in Infrastructure.",
-  "projectsFilter": {
-    "sbu": ["Gedung RS", "Jembatan", "Sanitasi", "Bandara"],
-    "contractType": ["Gedung RS", "Jembatan", "Sanitasi"],
-    "paymentMethod": ["Termin Progress", "Lumpsum", "Milestone"],
-    "projectOwner": ["Swasta", "BUMN", "Pemerintah"],
-    "contractMethod": ["Design & Build", "Tender", "Penunjukan Langsung"],
-    "partnership": ["Join Operation (JO)", "Non JO"],
-    "fundingSource": ["APBN", "APBD", "Swasta"],
-    "consultant": ["PT Yodya Karya", "PT Virama Karya"],
-    "location": ["Surabaya, Jawa Timur", "Jakarta", "Bandung"],
-    "year": ["2023", "2024", "2025"],
-    "profitCenter": ["Building Construction Division", "Infrastructure Division"],
-    "projectDuration": ["12 bulan", "24 bulan", "36 bulan"]
-  },
-  "projectResults": [
-    { "id": 1, "name": "RS Tri Harsi 2", "sbu": "Gedung RS", "owner": "Swasta", "contractType": "Lumpsum", "unitRate": "Rp12.500.000", "grossProfit": "12.5%", "spi": 0.90, "cpi": 1.10, "year": "2024", "location": "Surabaya, Jawa Timur" },
-    { "id": 2, "name": "RS Kasih Ibu Ext", "sbu": "Gedung RS", "owner": "BUMN", "contractType": "Gedung RS", "unitRate": "Rp11.800.000", "grossProfit": "10.2%", "spi": 1.00, "cpi": 0.90, "year": "2024", "location": "Jakarta" },
-    { "id": 3, "name": "RS Hermina Solo", "sbu": "Gedung RS", "owner": "Swasta", "contractType": "Gedung RS", "unitRate": "Rp13.200.000", "grossProfit": "14.0%", "spi": 1.10, "cpi": 1.00, "year": "2025", "location": "Bandung" },
-    { "id": 4, "name": "Jembatan Mahakam IV", "sbu": "Jembatan", "owner": "BUMN", "contractType": "Jembatan", "unitRate": "Rp45.000.000", "grossProfit": "8.3%", "spi": 0.85, "cpi": 0.88, "year": "2023", "location": "Surabaya, Jawa Timur" },
-    { "id": 5, "name": "Flyover Simpang Barelang", "sbu": "Jembatan", "owner": "Pemerintah", "contractType": "Jembatan", "unitRate": "Rp38.700.000", "grossProfit": "9.1%", "spi": 0.95, "cpi": 1.02, "year": "2024", "location": "Jakarta" },
-    { "id": 6, "name": "Jembatan Teluk Kendari", "sbu": "Jembatan", "owner": "BUMN", "contractType": "Jembatan", "unitRate": "Rp52.300.000", "grossProfit": "7.8%", "spi": 1.05, "cpi": 0.95, "year": "2025", "location": "Bandung" },
-    { "id": 7, "name": "IPAL Komunal Denpasar", "sbu": "Sanitasi", "owner": "Pemerintah", "contractType": "Sanitasi", "unitRate": "Rp8.200.000", "grossProfit": "15.4%", "spi": 1.10, "cpi": 1.15, "year": "2024", "location": "Surabaya, Jawa Timur" },
-    { "id": 8, "name": "WTP Karian Serpong", "sbu": "Sanitasi", "owner": "BUMN", "contractType": "Sanitasi", "unitRate": "Rp9.500.000", "grossProfit": "11.0%", "spi": 0.92, "cpi": 0.97, "year": "2023", "location": "Jakarta" },
-    { "id": 9, "name": "SPAM Regional Umbulan", "sbu": "Sanitasi", "owner": "Pemerintah", "contractType": "Sanitasi", "unitRate": "Rp7.800.000", "grossProfit": "13.2%", "spi": 1.00, "cpi": 1.05, "year": "2025", "location": "Surabaya, Jawa Timur" },
-    { "id": 10, "name": "Bandara Dhoho Kediri", "sbu": "Bandara", "owner": "BUMN", "contractType": "Gedung RS", "unitRate": "Rp65.000.000", "grossProfit": "6.5%", "spi": 0.88, "cpi": 0.82, "year": "2024", "location": "Surabaya, Jawa Timur" },
-    { "id": 11, "name": "Terminal 4 Soekarno Hatta", "sbu": "Bandara", "owner": "BUMN", "contractType": "Gedung RS", "unitRate": "Rp72.100.000", "grossProfit": "5.8%", "spi": 0.78, "cpi": 0.85, "year": "2023", "location": "Jakarta" },
-    { "id": 12, "name": "Bandara Singkawang", "sbu": "Bandara", "owner": "Pemerintah", "contractType": "Gedung RS", "unitRate": "Rp48.500.000", "grossProfit": "9.7%", "spi": 1.02, "cpi": 1.08, "year": "2025", "location": "Bandung" },
-    { "id": 13, "name": "RS Regional Palu", "sbu": "Gedung RS", "owner": "Pemerintah", "contractType": "Lumpsum", "unitRate": "Rp10.900.000", "grossProfit": "11.8%", "spi": 0.94, "cpi": 1.03, "year": "2023", "location": "Bandung" },
-    { "id": 14, "name": "Jembatan Pulau Balang", "sbu": "Jembatan", "owner": "BUMN", "contractType": "Jembatan", "unitRate": "Rp58.200.000", "grossProfit": "6.2%", "spi": 0.80, "cpi": 0.78, "year": "2024", "location": "Jakarta" },
-    { "id": 15, "name": "IPAL Industri Cikarang", "sbu": "Sanitasi", "owner": "Swasta", "contractType": "Sanitasi", "unitRate": "Rp11.300.000", "grossProfit": "16.1%", "spi": 1.08, "cpi": 1.12, "year": "2025", "location": "Jakarta" }
-  ],
   "level3": {
-    "projectName": "RS Tri Harsi 2",
+    "project_name": "RS Tri Harsi 2",
     "sbu": "Gedung RS",
-    "projectOwner": "Swasta",
-    "contractType": "Lumpsum",
+    "owner": "Swasta",
+    "contract_type": "Lumpsum",
     "phases": [
-      { "id": 1, "name": "Pekerjaan Tanah", "bqExternal": 500000000, "rabInternal": 450000000, "deviasi": 10.0 },
-      { "id": 2, "name": "Pekerjaan Struktur", "bqExternal": 5200000000, "rabInternal": 4800000000, "deviasi": 7.6 },
-      { "id": 3, "name": "Pekerjaan Arsitektur", "bqExternal": 3100000000, "rabInternal": 2900000000, "deviasi": 6.4 },
-      { "id": 4, "name": "Pekerjaan MEP", "bqExternal": 2200000000, "rabInternal": 2500000000, "deviasi": -13.6 }
+      { "id": 1, "name": "Pekerjaan Tanah", "bqExternal": 500000000, "rabInternal": 450000000, "realisasi": 420000000, "deviasi": 10.0 },
+      { "id": 2, "name": "Pekerjaan Struktur", "bqExternal": 5200000000, "rabInternal": 4800000000, "realisasi": 5100000000, "deviasi": 7.6 },
+      { "id": 3, "name": "Pekerjaan Arsitektur", "bqExternal": 3100000000, "rabInternal": 2900000000, "realisasi": 2850000000, "deviasi": 6.4 },
+      { "id": 4, "name": "Pekerjaan MEP", "bqExternal": 2200000000, "rabInternal": 2500000000, "realisasi": 2700000000, "deviasi": -13.6 }
     ]
   },
   "level4": {
     "tahap": "Pekerjaan Struktur",
     "rabInternal": 4800000000,
     "items": [
-      { "id": 1, "name": "Beton Ready Mic K-350", "volume": 500, "satuan": "m\u00b3", "harsatInternal": 1250000, "totalBiaya": 625000000 },
-      { "id": 2, "name": "Besi D-16", "volume": 20000, "satuan": "kg", "harsatInternal": 15500, "totalBiaya": 310000000 },
-      { "id": 3, "name": "Upah Pembesian", "volume": 1, "satuan": "ls", "harsatInternal": 250000000, "totalBiaya": 250000000 },
-      { "id": 4, "name": "Sewa Tower Crane", "volume": 2, "satuan": "bln", "harsatInternal": 60000000, "totalBiaya": 120000000 }
+      { "id": 1, "name": "Beton Ready Mic K-350", "item_no": "2.1", "totalBiaya": 625000000, "realisasi": 640000000, "deviasi": -15000000, "deviasi_pct": -2.4, "is_total_row": false, "children": [] },
+      { "id": 2, "name": "Besi D-16", "item_no": "2.2", "totalBiaya": 310000000, "realisasi": 325000000, "deviasi": -15000000, "deviasi_pct": -4.8, "is_total_row": false, "children": [] },
+      { "id": 3, "name": "Upah Pembesian", "item_no": "2.3", "totalBiaya": 250000000, "realisasi": 245000000, "deviasi": 5000000, "deviasi_pct": 2.0, "is_total_row": false, "children": [] },
+      { "id": 4, "name": "Sewa Tower Crane", "item_no": "2.4", "totalBiaya": 120000000, "realisasi": 130000000, "deviasi": -10000000, "deviasi_pct": -8.3, "is_total_row": false, "children": [] }
     ]
   },
-  "level5": {
-    "tahap": "Pekerjaan Struktur",
-    "item": "Besi D-16",
-    "volume": "20.000 kg",
-    "vendor": {
-      "nama": "PT Baja Sejahtera",
-      "tahunPerolehan": "2024",
-      "lokasi": "Surabaya",
-      "ratingPerforma": "4/5"
-    },
-    "kontrak": {
-      "nilaiKontrak": "Rp310.000.000",
-      "hargaSatuan": "Rp15.500/kg",
-      "realisasiPengiriman": "100% (Selesai)",
-      "deviasiHargaMarket": "\u2191 +2% (Wajar)"
-    },
-    "catatanMonitoring": "Vendor menyuplai tepat waktu sesuai jadwal pengerjaan struktur lantai 1-3. Kenaikan harga terjadi di temin ke-2 karena fluktuasi harga baja global."
-  },
+  "level5": [
+    {
+      "id": 2,
+      "material_type": "Besi D-16",
+      "volume": 20000,
+      "satuan": "kg",
+      "vendor": {
+        "nama": "PT Baja Sejahtera",
+        "tahunPerolehan": "2024",
+        "lokasi": "Surabaya",
+        "ratingPerforma": "4/5"
+      },
+      "kontrak": {
+        "nilaiKontrak": "Rp310.000.000",
+        "hargaSatuan": "Rp15.500/kg",
+        "realisasiPengiriman": "100% (Selesai)",
+        "deviasiHargaMarket": "\u2191 +2% (Wajar)"
+      },
+      "catatanMonitoring": "Vendor menyuplai tepat waktu sesuai jadwal pengerjaan struktur lantai 1-3. Kenaikan harga terjadi di temin ke-2 karena fluktuasi harga baja global."
+    }
+  ],
   "level6": {
     "projectName": "RS Tri Harsi 2",
     "tahap": "Pekerjaan Struktur",
@@ -157,26 +149,32 @@
     "totalHpp": { "tender": 9.5, "rkp": 9.2, "realization": 9.8 },
     "cpiValue": 0.94,
     "cpiStatus": "Over Budget",
-    "summaryInsight": "Project mengalami pembengkakan biaya <1 teritama pada pos BTL karena durasi project yang mundur 2 bulan."
+    "summaryInsight": "Project mengalami pembengkakan biaya <1 terutama pada pos BTL karena durasi project yang mundur 2 bulan."
   },
   "level7": {
     "risks": [
-      { "id": 1, "kategori": "Suplai / Vendor", "deskripsi": "Keterlambatan Besi (Level 5)", "dampak": "\u2191 +4 hari", "status": "At Risk" },
-      { "id": 2, "kategori": "Eksternal", "deskripsi": "Cuaca Buruk (Hujan Ekstreme)", "dampak": "\u2191 +Rp100 juta (Alat)", "status": "At Risk" },
-      { "id": 3, "kategori": "Teknis", "deskripsi": "Perubahan Desain Pondasi", "dampak": "\u2191 +Rp250 juta (Mat)", "status": "At Risk" }
+      { "id": 1, "risk_code": "R001", "risk_title": "Keterlambatan Besi (Level 5)", "risk_description": "Keterlambatan pengiriman besi dari vendor utama", "category": "Suplai / Vendor", "financial_impact_idr": "50000000", "probability": 3, "impact": 4, "severity": "high", "mitigation": "Siapkan vendor cadangan", "status": "At Risk", "owner": "Project Manager", "identified_at": "2024-03-15", "target_resolved_at": "2024-06-30" },
+      { "id": 2, "risk_code": "R002", "risk_title": "Cuaca Buruk (Hujan Ekstreme)", "risk_description": "Cuaca buruk menyebabkan keterlambatan pekerjaan outdoor", "category": "Eksternal", "financial_impact_idr": "100000000", "probability": 4, "impact": 3, "severity": "high", "mitigation": "Percepatan pekerjaan di musim kering", "status": "At Risk", "owner": "Site Manager", "identified_at": "2024-01-10", "target_resolved_at": "2024-12-31" },
+      { "id": 3, "risk_code": "R003", "risk_title": "Perubahan Desain Pondasi", "risk_description": "Perubahan desain pondasi akibat kondisi tanah yang tidak sesuai", "category": "Teknis", "financial_impact_idr": "250000000", "probability": 2, "impact": 5, "severity": "critical", "mitigation": "Review desain dengan konsultan", "status": "At Risk", "owner": "Design Engineer", "identified_at": "2024-02-20", "target_resolved_at": "2024-05-15" }
     ],
-    "timeline": {
-      "planned": "01 Jan 2024 - 30 Des 2024",
-      "actual": "01 Jan 2024 - 28 Feb 2025",
-      "delayNote": "Delay 2 bulan"
+    "progressCurve": {
+      "timeline": {
+        "start_date": "2024-01-01",
+        "planned_end": "2024-12-30",
+        "actual_end": "2025-02-28",
+        "planned": "01 Jan 2024 - 30 Des 2024",
+        "actual": "01 Jan 2024 - 28 Feb 2025",
+        "delay_months": 2,
+        "delay_note": "Delay 2 bulan"
+      },
+      "spi_value": 0.88,
+      "spi_status": "Critical Delay",
+      "sCurve": {
+        "months": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Aug", "Sept", "Okt", "Nov", "Des"],
+        "plan": [0, 5, 12, 20, 30, 42, 55, 68, 78, 88, 95, 100],
+        "actual": [0, 3, 8, 15, 22, 30, 40, 52, 62, 72, 80, 85]
+      }
     },
-    "sCurve": {
-      "months": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Aug", "Sept", "Okt", "Nov", "Des"],
-      "plan": [0, 5, 12, 20, 30, 42, 55, 68, 78, 88, 95, 100],
-      "actual": [0, 3, 8, 15, 22, 30, 40, 52, 62, 72, 80, 85]
-    },
-    "spiValue": 0.88,
-    "spiStatus": "Critical Delay",
     "spiInsight": "The SPI value of 0.88 indicates that the project is progressing slower than planned and is currently experiencing a critical schedule delay."
   }
 }
