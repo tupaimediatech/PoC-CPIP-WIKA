@@ -59,29 +59,35 @@ export default function Level6Page() {
       </div>
     );
 
-  const phase = periods?.phases.find((p) => p.id === tahapId) ?? periods?.phases[0];
+  // Penyesuaian pengambilan data dari struktur API
+  const phase = periods?.phases?.find((p) => p.id === tahapId) ?? (periods as any);
+
+  // Ambil total realisasi dengan menjumlahkan semua realisasi item di dalam data
+  const calculatedRealisasi = phase?.items?.reduce((acc: number, curr: any) => acc + (curr.realisasi || 0), 0) || phase?.realisasi || 0;
+  const totalRAB = phase?.rabInternal || 0;
+
   const cpiVal = cpi ?? 0;
   const cpiColor = cpiVal >= 1.0 ? "text-green-600" : cpiVal >= 0.9 ? "text-yellow-600" : "text-red-600";
   const cpiStatus = cpiVal >= 1.0 ? "Under Budget" : cpiVal >= 0.9 ? "Near Budget" : "Over Budget";
 
-  // Penyesuaian hppRows agar sesuai dengan foto (3 kolom angka)
+  // Penyesuaian hppRows agar menggunakan data rabInternal dan realisasi dari API
   const hppRows = phase
     ? [
         {
           id: 1,
           name: "Biaya Langsung (BL)",
           sub: "(Material, Upah, Alat, Subkon)",
-          tender: 8_000_000_000, // Ganti dengan phase.tenderBL jika ada di API
-          rkp: phase.rabInternal * 0.85,
-          actual: phase.realisasi * 0.85,
+          tender: totalRAB * 0.85,
+          rkp: totalRAB * 0.85,
+          actual: calculatedRealisasi * 0.85,
         },
         {
-          id: 3, // Di foto menggunakan angka 3
+          id: 3,
           name: "Biaya Tidak Langsung (BTL)",
           sub: "(Sekretariat, Pegawai, Kendaraan, Umum)",
-          tender: 1_500_000_000, // Ganti dengan phase.tenderBTL jika ada di API
-          rkp: phase.rabInternal * 0.15,
-          actual: phase.realisasi * 0.15,
+          tender: totalRAB * 0.15,
+          rkp: totalRAB * 0.15,
+          actual: calculatedRealisasi * 0.15,
         },
       ]
     : [];
@@ -90,7 +96,11 @@ export default function Level6Page() {
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
       <PageHeader
         title={`Level 6 Analisa HPP & CPI - ${periods?.project_name ?? "Project"}`}
-        pills={[...(phase ? [{ label: "Tahap", value: phase.name }] : []), ...(workItem ? [{ label: "Item", value: workItem.name }] : [])]}
+        pills={[
+          ...(phase ? [{ label: "Tahap", value: phase.tahap || phase.name }] : []),
+          ...(workItem ? [{ label: "Item", value: workItem.name }] : []),
+          ...(workItem ? [{ label: "Volume", value: workItem.volume || "-" }] : []),
+        ]}
         onExport={() => {}}
       />
 
@@ -126,9 +136,9 @@ export default function Level6Page() {
               <tr className="bg-[#F9FAFB] border-t-2">
                 <td className="px-6 py-4" />
                 <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">TOTAL HPP</td>
-                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-left">{formatM(9_500_000_000)}</td>
-                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-left">{formatM(phase!.rabInternal)}</td>
-                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-left">{formatM(phase!.realisasi)}</td>
+                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-left">{formatM(totalRAB)}</td>
+                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-left">{formatM(totalRAB)}</td>
+                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-left">{formatM(calculatedRealisasi)}</td>
               </tr>
             </tfoot>
           </table>
@@ -137,7 +147,7 @@ export default function Level6Page() {
         <div className="mb-8 py-10 text-center text-gray-400 border border-gray-100 rounded-xl">No HPP data available for this period</div>
       )}
 
-      {/* Visual Indicator section remains same */}
+      {/* Visual Indicator section */}
       <h3 className="text-[16px] font-bold text-[#1B1C1F] mb-4">Visual Indicator</h3>
       <div className="grid grid-cols-2 gap-6 mb-8">
         <div className="border border-gray-100 rounded-xl p-6">
