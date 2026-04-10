@@ -7,7 +7,7 @@ use App\Http\Controllers\HarsatController;
 use App\Http\Controllers\MaterialLogController;
 use App\Http\Controllers\ProgressCurveController;
 use App\Http\Controllers\ProjectController;
-use App\Http\Controllers\ProjectPeriodController;
+use App\Http\Controllers\ProjectWbsController;
 use App\Http\Controllers\ProjectRiskController;
 use App\Http\Controllers\WorkItemController;
 use Illuminate\Support\Facades\Route;
@@ -31,12 +31,12 @@ Route::get('/projects/{project}/insight',          [ProjectController::class, 'i
 Route::get('/projects',                            [ProjectController::class, 'index']);
 Route::get('/projects/{project}',                  [ProjectController::class, 'show']);
 
-Route::get('/projects/{project}/periods',                    [ProjectPeriodController::class, 'index']);
-Route::get('/projects/{project}/periods/{periodModel}',      [ProjectPeriodController::class, 'show']);
+Route::get('/projects/{project}/wbs-phases',                    [ProjectWbsController::class, 'index']);
+Route::get('/projects/{project}/wbs-phases/{wbsModel}',        [ProjectWbsController::class, 'show']);
 
-Route::get('/periods/{periodModel}/work-items',              [WorkItemController::class, 'index']);
-Route::get('/periods/{periodModel}/materials',               [MaterialLogController::class, 'index']);
-Route::get('/periods/{periodModel}/equipment',               [EquipmentLogController::class, 'index']);
+Route::get('/wbs-phases/{wbsModel}/work-items',               [WorkItemController::class, 'index']);
+Route::get('/wbs-phases/{wbsModel}/materials',                [MaterialLogController::class, 'index']);
+Route::get('/wbs-phases/{wbsModel}/equipment',                [EquipmentLogController::class, 'index']);
 
 Route::get('/projects/{project}/progress-curve',   [ProgressCurveController::class, 'index']);
 Route::get('/projects/{project}/risks',            [ProjectRiskController::class, 'index']);

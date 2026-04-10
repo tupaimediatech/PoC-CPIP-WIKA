@@ -202,9 +202,18 @@ class Project extends Model
         return $this->belongsTo(IngestionFile::class);
     }
 
+    public function wbsPhases(): HasMany
+    {
+        return $this->hasMany(ProjectWbs::class);
+    }
+
+    /**
+     * Alias for backward compatibility
+     * @deprecated Use wbsPhases() instead
+     */
     public function periods(): HasMany
     {
-        return $this->hasMany(ProjectPeriod::class);
+        return $this->wbsPhases();
     }
 
     public function progressCurves(): HasMany

@@ -7,7 +7,7 @@ use App\Exceptions\ImportValidationException;
 use App\Models\Project;
 use App\Models\ProjectEquipmentLog;
 use App\Models\ProjectMaterialLog;
-use App\Models\ProjectPeriod;
+use App\Models\ProjectWbs;
 use App\Models\ProjectProgressCurve;
 use App\Models\ProjectWorkItem;
 use Illuminate\Support\Facades\DB;
@@ -60,13 +60,13 @@ class AdaptiveWorkbookImport
             $primaryProject = $this->resolvePrimaryProject($projects, $payload['metadata']);
 
             if ($primaryProject !== null && $this->hasPeriodPayload($payload)) {
-                $period = $this->upsertPeriod($primaryProject, $payload['metadata'], $ingestionFileId);
+                $wbsPhase = $this->upsertPeriod($primaryProject, $payload['metadata'], $ingestionFileId);
 
-                $this->syncWorkItems($period, $payload['work_items']);
-                $this->syncMaterialLogs($period, $payload['materials']);
-                $this->syncEquipmentLogs($period, $payload['equipments']);
+                $this->syncWorkItems($wbsPhase, $payload['work_items']);
+                $this->syncMaterialLogs($wbsPhase, $payload['materials']);
+                $this->syncEquipmentLogs($wbsPhase, $payload['equipments']);
                 $this->syncSCurves($primaryProject, $payload['s_curves']);
-                $this->refreshPeriodTotals($period);
+                $this->refreshPeriodTotals($wbsPhase);
             }
         });
 
@@ -647,16 +647,24 @@ class AdaptiveWorkbookImport
         return $projects;
     }
 
-    private function upsertPeriod(Project $project, array $metadata, ?int $ingestionFileId): ProjectPeriod
+    private function upsertPeriod(Project $project, array $metadata, ?int $ingestionFileId): ProjectWbs
     {
-        $periodValue = $metadata['period'] ?? now()->format('Y-m');
+        // For adaptive import, use 'period' from metadata or generate default WBS name
+        $wbsName = $metadata['name_of_work_phase'] ?? $metadata['period'] ?? 'PEKERJAAN UMUM';
+
+        // If period is in YYYY-MM format, transform to "PEKERJAAN XXX"
+        if (preg_match('/^\d{4}-\d{2}$/', $wbsName)) {
+            $monthNum = substr($wbsName, 5, 2);
+            $wbsName = $this->transformMonthToWbsName((int) $monthNum);
+        }
+
         $contractValue = $metadata['contract_value'] ?? (float) $project->contract_value;
         $addendumValue = $metadata['addendum_value'] ?? null;
         $totalPagu = $metadata['total_pagu']
             ?? ($contractValue !== null && $addendumValue !== null ? $contractValue + $addendumValue : null);
 
-        return ProjectPeriod::updateOrCreate(
-            ['project_id' => $project->id, 'period' => $periodValue],
+        return ProjectWbs::updateOrCreate(
+            ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
             [
                 'ingestion_file_id' => $ingestionFileId,
                 'client_name' => $metadata['client_name'] ?? $metadata['owner'] ?? $project->owner,
@@ -672,13 +680,13 @@ class AdaptiveWorkbookImport
         );
     }
 
-    private function syncWorkItems(ProjectPeriod $period, array $rows): void
+    private function syncWorkItems(ProjectWbs $wbsPhase, array $rows): void
     {
         if (empty($rows)) {
             return;
         }
 
-        $period->workItems()->delete();
+        $wbsPhase->workItems()->delete();
 
         $sortOrder = 0;
         $parentMap = [];
@@ -699,7 +707,7 @@ class AdaptiveWorkbookImport
             $isTotalRow = str_contains(strtolower($itemName), 'total') || str_contains(strtolower($itemName), 'jumlah');
 
             $item = ProjectWorkItem::create([
-                'period_id' => $period->id,
+                'period_id' => $wbsPhase->id,
                 'parent_id' => $parentId,
                 'level' => $level,
                 'item_no' => $itemNo ?: null,
@@ -719,13 +727,13 @@ class AdaptiveWorkbookImport
         }
     }
 
-    private function syncMaterialLogs(ProjectPeriod $period, array $rows): void
+    private function syncMaterialLogs(ProjectWbs $wbsPhase, array $rows): void
     {
         if (empty($rows)) {
             return;
         }
 
-        $period->materialLogs()->delete();
+        $wbsPhase->materialLogs()->delete();
 
         foreach ($rows as $row) {
             $this->total++;
@@ -742,7 +750,7 @@ class AdaptiveWorkbookImport
                 || str_contains(strtolower($materialType), 'potongan');
 
             ProjectMaterialLog::create([
-                'period_id' => $period->id,
+                'period_id' => $wbsPhase->id,
                 'work_item_id' => null,
                 'supplier_name' => $supplierName ?: 'Unknown',
                 'material_type' => $materialType ?: 'Unknown',
@@ -758,13 +766,13 @@ class AdaptiveWorkbookImport
         }
     }
 
-    private function syncEquipmentLogs(ProjectPeriod $period, array $rows): void
+    private function syncEquipmentLogs(ProjectWbs $wbsPhase, array $rows): void
     {
         if (empty($rows)) {
             return;
         }
 
-        $period->equipmentLogs()->delete();
+        $wbsPhase->equipmentLogs()->delete();
 
         $lastVendor = null;
 
@@ -787,7 +795,7 @@ class AdaptiveWorkbookImport
             }
 
             ProjectEquipmentLog::create([
-                'period_id' => $period->id,
+                'period_id' => $wbsPhase->id,
                 'work_item_id' => null,
                 'vendor_name' => $vendorName,
                 'equipment_name' => $equipmentName,
@@ -835,21 +843,21 @@ class AdaptiveWorkbookImport
         }
     }
 
-    private function refreshPeriodTotals(ProjectPeriod $period): void
+    private function refreshPeriodTotals(ProjectWbs $wbsPhase): void
     {
-        $hppPlan = ProjectWorkItem::where('period_id', $period->id)
+        $hppPlan = ProjectWorkItem::where('period_id', $wbsPhase->id)
             ->whereNull('parent_id')
             ->where('is_total_row', false)
             ->sum('total_budget');
 
-        $hppActual = ProjectWorkItem::where('period_id', $period->id)
+        $hppActual = ProjectWorkItem::where('period_id', $wbsPhase->id)
             ->whereNull('parent_id')
             ->where('is_total_row', false)
             ->sum('realisasi');
 
-        $period->update([
-            'hpp_plan_total' => $hppPlan ?: $period->hpp_plan_total,
-            'hpp_actual_total' => $hppActual ?: $period->hpp_actual_total,
+        $wbsPhase->update([
+            'hpp_plan_total' => $hppPlan ?: $wbsPhase->hpp_plan_total,
+            'hpp_actual_total' => $hppActual ?: $wbsPhase->hpp_actual_total,
             'hpp_deviation' => ($hppPlan ?: 0) - ($hppActual ?: 0),
         ]);
     }
@@ -1290,6 +1298,21 @@ class AdaptiveWorkbookImport
                 'row' => $row['__source_row'] ?? null,
             ],
         ];
+    }
+
+    private function transformMonthToWbsName(int $month): string
+    {
+        return match ($month) {
+            1 => 'PEKERJAAN PERSIAPAN',
+            2 => 'PEKERJAAN PONDASI',
+            3 => 'PEKERJAAN STRUKTUR',
+            4 => 'PEKERJAAN ARSITEKTUR',
+            5 => 'PEKERJAAN ME',
+            6 => 'PEKERJAAN UTILITIES',
+            7 => 'PEKERJAAN EXTERIOR',
+            8 => 'PEKERJAAN PELENGKAPAN',
+            default => 'PEKERJAAN LANLAIN',
+        };
     }
 
     private function candidateValueKey(mixed $value): string

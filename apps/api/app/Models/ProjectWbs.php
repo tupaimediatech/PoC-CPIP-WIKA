@@ -7,14 +7,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ProjectPeriod extends Model
+class ProjectWbs extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'project_id',
         'ingestion_file_id',
-        'period',
+        'name_of_work_phase',
         'client_name',
         'project_manager',
         'report_source',
@@ -27,6 +27,7 @@ class ProjectPeriod extends Model
         'hpp_plan_total',
         'hpp_actual_total',
         'hpp_deviation',
+        'deviasi_pct',
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class ProjectPeriod extends Model
         'hpp_plan_total'     => 'decimal:2',
         'hpp_actual_total'   => 'decimal:2',
         'hpp_deviation'      => 'decimal:2',
+        'deviasi_pct'        => 'decimal:4',
     ];
 
     public function project(): BelongsTo

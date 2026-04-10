@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProjectPeriod;
+use App\Models\ProjectWbs;
 use Illuminate\Http\JsonResponse;
 
 class EquipmentLogController extends Controller
 {
-    public function index(ProjectPeriod $periodModel): JsonResponse
+    public function index(ProjectWbs $wbsModel): JsonResponse
     {
-        $logs = $periodModel->equipmentLogs()
+        $logs = $wbsModel->equipmentLogs()
             ->orderBy('vendor_name')
             ->orderBy('id')
             ->get();

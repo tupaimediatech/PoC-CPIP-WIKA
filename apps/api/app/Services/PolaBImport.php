@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Project;
 use App\Models\ProjectMaterialLog;
-use App\Models\ProjectPeriod;
+use App\Models\ProjectWbs;
 use App\Models\ProjectWorkItem;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -80,9 +80,17 @@ class PolaBImport
             ]
         );
 
-        // Upsert period
-        $period = ProjectPeriod::updateOrCreate(
-            ['project_id' => $project->id, 'period' => $meta['period'] ?? now()->format('Y-m')],
+        // Upsert WBS phase
+        $wbsName = $meta['name_of_work_phase'] ?? $meta['period'] ?? 'PEKERJAAN UMUM';
+
+        // If period is in YYYY-MM format, transform to "PEKERJAAN XXX"
+        if (preg_match('/^\d{4}-\d{2}$/', $wbsName)) {
+            $monthNum = substr($wbsName, 5, 2);
+            $wbsName = $this->transformMonthToWbsName((int) $monthNum);
+        }
+
+        $wbsPhase = ProjectWbs::updateOrCreate(
+            ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
             [
                 'ingestion_file_id'  => $ingestionFileId,
                 'client_name'        => $meta['client_name'] ?? null,
@@ -105,22 +113,22 @@ class PolaBImport
                 ? array_slice($raw, $hppHeaderRow, $vendorHeaderRow - $hppHeaderRow)
                 : array_slice($raw, $hppHeaderRow);
 
-            $this->parseWorkItems($hppRows, $period->id);
+            $this->parseWorkItems($hppRows, $wbsPhase->id);
         }
 
         // ── Zona 3: Vendor/Material ───────────────────────────────────────
         if ($vendorHeaderRow !== null) {
             $vendorRows = array_slice($raw, $vendorHeaderRow);
-            $this->parseMaterialLogs($vendorRows, $period->id);
+            $this->parseMaterialLogs($vendorRows, $wbsPhase->id);
         }
 
-        // Update HPP totals on period
-        $hppPlan   = ProjectWorkItem::where('period_id', $period->id)
+        // Update HPP totals on WBS phase
+        $hppPlan   = ProjectWorkItem::where('period_id', $wbsPhase->id)
             ->whereNull('parent_id')->where('is_total_row', false)->sum('total_budget');
-        $hppActual = ProjectWorkItem::where('period_id', $period->id)
+        $hppActual = ProjectWorkItem::where('period_id', $wbsPhase->id)
             ->whereNull('parent_id')->where('is_total_row', false)->sum('realisasi');
 
-        $period->update([
+        $wbsPhase->update([
             'hpp_plan_total'   => $hppPlan,
             'hpp_actual_total' => $hppActual,
             'hpp_deviation'    => $hppPlan - $hppActual,
@@ -293,5 +301,20 @@ class PolaBImport
 
             $this->imported++;
         }
+    }
+
+    private function transformMonthToWbsName(int $month): string
+    {
+        return match ($month) {
+            1 => 'PEKERJAAN PERSIAPAN',
+            2 => 'PEKERJAAN PONDASI',
+            3 => 'PEKERJAAN STRUKTUR',
+            4 => 'PEKERJAAN ARSITEKTUR',
+            5 => 'PEKERJAAN ME',
+            6 => 'PEKERJAAN UTILITIES',
+            7 => 'PEKERJAAN EXTERIOR',
+            8 => 'PEKERJAAN PELENGKAPAN',
+            default => 'PEKERJAAN LANLAIN',
+        };
     }
 }

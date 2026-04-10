@@ -38,7 +38,15 @@ class ProjectMaterialLog extends Model
 
     public function period(): BelongsTo
     {
-        return $this->belongsTo(ProjectPeriod::class, 'period_id');
+        return $this->belongsTo(ProjectWbs::class, 'period_id');
+    }
+
+    /**
+     * Alias for clarity - this belongs to a WBS phase
+     */
+    public function wbsPhase(): BelongsTo
+    {
+        return $this->belongsTo(ProjectWbs::class, 'period_id');
     }
 
     public function workItem(): BelongsTo

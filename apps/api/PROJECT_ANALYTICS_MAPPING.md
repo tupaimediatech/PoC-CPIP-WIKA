@@ -89,25 +89,26 @@
 
 **API Endpoints:**
 - `GET /api/projects/{id}`
-- `GET /api/projects/{id}/periods`
+- `GET /api/projects/{id}/wbs-phases`
 
-**Primary Tables:** `projects`, `project_periods`
+**Primary Tables:** `projects`, `project_wbs`
 
-**project_periods is a child table from projects table!**
+**project_wbs is a child table from projects table!**
 
 **Columns Used - projects:**
 ```php
 - id               // For navigation
 ```
 
-**Columns Used - project_periods:**
+**Columns Used - project_wbs:**
 ```php
-- id               // Period ID for navigation (tahapId)
-- project_id       // FK to projects
-- period           // Will change to Item WBS Soon
-- total_pagu       // as BQ External
-- hpp_plan_total   // as RAB Internal
-- deviasi_pct      // as Deviasi
+- id                    // WBS Phase ID for navigation (wbsModel / tahapId)
+- project_id            // FK to projects
+- name_of_work_phase    // WBS Phase name (e.g., "PEKERJAAN PONDASI", "PEKERJAAN STRUKTUR")
+- total_pagu            // as BQ External
+- hpp_plan_total        // as RAB Internal
+- hpp_deviation         // as Deviasi
+- deviasi_pct           // as Deviasi %
 ```
 
 ---
@@ -116,13 +117,13 @@
 
 **Frontend Route:** `/projects/[id]/[tahapId]`
 
-**API Endpoint:** `GET /api/periods/{tahapId}/work-items`
+**API Endpoint:** `GET /api/wbs-phases/{tahapId}/work-items`
 
-**Primary Tables:** `project_periods`, `project_work_items`
+**Primary Tables:** `project_wbs`, `project_work_items`
 
-**project_work_items is a child table from project_periods table!**
+**project_work_items is a child table from project_wbs table!**
 
-**Columns Used - project_periods:**
+**Columns Used - project_wbs:**
 ```php
 - id               // tahapId
 - project_id       // For navigation
@@ -131,7 +132,7 @@
 **Columns Used - project_work_items:**
 ```php
 - id               // Item ID for navigation (itemId)
-- period_id        // FK to project_periods
+- period_id        // FK to project_wbs
 - item_name        // Display Item sumber daya
 - volume           // Display volume
 - satuan           // Display satuan
@@ -145,17 +146,17 @@
 
 **Frontend Route:** `/projects/[id]/[tahapId]/[itemId]`
 
-**API Endpoint:** `GET /api/periods/{tahapId}/materials`
+**API Endpoint:** `GET /api/wbs-phases/{tahapId}/materials`
 
-**Primary Tables:** `project_periods`, `project_work_items`, `project_material_logs`
+**Primary Tables:** `project_wbs`, `project_work_items`, `project_material_logs`
 
 **project_material_logs is a child table from project_work_items!**
 
-**Columns Used - project_periods:**
+**Columns Used - project_wbs:**
 ```php
 - id               // tahapId
 - project_id       // For navigation
-- period           // Period display
+- name_of_work_phase  // WBS Phase display
 ```
 
 **Columns Used - project_work_items:**
@@ -168,7 +169,7 @@
 **Columns Used - project_material_logs:**
 ```php
 - id               // Log ID
-- period_id        // FK to project_periods
+- period_id        // FK to project_wbs
 - work_item_id     // FK to project_work_items (optional)
 - supplier_name    // For Nama Vendor
 - tahun_perolehan  // For Tahun Perolehan
@@ -194,7 +195,7 @@
 
 **API Endpoint:** `GET /api/projects/{id}/insight`
 
-**Primary Tables:** `projects`, `project_periods`, `project_work_items`
+**Primary Tables:** `projects`, `project_wbs`, `project_work_items`
 
 **Columns Used - projects:**
 ```php
@@ -208,7 +209,7 @@
 - status           // Status display
 ```
 
-**Columns Used - project_periods:**
+**Columns Used - project_wbs:**
 ```php
 - hpp_plan_total   // Planned HPP aggregate
 - hpp_actual_total // Actual HPP aggregate
@@ -297,7 +298,7 @@
 ## Table Relationships
 
 ```
-projects (1) ──── (N) project_periods ──── (N) project_work_items
+projects (1) ──── (N) project_wbs ──── (N) project_work_items
     │                    │                      
     │ (1)                │ (1)                  
     │                    │                      
@@ -309,7 +310,7 @@ projects (1) ──── (N) project_periods ──── (N) project_work_item
 
 projects (1) ──── (N) project_risks
 ingestion_files (1) ──── (N) projects
-ingestion_files (1) ──── (N) project_periods
+ingestion_files (1) ──── (N) project_wbs
 ```
 
 ---
@@ -340,14 +341,15 @@ ingestion_files (1) ──── (N) project_periods
 │                                      │ 1                                     │    │
 │                                      ▼                                       │    │
 │  ┌───────────────────────────────────────────────────────────────────────────┐    │
-│  │  LEVEL 3: project_periods                                                   │    │
+│  │  LEVEL 3: project_wbs                                                       │    │
 │  │  ──────────────────────────────────────────────────────────────────────── │    │
 │  │  PK: id                                                                   │    │
 │  │  FK: project_id → projects.id                                            │    │
 │  │  FK: ingestion_file_id → ingestion_files.id (nullable)                    │    │
-│  │  Columns: period, client_name, project_manager, report_source,           │    │
-│  │           progress_prev_pct, progress_this_pct, progress_total_pct,       │    │
-│  │           contract_value, addendum_value, total_pagu (BQ External),       │    │
+│  │  Columns: name_of_work_phase (WBS Phase Name), client_name,             │    │
+│  │           project_manager, report_source, progress_prev_pct,             │    │
+│  │           progress_this_pct, progress_total_pct, contract_value,         │    │
+│  │           addendum_value, total_pagu (BQ External),                       │    │
 │  │           hpp_plan_total (RAB Internal), hpp_actual_total,                │    │
 │  │           hpp_deviation, deviasi_pct (calc)                               │    │
 │  └───────────────────────────────────────────────────────────────────────────┘    │
@@ -358,7 +360,7 @@ ingestion_files (1) ──── (N) project_periods
 │  │  LEVEL 3-4: project_work_items (self-referencing)                         │    │
 │  │  ──────────────────────────────────────────────────────────────────────── │    │
 │  │  PK: id                                                                   │    │
-│  │  FK: period_id → project_periods.id                                      │    │
+│  │  FK: period_id → project_wbs.id                                          │    │
 │  │  FK: parent_id → project_work_items.id (nullable, self-ref)              │    │
 │  │  Columns: level (0=category, 1=sub-item, 2=detail),                        │    │
 │  │           item_no, item_name, volume, satuan, harsat_internal,              │    │
@@ -382,15 +384,15 @@ ingestion_files (1) ──── (N) project_periods
 │  │           rating_performa,│ │           jam_kerja,  │ │           realisasi_pct, │  │
 │  │           material_type,│ │           rate_per_jam,│ │           deviasi_pct,  │  │
 │  │           qty, satuan,   │ │           total_biaya,│ │           keterangan     │  │
-│  │           harga_satuan,  │ │           payment_    │                       │  │
-│  │           total_tagihan, │ │           status     │                       │  │
-│  │           realisasi_    │ │           source_row  │                       │  │
-│  │           pengiriman,   │ │                      │                       │  │
-│  │           deviasi_harga_│ │                      │                       │  │
-│  │           market,       │ │                      │                       │  │
-│  │           catatan_      │ │                      │                       │  │
-│  │           monitoring,   │ │                      │                       │  │
-│  │           is_discount    │ │                      │                       │  │
+│  │           harga_satuan,  │ │           payment_    │ │                       │  │
+│  │           total_tagihan, │ │           status     │ │                       │  │
+│  │           realisasi_    │ │           source_row  │ │                       │  │
+│  │           pengiriman,   │ │                      │ │                       │  │
+│  │           deviasi_harga_│ │                      │ │                       │  │
+│  │           market,       │ │                      │ │                       │  │
+│  │           catatan_      │ │                      │ │                       │  │
+│  │           monitoring,   │ │                      │ │                       │  │
+│  │           is_discount    │ │                      │ │                       │  │
 │  └───────────────────────┘ └───────────────────────┘ └───────────────────────┘  │
 │                                                                               │
 │  ┌───────────────────────────────────────────────────────────────────────────┐│
@@ -432,7 +434,7 @@ ingestion_files (1) ──── (N) project_periods
 | Table | Level(s) | Description |
 |-------|-----------|-------------|
 | `projects` | Level 1, 2 | Main project data, filters, KPIs |
-| `project_periods` | Level 3 | Monthly/period reports (BQ vs RAB) |
+| `project_wbs` | Level 3 | WBS phase reports (BQ vs RAB) |
 | `project_work_items` | Level 3, 4 | Work breakdown structure, HPP items |
 | `project_material_logs` | Level 5 | Material/vendor tracking |
 | `project_equipment_logs` | Level 5 | Equipment/vendor tracking |
@@ -443,13 +445,13 @@ ingestion_files (1) ──── (N) project_periods
 
 | From Table | From Column | To Table | To Column | Relationship |
 |------------|------------|----------|-----------|--------------|
-| `project_periods` | `project_id` | `projects` | `id` | Many-to-One |
-| `project_periods` | `ingestion_file_id` | `ingestion_files` | `id` | Many-to-One |
-| `project_work_items` | `period_id` | `project_periods` | `id` | Many-to-One |
+| `project_wbs` | `project_id` | `projects` | `id` | Many-to-One |
+| `project_wbs` | `ingestion_file_id` | `ingestion_files` | `id` | Many-to-One |
+| `project_work_items` | `period_id` | `project_wbs` | `id` | Many-to-One |
 | `project_work_items` | `parent_id` | `project_work_items` | `id` | Self-referencing |
-| `project_material_logs` | `period_id` | `project_periods` | `id` | Many-to-One |
+| `project_material_logs` | `period_id` | `project_wbs` | `id` | Many-to-One |
 | `project_material_logs` | `work_item_id` | `project_work_items` | `id` | Many-to-One (opt) |
-| `project_equipment_logs` | `period_id` | `project_periods` | `id` | Many-to-One |
+| `project_equipment_logs` | `period_id` | `project_wbs` | `id` | Many-to-One |
 | `project_equipment_logs` | `work_item_id` | `project_work_items` | `id` | Many-to-One (opt) |
 | `project_progress_curves` | `project_id` | `projects` | `id` | Many-to-One |
 | `project_risks` | `project_id` | `projects` | `id` | Many-to-One |
@@ -461,7 +463,7 @@ ingestion_files (1) ──── (N) project_periods
 | Table | Columns | Description |
 |-------|---------|-------------|
 | `projects` | `project_code` | Unique project code |
-| `project_periods` | `project_id + period` | One period per project per month |
+| `project_wbs` | `project_id + name_of_work_phase` | One WBS phase per project per name |
 | `project_progress_curves` | `project_id + week_number` | One curve per project per week |
 | `column_aliases` | `alias + context` | One alias per context |
 
@@ -472,7 +474,7 @@ ingestion_files (1) ──── (N) project_periods
 | Table | Purpose | Primary Key |
 |-------|---------|-------------|
 | `projects` | Main project data | `id` |
-| `project_periods` | Monthly/period reports | `id` |
+| `project_wbs` | WBS phase reports | `id` |
 | `project_work_items` | WBS/HPP breakdown | `id` |
 | `project_material_logs` | Material tracking | `id` |
 | `project_equipment_logs` | Equipment tracking | `id` |
@@ -511,19 +513,52 @@ ingestion_files (1) ──── (N) project_periods
 GET    /api/projects              - List projects with filters
 GET    /api/projects/{id}         - Project details
 GET    /api/projects/{id}/insight - Project insights
-GET    /api/projects/{id}/periods - Project phases
+GET    /api/projects/{id}/wbs-phases - Project WBS phases (UPDATED)
 GET    /api/projects/{id}/progress-curve - Timeline data
 GET    /api/projects/{id}/risks   - Risk register
 GET    /api/projects/summary      - Dashboard summary
 GET    /api/projects/filter-options - Filter dropdown options
 ```
 
-### Period Endpoints
+### WBS Phase Endpoints (UPDATED)
 ```
-GET    /api/periods/{periodId}/work-items - Work items for period
-GET    /api/periods/{periodId}/materials  - Materials for period
-GET    /api/periods/{periodId}/equipment  - Equipment for period
+GET    /api/projects/{project}/wbs-phases              - List WBS phases for a project (NEW)
+GET    /api/projects/{project}/wbs-phases/{wbsModel}     - Single WBS phase detail (NEW)
+GET    /api/wbs-phases/{wbsModel}/work-items           - Work items for WBS phase (NEW)
+GET    /api/wbs-phases/{wbsModel}/materials            - Materials for WBS phase (NEW)
+GET    /api/wbs-phases/{wbsModel}/equipment            - Equipment for WBS phase (NEW)
 ```
+
+### Deprecated Endpoints
+```
+GET    /api/projects/{project}/periods               - USE /wbs-phases INSTEAD
+GET    /api/projects/{project}/periods/{periodModel}  - USE /wbs-phases/{wbsModel} INSTEAD
+GET    /api/periods/{periodModel}/work-items         - USE /wbs-phases/{wbsModel}/work-items INSTEAD
+GET    /api/periods/{periodModel}/materials          - USE /wbs-phases/{wbsModel}/materials INSTEAD
+GET    /api/periods/{periodModel}/equipment          - USE /wbs-phases/{wbsModel}/equipment INSTEAD
+```
+
+---
+
+## Breaking Changes (v2.0)
+
+### Table Renames
+| Old Name | New Name |
+|----------|----------|
+| `project_periods` | `project_wbs` |
+| `period` (column) | `name_of_work_phase` |
+
+### API Parameter Changes
+| Old Parameter | New Parameter |
+|---------------|---------------|
+| `periodModel` | `wbsModel` |
+| `periodId` | `wbsModel` (or `tahapId` in frontend) |
+
+### Response Field Changes
+| Old Field | New Field |
+|-----------|-----------|
+| `period` | `name_of_work_phase` |
+| Added `deviasiPct` to WBS phase response | |
 
 ---
 
@@ -533,10 +568,11 @@ GET    /api/periods/{periodId}/equipment  - Equipment for period
 |------|---------|---------|
 | 2024-04-08 | 1.0 | Initial documentation with 7-level flow mapping |
 | 2024-04-08 | 1.1 | Updated filter mapping (14 filters) with new columns |
-| 2024-04-08 | 1.2 | Added `deviasi_pct` to project_periods (Level 3) |
+| 2024-04-08 | 1.2 | Added `deviasi_pct` to project_wbs (Level 3) |
 | 2024-04-08 | 1.3 | Added `volume`, `satuan`, `harsat_internal` to project_work_items (Level 4) |
 | 2024-04-08 | 1.4 | Added ERD (Entity Relationship Diagram) section |
+| 2026-04-10 | 2.0 | **BREAKING**: Renamed `project_periods` → `project_wbs`, `period` → `name_of_work_phase`. Updated all API endpoints. |
 
 ---
 
-*Last Updated: 2026-04-08*
+*Last Updated: 2026-04-10*

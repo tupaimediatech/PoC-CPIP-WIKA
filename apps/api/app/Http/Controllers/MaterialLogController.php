@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProjectPeriod;
+use App\Models\ProjectWbs;
 use Illuminate\Http\JsonResponse;
 
 class MaterialLogController extends Controller
 {
     /**
-     * Level 5 — material/vendor logs for a period, mapped to frontend format.
+     * Level 5 — material/vendor logs for a WBS phase, mapped to frontend format.
      */
-    public function index(ProjectPeriod $periodModel): JsonResponse
+    public function index(ProjectWbs $wbsModel): JsonResponse
     {
-        $logs = $periodModel->materialLogs()
+        $logs = $wbsModel->materialLogs()
             ->where('is_discount', false)
             ->orderBy('id')
             ->get();
