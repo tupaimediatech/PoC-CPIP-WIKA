@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Project;
 use App\Models\ProjectEquipmentLog;
 use App\Models\ProjectMaterialLog;
-use App\Models\ProjectPeriod;
+use App\Models\ProjectWbs;
 use App\Models\ProjectProgressCurve;
 use App\Models\ProjectWorkItem;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -203,8 +203,16 @@ class PolaCImport
 
         $totalPagu = ($meta['contract_value'] ?? 0) + ($meta['addendum_value'] ?? 0);
 
-        $period = ProjectPeriod::updateOrCreate(
-            ['project_id' => $project->id, 'period' => $meta['period'] ?? now()->format('Y-m')],
+        $wbsName = $meta['name_of_work_phase'] ?? $meta['period'] ?? 'PEKERJAAN UMUM';
+
+        // If period is in YYYY-MM format, transform to "PEKERJAAN XXX"
+        if (preg_match('/^\d{4}-\d{2}$/', $wbsName)) {
+            $monthNum = substr($wbsName, 5, 2);
+            $wbsName = $this->transformMonthToWbsName((int) $monthNum);
+        }
+
+        $wbsPhase = ProjectWbs::updateOrCreate(
+            ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
             [
                 'ingestion_file_id'  => $ingestionFileId,
                 'client_name'        => $meta['client_name'] ?? null,
@@ -219,7 +227,7 @@ class PolaCImport
 
         $this->imported++;
 
-        return [$project, $period];
+        return [$project, $wbsPhase];
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -439,5 +447,20 @@ class PolaCImport
 
             $this->imported++;
         }
+    }
+
+    private function transformMonthToWbsName(int $month): string
+    {
+        return match ($month) {
+            1 => 'PEKERJAAN PERSIAPAN',
+            2 => 'PEKERJAAN PONDASI',
+            3 => 'PEKERJAAN STRUKTUR',
+            4 => 'PEKERJAAN ARSITEKTUR',
+            5 => 'PEKERJAAN ME',
+            6 => 'PEKERJAAN UTILITIES',
+            7 => 'PEKERJAAN EXTERIOR',
+            8 => 'PEKERJAAN PELENGKAPAN',
+            default => 'PEKERJAAN LANLAIN',
+        };
     }
 }
