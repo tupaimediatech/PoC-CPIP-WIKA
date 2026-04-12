@@ -7,7 +7,6 @@ import SCurveChart from "@/components/analytics/SCurveChart";
 import { projectApi } from "@/lib/api";
 import type { ProjectRisk, ProgressCurveResponse } from "@/types/project";
 import { DEMO_MODE } from "@/lib/demo";
-import mockData from "@/data/mock-data.json";
 
 const SEVERITY_COLOR: Record<string, string> = {
   critical: "text-red-600",
@@ -26,15 +25,12 @@ export default function Level7Page() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (DEMO_MODE) {
-      setRisks(mockData.level7.risks as unknown as ProjectRisk[]);
-      setCurve(mockData.level7.progressCurve as unknown as ProgressCurveResponse["data"]);
-      setLoading(false);
-      return;
-    }
+    // Memanggil 2 API berbeda: projectApi.risks (Level 7A) dan projectApi.progressCurve (Level 7B)
     Promise.all([projectApi.risks(projectId), projectApi.progressCurve(projectId)])
       .then(([riskRes, curveRes]) => {
+        // mapping data dari response API pertama (risks)
         setRisks(riskRes.data);
+        // mapping data dari response API kedua (progressCurve/timeline)
         setCurve(curveRes.data);
       })
       .catch(console.error)
@@ -54,17 +50,17 @@ export default function Level7Page() {
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
+      {/* Level 7A: Kamus Risiko Section */}
       <PageHeader title="Level 7A Kamus Risiko (Historical Risk Register)" onExport={() => {}} />
 
       <div className="overflow-hidden border border-gray-100 rounded-xl mb-10">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-[#F9FAFB] border-b border-gray-100">
-              {/* Header disesuaikan jumlahnya dengan gambar (5 kolom) */}
               <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Risiko</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Deskripsi Kejadian</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Dampak (Rp / hari)</th>
+              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Dampak (Financial)</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
             </tr>
           </thead>
@@ -81,26 +77,16 @@ export default function Level7Page() {
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{risk.category ?? "-"}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-700">{risk.risk_title}</td>
-
-                  {/* Kolom Dampak: Menampilkan data dari API dengan gaya panah di gambar */}
                   <td className="px-4 py-4 text-[14px] text-red-600 font-medium">
                     <div className="flex items-center gap-1">
                       <span>↑</span>
-                      <span>
-                        {risk.financial_impact_idr
-                          ? `+Rp${Number(risk.financial_impact_idr).toLocaleString("id-ID")}`
-                          : risk.impact_days
-                            ? `+${risk.impact_days} hari`
-                            : "-"}
-                      </span>
+                      <span>{risk.financial_impact_idr ? `Rp${Number(risk.financial_impact_idr).toLocaleString("id-ID")}` : "-"}</span>
                     </div>
                   </td>
-
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFF9E6] border border-[#FEF3C7] w-fit">
                       <div className="w-2 h-2 rounded-full bg-[#D97706]" />
-                      {/* Status tetap mengambil dari API (misal: 'At Risk') */}
-                      <span className="text-[#D97706] text-[12px] font-bold">{risk.status ?? "At Risk"}</span>
+                      <span className="text-[#D97706] text-[12px] font-bold uppercase">{risk.status}</span>
                     </div>
                   </td>
                 </tr>
@@ -110,6 +96,7 @@ export default function Level7Page() {
         </table>
       </div>
 
+      {/* Level 7B: Project Timeline Section */}
       <h2 className="text-[18px] font-bold text-[#1B1C1F] mb-4">Level 7B Project Timeline</h2>
 
       {curve?.timeline ? (
@@ -138,7 +125,7 @@ export default function Level7Page() {
       )}
 
       <div className="flex items-center gap-2 mb-2">
-        <div className="w-7 h-7 bg-primary-blue rounded-lg flex items-center justify-center">
+        <div className="w-7 h-7 bg-[#0052CC] rounded-lg flex items-center justify-center">
           <span className="text-white text-[10px] font-bold">SPI</span>
         </div>
         <span className="text-[14px] font-bold text-[#1B1C1F]">Schedule Performance Index</span>
@@ -149,7 +136,7 @@ export default function Level7Page() {
         <div>
           <p className={`text-[16px] font-bold ${spiColor} mb-1`}>{curve?.spi_status}</p>
           <p className="text-[14px] text-gray-600 leading-relaxed">
-            {`The SPI value of ${spi.toFixed(2)} indicates ${spi >= 1 ? "the project is ahead of or on schedule." : "the project is behind schedule."}`}
+            {`The SPI value of ${spi.toFixed(2)} indicates the project status is currently ${curve?.spi_status?.toLowerCase()}.`}
           </p>
         </div>
       </div>
@@ -157,7 +144,7 @@ export default function Level7Page() {
       <div className="flex justify-end">
         <button
           onClick={() => router.push("/projects")}
-          className="flex items-center justify-center border border-primary-blue text-primary-blue text-[13px] font-bold rounded-lg px-6 hover:bg-blue-50 transition-colors"
+          className="flex items-center justify-center border border-[#0052CC] text-[#0052CC] text-[13px] font-bold rounded-lg px-6 hover:bg-blue-50 transition-colors"
           style={{ height: "38px" }}
         >
           Finish Analysis

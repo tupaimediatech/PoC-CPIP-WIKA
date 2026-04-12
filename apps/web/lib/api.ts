@@ -109,7 +109,7 @@ export const projectApi = {
 
   insight: (id: number): Promise<InsightResponse> => api.get(`/projects/${id}/insight`).then((r) => r.data),
 
-  periods: (id: number): Promise<ProjectPhaseListResponse> => api.get(`/projects/${id}/periods`).then((r) => r.data),
+  periods: (id: number): Promise<ProjectPhaseListResponse> => api.get(`/projects/${id}/wbs-phases`).then((r) => r.data),
 
   progressCurve: (id: number): Promise<ProgressCurveResponse> => api.get(`/projects/${id}/progress-curve`).then((r) => r.data),
 
@@ -214,9 +214,9 @@ export const projectApi = {
 };
 
 export const periodApi = {
-  workItems: (periodId: number): Promise<WorkItemLevel4ListResponse> => api.get(`/periods/${periodId}/work-items`).then((r) => r.data),
+  workItems: (periodId: number): Promise<WorkItemLevel4ListResponse> => api.get(`/wbs-phases/${periodId}/work-items`).then((r) => r.data),
 
-  materials: (periodId: number): Promise<MaterialLogLevel5ListResponse> => api.get(`/periods/${periodId}/materials`).then((r) => r.data),
+  materials: (periodId: number): Promise<MaterialLogLevel5ListResponse> => api.get(`/work-items/${periodId}/materials`).then((r) => r.data),
 
   equipment: (periodId: number): Promise<EquipmentLogListResponse> => api.get(`/periods/${periodId}/equipment`).then((r) => r.data),
 };

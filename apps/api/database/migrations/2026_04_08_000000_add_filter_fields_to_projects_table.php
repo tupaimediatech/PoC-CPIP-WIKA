@@ -32,15 +32,15 @@ return new class extends Migration
                 ->after('owner')
                 ->comment('Kode Profit Center/SPK Intern');
 
-            // 4. Add consultant_name (Nama MK/Konsultan)
-            $table->string('consultant_name', 255)->nullable()
-                ->after('partner_name')
-                ->comment('Nama Manajemen Konstruksi/Konsultan');
-
-            // 5. Add partner_name (Nama Mitra - filled only if partnership is JO)
+            // 4. Add partner_name (Nama Mitra - filled only if partnership is JO)
             $table->string('partner_name', 255)->nullable()
                 ->after('partnership')
                 ->comment('Nama Mitra - diisi hanya jika partnership = JO');
+
+            // 5. Add consultant_name (Nama MK/Konsultan)
+            $table->string('consultant_name', 255)->nullable()
+                ->after('partner_name')
+                ->comment('Nama Manajemen Konstruksi/Konsultan');
         });
     }
 

@@ -37,7 +37,9 @@ export default function Level5Page() {
     periodApi
       .materials(tahapId)
       .then((res) => {
-        const found = res.data.find((m) => m.id === itemId) ?? res.data[0] ?? null;
+        // Penyesuaian di sini: res.data merujuk pada array di dalam objek respons API
+        const materialList = res.data || [];
+        const found = materialList.find((m: MaterialLogLevel5) => m.id === itemId) ?? materialList[0] ?? null;
         setMaterial(found);
       })
       .catch(console.error)

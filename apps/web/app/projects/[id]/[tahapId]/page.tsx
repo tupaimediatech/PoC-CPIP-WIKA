@@ -10,9 +10,10 @@ import type { WorkItemLevel4, WorkItemLevel4ListResponse } from "@/types/project
 import { DEMO_MODE } from "@/lib/demo";
 import mockData from "@/data/mock-data.json";
 
-function formatRupiah(value: number | undefined | null): string {
+function formatRupiah(value: number | string | undefined | null): string {
   if (value === undefined || value === null) return "-";
-  return `Rp${value.toLocaleString("id-ID")}`;
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  return `Rp${num.toLocaleString("id-ID")}`;
 }
 
 function formatRupiahShort(value: number): string {
@@ -53,12 +54,13 @@ export default function Level4Page() {
 
   if (!data) return <div className="p-8 text-gray-400">No data found</div>;
 
-  const totalBiaya = data.items.filter((i) => !i.is_total_row).reduce((sum, i) => sum + i.totalBiaya, 0);
+  // Menggunakan field 'totalBiaya' sesuai JSON API
+  const totalBiayaSum = data.items.filter((i) => !i.is_total_row).reduce((sum, i) => sum + (Number(i.totalBiaya) || 0), 0);
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
       <PageHeader
-        title={`Level 4 Harsat Per Sumber Daya - Tahap ${data.tahap}`}
+        title={`Level 4 Harsat Per Sumber Daya - ${data.tahap}`}
         pills={[
           { label: "Tahap", value: data.tahap },
           { label: "RAB Internal", value: formatRupiahShort(data.rabInternal) },
@@ -86,10 +88,10 @@ export default function Level4Page() {
                 <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{item.name || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{item.volume?.toLocaleString("id-ID") || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{item.unit || item.satuan || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{formatRupiah(item.internalPrice || item.harsatInternal)}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{formatRupiah(item.totalCost || item.totalBiaya)}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-700">{item.volume ? Number(item.volume).toLocaleString("id-ID") : "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-700">{item.unit || "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-700">{formatRupiah(item.internalPrice)}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-700">{formatRupiah(item.totalBiaya)}</td>
                   <td className="px-4 py-4">
                     <button
                       onClick={() => router.push(`/projects/${projectId}/${tahapId}/${item.id}`)}
@@ -104,9 +106,9 @@ export default function Level4Page() {
           <tfoot>
             <tr className="bg-[#F9FAFB] border-t border-gray-200">
               <td className="px-6 py-4" />
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">TOTAL Tahap Struktur</td>
+              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">TOTAL {data.tahap}</td>
               <td colSpan={3} />
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatRupiah(totalBiaya)}</td>
+              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatRupiah(totalBiayaSum)}</td>
               <td className="px-4 py-4" />
             </tr>
           </tfoot>
