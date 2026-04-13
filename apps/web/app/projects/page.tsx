@@ -11,75 +11,85 @@ import { formatKpi, kpiColor } from "@/lib/utils";
 import { DEMO_MODE } from "@/lib/demo";
 import mockData from "@/data/mock-data.json";
 
+// Mapping key disesuaikan dengan struktur data API yang Anda berikan
 const FILTER_GRID: {
-  key: string;
+  key: keyof Project;
   label: string;
   optionKey?: keyof FilterOptionsResponse;
   type: "select" | "text";
   placeholder?: string;
 }[] = [
   { key: "project_name", label: "Project Name", type: "text", placeholder: "Gedung RS" },
-  { key: "contract_pricing_type", label: "Contract Pricing Type", type: "select", optionKey: "contract_type" }, // Sesuaikan mapping key API Anda
-  { key: "consultant", label: "Project Consultant", type: "text", placeholder: "PT Yodya Karya..." },
-  { key: "profit_center", label: "Profit Center Code / Internal SPK Code", type: "select", optionKey: "division" },
+  { key: "contract_type", label: "Contract Pricing Type", type: "select", optionKey: "contract_type" },
+  { key: "consultant_name", label: "Project Consultant", type: "text", placeholder: "PT Virama Karya..." },
+  { key: "division", label: "Profit Center / Division", type: "select", optionKey: "division" },
   { key: "sbu", label: "SBU Project", type: "select", optionKey: "sbu" },
   { key: "location", label: "Location", type: "text", placeholder: "Surabaya, Jawa Timur" },
-  { key: "owner", label: "Project Owner (Name & Category)", type: "select", optionKey: "owner" },
+  { key: "owner", label: "Project Owner", type: "select", optionKey: "owner" },
   { key: "payment_method", label: "Payment Method", type: "select", optionKey: "payment_method" },
-  { key: "partnership_type", label: "Partnership Type", type: "select", optionKey: "partnership" },
+  { key: "partnership", label: "Partnership Type", type: "select", optionKey: "partnership" },
   { key: "funding_source", label: "Funding Source", type: "select", optionKey: "funding_source" },
-  { key: "project_duration", label: "Project Duration", type: "text", placeholder: "24 months" },
-  { key: "partnership_name", label: "Partnership Name", type: "text", placeholder: "Enter Partnership Name" },
-  { key: "contract_method", label: "Contract Method", type: "select" },
+  { key: "planned_duration", label: "Project Duration (Months)", type: "text", placeholder: "24" },
+  { key: "partner_name", label: "Partnership Name", type: "text", placeholder: "Enter Partnership Name" },
+  { key: "type_of_contract", label: "Contract Method", type: "select", optionKey: "type_of_contract" as any },
 ];
 
 export default function ProjectsPage() {
   const router = useRouter();
   const [filterOptions, setFilterOptions] = useState<FilterOptionsResponse | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
-  const [projects, setProjects] = useState<Project[]>([]);
+
+  // States untuk data
+  const [allProjects, setAllProjects] = useState<Project[]>([]); // Data asli dari API
+  const [projects, setProjects] = useState<Project[]>([]); // Data hasil filter
+
   const [searchApplied, setSearchApplied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState(false);
 
+  // Load Initial Data (API)
   useEffect(() => {
+    setLoading(true);
     if (DEMO_MODE) {
+      const data = mockData.projects as unknown as Project[];
+      setAllProjects(data);
       setFilterOptions(mockData.filterOptions as unknown as FilterOptionsResponse);
-      return;
+      setLoading(false);
+    } else {
+      Promise.all([
+        projectApi.list(), // Ambil semua data tanpa params agar bisa difilter di FE
+        projectApi.filterOptions(),
+      ])
+        .then(([res, options]) => {
+          setAllProjects(res.data);
+          setFilterOptions(options);
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
     }
-    projectApi.filterOptions().then(setFilterOptions).catch(console.error);
   }, []);
 
   const handleSearch = () => {
-    if (DEMO_MODE) {
-      const filtered = (mockData.projects as unknown as Project[]).filter((p) => {
-        for (const [k, v] of Object.entries(filters)) {
-          if (!v) continue;
-          const val = (p as unknown as Record<string, unknown>)[k];
-          if (val !== undefined && String(val) !== v) return false;
-        }
-        return true;
-      });
-      setProjects(filtered);
-      setSearchApplied(true);
-      setSnackbar(true);
-      return;
-    }
     setLoading(true);
-    const params: Record<string, string | number> = {};
-    Object.entries(filters).forEach(([k, v]) => {
-      if (v) params[k] = v;
+
+    // Logika Filter Frontend
+    const filtered = allProjects.filter((project) => {
+      return Object.entries(filters).every(([key, value]) => {
+        if (!value) return true; // Skip jika filter kosong
+
+        const projectValue = project[key as keyof Project];
+
+        if (projectValue === null || projectValue === undefined) return false;
+
+        // Case-insensitive search untuk text, exact match untuk select
+        return String(projectValue).toLowerCase().includes(String(value).toLowerCase());
+      });
     });
 
-    projectApi
-      .list(params as any)
-      .then((res) => {
-        setProjects(res.data);
-        setSearchApplied(true);
-        setSnackbar(true);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    setProjects(filtered);
+    setSearchApplied(true);
+    setSnackbar(true);
+    setLoading(false);
   };
 
   const handleReset = useCallback(() => {
@@ -92,7 +102,9 @@ export default function ProjectsPage() {
 
   const getOptions = (optionKey?: keyof FilterOptionsResponse): string[] => {
     if (!optionKey || !filterOptions) return [];
-    return (filterOptions[optionKey] as (string | number)[]).map(String);
+    const options = filterOptions[optionKey];
+    if (!Array.isArray(options)) return [];
+    return options.filter((opt) => opt !== null).map(String);
   };
 
   return (
@@ -101,15 +113,15 @@ export default function ProjectsPage() {
 
       <div className="grid grid-cols-3 gap-x-6 gap-y-4 mb-6">
         {FILTER_GRID.map(({ key, label, optionKey, type, placeholder }) => (
-          <div key={key} className={key === "contract_method" ? "col-start-1" : ""}>
+          <div key={key}>
             <label className="text-[14px] font-semibold text-[#1B1C1F] mb-2 block">{label}</label>
 
             <div className="relative">
               {type === "select" ? (
                 <>
                   <select
-                    value={filters[key] ?? ""}
-                    onChange={(e) => setFilters((prev) => ({ ...prev, [key]: e.target.value }))}
+                    value={filters[key as string] ?? ""}
+                    onChange={(e) => setFilters((prev) => ({ ...prev, [key as string]: e.target.value }))}
                     className="w-full appearance-none bg-white border border-[#E0E2E7] rounded-lg text-[14px] text-[#1B1C1F] px-4 h-[37px] focus:outline-none focus:border-blue-500 transition-colors pr-10"
                   >
                     <option value="">Select {label}</option>
@@ -125,8 +137,8 @@ export default function ProjectsPage() {
                 <input
                   type="text"
                   placeholder={placeholder}
-                  value={filters[key] ?? ""}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, [key]: e.target.value }))}
+                  value={filters[key as string] ?? ""}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, [key as string]: e.target.value }))}
                   className="w-full bg-white border border-[#E0E2E7] rounded-lg text-[14px] text-[#1B1C1F] px-4 h-[37px] focus:outline-none focus:border-blue-500 placeholder:text-[#98A2B3]"
                 />
               )}
@@ -154,7 +166,9 @@ export default function ProjectsPage() {
       <h2 className="text-[20px] font-bold text-[#1B1C1F] mb-6">Project Results</h2>
 
       {!searchApplied ? (
-        <div className="py-16 text-center text-gray-400 text-[14px]">Apply filters and click Search to view projects</div>
+        <div className="py-16 text-center text-gray-400 text-[14px]">
+          {loading ? "Fetching data..." : "Apply filters and click Search to view projects"}
+        </div>
       ) : projects.length === 0 ? (
         <div className="py-16 text-center text-gray-400 text-[14px]">No projects found</div>
       ) : (
@@ -176,21 +190,16 @@ export default function ProjectsPage() {
                 <tr key={project.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{project.project_name}</td>
-
                   <td className="px-4 py-4 text-[14px] text-gray-600">
                     {project.contract_value ? `Rp${Number(project.contract_value).toLocaleString("id-ID")}` : "-"}
                   </td>
-
                   <td className="px-4 py-4 text-[14px] text-gray-700">{project.gross_profit_pct ? `${project.gross_profit_pct}%` : "-"}</td>
-
                   <td className={`px-4 py-4 text-[14px] font-bold ${kpiColor(String(project.spi))}`}>
                     {project.spi ? Number(project.spi).toFixed(2) : "-"}
                   </td>
-
                   <td className={`px-4 py-4 text-[14px] font-bold ${kpiColor(String(project.cpi))}`}>
                     {project.cpi ? Number(project.cpi).toFixed(2) : "-"}
                   </td>
-
                   <td className="px-4 py-4">
                     <button
                       onClick={() => router.push(`/projects/${project.id}`)}
