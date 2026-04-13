@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\ProjectMaterialLog;
 use App\Models\ProjectWbs;
 use App\Models\ProjectWorkItem;
+use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
@@ -77,17 +78,15 @@ class PolaBImport
                 'progress_pct'      => $meta['progress_total_pct'] ?? null,
                 'project_year'      => $meta['project_year'] ?? now()->year,
                 'ingestion_file_id' => $ingestionFileId,
+                'user_id'           => Auth::id(),
             ]
         );
 
         // Upsert WBS phase
-        $wbsName = $meta['name_of_work_phase'] ?? $meta['period'] ?? 'PEKERJAAN UMUM';
-
-        // If period is in YYYY-MM format, transform to "PEKERJAAN XXX"
-        if (preg_match('/^\d{4}-\d{2}$/', $wbsName)) {
-            $monthNum = substr($wbsName, 5, 2);
-            $wbsName = $this->transformMonthToWbsName((int) $monthNum);
-        }
+        $wbsName = $meta['name_of_work_phase']
+            ?? $meta['period_label']
+            ?? $meta['period']
+            ?? 'PEKERJAAN UMUM';
 
         $wbsPhase = ProjectWbs::updateOrCreate(
             ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
@@ -128,10 +127,13 @@ class PolaBImport
         $hppActual = ProjectWorkItem::where('period_id', $wbsPhase->id)
             ->whereNull('parent_id')->where('is_total_row', false)->sum('realisasi');
 
+        $totalPagu = (float) $wbsPhase->total_pagu;
+
         $wbsPhase->update([
             'hpp_plan_total'   => $hppPlan,
             'hpp_actual_total' => $hppActual,
             'hpp_deviation'    => $hppPlan - $hppActual,
+            'deviasi_pct'      => $totalPagu > 0 ? (($totalPagu - $hppPlan) / $totalPagu) * 100 : 0,
         ]);
 
         return [
@@ -181,6 +183,7 @@ class PolaBImport
             // Deteksi format "Periode: Maret 2026" atau "Bulan: 2026-03"
             if (str_contains(strtolower($rawKey), 'periode') ||
                 str_contains(strtolower($rawKey), 'bulan')) {
+                $meta['period_label'] = trim((string) $val);
                 $p = $this->mapper->parsePeriod((string) $val);
                 if ($p) $meta['period'] = $p;
             }
@@ -303,18 +306,4 @@ class PolaBImport
         }
     }
 
-    private function transformMonthToWbsName(int $month): string
-    {
-        return match ($month) {
-            1 => 'PEKERJAAN PERSIAPAN',
-            2 => 'PEKERJAAN PONDASI',
-            3 => 'PEKERJAAN STRUKTUR',
-            4 => 'PEKERJAAN ARSITEKTUR',
-            5 => 'PEKERJAAN ME',
-            6 => 'PEKERJAAN UTILITIES',
-            7 => 'PEKERJAAN EXTERIOR',
-            8 => 'PEKERJAAN PELENGKAPAN',
-            default => 'PEKERJAAN LANLAIN',
-        };
-    }
 }

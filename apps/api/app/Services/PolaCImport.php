@@ -8,6 +8,7 @@ use App\Models\ProjectMaterialLog;
 use App\Models\ProjectWbs;
 use App\Models\ProjectProgressCurve;
 use App\Models\ProjectWorkItem;
+use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
@@ -198,6 +199,7 @@ class PolaCImport
                 'progress_pct'      => $meta['progress_total_pct'] ?? null,
                 'project_year'      => $meta['project_year'] ?? now()->year,
                 'ingestion_file_id' => $ingestionFileId,
+                'user_id'           => Auth::id(),
             ]
         );
 

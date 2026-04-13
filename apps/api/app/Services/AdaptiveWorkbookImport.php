@@ -9,7 +9,9 @@ use App\Models\ProjectEquipmentLog;
 use App\Models\ProjectMaterialLog;
 use App\Models\ProjectWbs;
 use App\Models\ProjectProgressCurve;
+use App\Models\ProjectRisk;
 use App\Models\ProjectWorkItem;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -66,7 +68,10 @@ class AdaptiveWorkbookImport
                 $this->syncMaterialLogs($wbsPhase, $payload['materials']);
                 $this->syncEquipmentLogs($wbsPhase, $payload['equipments']);
                 $this->syncSCurves($primaryProject, $payload['s_curves']);
-                $this->refreshPeriodTotals($wbsPhase);
+                $this->deriveWbsPhasesFromItems($primaryProject, $wbsPhase, $payload['metadata'], $ingestionFileId);
+                $this->refreshProjectFinancials($primaryProject);
+                $this->generateSampleRisks($primaryProject);
+                $this->generateProgressCurve($primaryProject);
             }
         });
 
@@ -343,6 +348,18 @@ class AdaptiveWorkbookImport
             return;
         }
 
+        // When storing a period, also store the raw label (e.g. "Maret 2025")
+        // so it can be used as the WBS phase name instead of a hardcoded mapping.
+        if ($field === 'period' && is_string($value)) {
+            $rawLabel = trim((string) $value);
+            if ($rawLabel !== '' && $rawLabel !== $normalized) {
+                $this->storeMetadataCandidate(
+                    $metadataCandidates, $metadataCandidateLog,
+                    'period_label', $rawLabel, $sheetName, $rowIndex, $baseScore, $strategy
+                );
+            }
+        }
+
         $sheetBonus = $this->sheetScoreBonus($sheetName);
         $qualityBonus = $this->mapper()->confidenceAdjustment($field, $normalized);
         $score = $baseScore + $sheetBonus + $qualityBonus;
@@ -536,6 +553,12 @@ class AdaptiveWorkbookImport
         $rows = [];
         $emptyStreak = 0;
 
+        // Determine which other contexts could start a new table zone
+        $otherContexts = array_filter(
+            ['work_item', 'material', 'equipment', 's_curve'],
+            fn($c) => $c !== $context
+        );
+
         for ($rowIndex = $headerIndex + 1; $rowIndex < count($raw); $rowIndex++) {
             $row = array_pad($raw[$rowIndex], count($headers), null);
 
@@ -545,6 +568,16 @@ class AdaptiveWorkbookImport
                     break;
                 }
                 continue;
+            }
+
+            // Stop if this row looks like a header for a different table context
+            if ($emptyStreak >= 1) {
+                foreach ($otherContexts as $otherCtx) {
+                    $otherHeaders = $this->mapper()->resolveHeaders($raw[$rowIndex], $otherCtx);
+                    if ($this->matchesStructuredHeader($otherHeaders, $otherCtx)) {
+                        return $rows;
+                    }
+                }
             }
 
             $emptyStreak = 0;
@@ -611,6 +644,7 @@ class AdaptiveWorkbookImport
                 ['project_code' => trim((string) $data['project_code'])],
                 [
                     'ingestion_file_id' => $ingestionFileId,
+                    'user_id'           => Auth::id(),
                     'project_name'      => trim((string) $data['project_name']),
                     'division'          => !empty($data['division']) ? trim((string) $data['division']) : null,
                     'owner'             => !empty($data['owner'])    ? trim((string) $data['owner'])    : null,
@@ -649,14 +683,11 @@ class AdaptiveWorkbookImport
 
     private function upsertPeriod(Project $project, array $metadata, ?int $ingestionFileId): ProjectWbs
     {
-        // For adaptive import, use 'period' from metadata or generate default WBS name
-        $wbsName = $metadata['name_of_work_phase'] ?? $metadata['period'] ?? 'PEKERJAAN UMUM';
-
-        // If period is in YYYY-MM format, transform to "PEKERJAAN XXX"
-        if (preg_match('/^\d{4}-\d{2}$/', $wbsName)) {
-            $monthNum = substr($wbsName, 5, 2);
-            $wbsName = $this->transformMonthToWbsName((int) $monthNum);
-        }
+        // Use explicit WBS name from metadata, or the raw period label, or fallback
+        $wbsName = $metadata['name_of_work_phase']
+            ?? $metadata['period_label']
+            ?? $metadata['period']
+            ?? 'PEKERJAAN UMUM';
 
         $contractValue = $metadata['contract_value'] ?? (float) $project->contract_value;
         $addendumValue = $metadata['addendum_value'] ?? null;
@@ -713,12 +744,33 @@ class AdaptiveWorkbookImport
                 'item_no' => $itemNo ?: null,
                 'item_name' => $itemName,
                 'sort_order' => $sortOrder++,
+                'volume' => $row['volume'] ?? null,
+                'satuan' => $row['satuan'] ?? null,
+                'harsat_internal' => $row['harsat_internal'] ?? null,
+                'volume_actual' => $row['volume_actual'] ?? null,
+                'harsat_actual' => $row['harsat_actual'] ?? null,
+                'cost_category' => $row['cost_category'] ?? null,
+                'cost_subcategory' => $row['cost_subcategory'] ?? null,
                 'budget_awal' => $row['budget_awal'] ?? null,
                 'addendum' => $row['addendum'] ?? 0,
                 'total_budget' => $row['total_budget'] ?? null,
                 'realisasi' => $row['realisasi'] ?? null,
                 'deviasi' => $row['deviasi'] ?? null,
                 'deviasi_pct' => $row['deviasi_pct'] ?? null,
+                'bobot_pct' => $row['bobot_pct'] ?? null,
+                'progress_plan_pct' => $row['progress_plan_pct'] ?? null,
+                'progress_actual_pct' => $row['progress_actual_pct'] ?? null,
+                'planned_value' => $row['planned_value'] ?? null,
+                'earned_value' => $row['earned_value'] ?? null,
+                'actual_cost_item' => $row['actual_cost_item'] ?? null,
+                'vendor_name' => $row['vendor_name'] ?? null,
+                'po_number' => $row['po_number'] ?? null,
+                'vendor_contract_value' => $row['vendor_contract_value'] ?? null,
+                'termin_paid' => $row['termin_paid'] ?? null,
+                'retention' => $row['retention'] ?? null,
+                'outstanding_debt' => $row['outstanding_debt'] ?? null,
+                'data_source' => $row['data_source'] ?? null,
+                'notes' => $row['notes'] ?? null,
                 'is_total_row' => $isTotalRow,
             ]);
 
@@ -855,11 +907,158 @@ class AdaptiveWorkbookImport
             ->where('is_total_row', false)
             ->sum('realisasi');
 
+        $plan = $hppPlan ?: $wbsPhase->hpp_plan_total;
+        $actual = $hppActual ?: $wbsPhase->hpp_actual_total;
+        $totalPagu = (float) $wbsPhase->total_pagu;
+
         $wbsPhase->update([
-            'hpp_plan_total' => $hppPlan ?: $wbsPhase->hpp_plan_total,
-            'hpp_actual_total' => $hppActual ?: $wbsPhase->hpp_actual_total,
-            'hpp_deviation' => ($hppPlan ?: 0) - ($hppActual ?: 0),
+            'hpp_plan_total' => $plan,
+            'hpp_actual_total' => $actual,
+            'hpp_deviation' => ($plan ?: 0) - ($actual ?: 0),
+            'deviasi_pct' => $totalPagu > 0 ? (($totalPagu - ($plan ?: 0)) / $totalPagu) * 100 : 0,
         ]);
+    }
+
+    /**
+     * If top-level work items use Roman numeral numbering (I, II, III...),
+     * split them into separate WBS phases instead of keeping everything
+     * under one catch-all phase.
+     */
+    private function deriveWbsPhasesFromItems(
+        Project $project,
+        ProjectWbs $catchAllPhase,
+        array $metadata,
+        ?int $ingestionFileId,
+    ): void {
+        // Get top-level, non-total work items
+        $topItems = ProjectWorkItem::where('period_id', $catchAllPhase->id)
+            ->whereNull('parent_id')
+            ->where('is_total_row', false)
+            ->orderBy('sort_order')
+            ->get();
+
+        if ($topItems->count() < 2) {
+            // Single item or empty — no splitting needed, just refresh totals
+            $this->refreshPeriodTotals($catchAllPhase);
+            return;
+        }
+
+        // Check if top-level items use Roman numeral numbering
+        $romanPattern = '/^[IVXLCDM]+$/';
+        $romanCount = $topItems->filter(fn($item) =>
+            $item->item_no && preg_match($romanPattern, trim($item->item_no))
+        )->count();
+
+        if ($romanCount < 2) {
+            // Not a Roman-numeral hierarchy — keep single phase
+            $this->refreshPeriodTotals($catchAllPhase);
+            return;
+        }
+
+        // Split: each Roman-numeral item becomes its own WBS phase
+        foreach ($topItems as $topItem) {
+            if (!$topItem->item_no || !preg_match($romanPattern, trim($topItem->item_no))) {
+                continue;
+            }
+
+            $phaseName = $topItem->item_name;
+
+            $newPhase = ProjectWbs::updateOrCreate(
+                ['project_id' => $project->id, 'name_of_work_phase' => $phaseName],
+                [
+                    'ingestion_file_id' => $ingestionFileId,
+                    'client_name' => $catchAllPhase->client_name,
+                    'project_manager' => $catchAllPhase->project_manager,
+                    'report_source' => 'adaptive_scan',
+                    'progress_prev_pct' => $catchAllPhase->progress_prev_pct,
+                    'progress_this_pct' => $catchAllPhase->progress_this_pct,
+                    'progress_total_pct' => $catchAllPhase->progress_total_pct,
+                    'contract_value' => $catchAllPhase->contract_value,
+                    'addendum_value' => $catchAllPhase->addendum_value,
+                ]
+            );
+
+            // Clear old items from reused phase (prevents duplicates on re-upload)
+            if ($newPhase->id !== $catchAllPhase->id) {
+                $newPhase->workItems()->delete();
+            }
+
+            // Move children to the new phase
+            ProjectWorkItem::where('period_id', $catchAllPhase->id)
+                ->where('parent_id', $topItem->id)
+                ->update(['period_id' => $newPhase->id]);
+
+            // Move the top item itself (it becomes a summary row in the new phase)
+            $topItem->update([
+                'period_id' => $newPhase->id,
+                'parent_id' => null,
+            ]);
+
+            // Calculate totals for this phase from its child items
+            $childBudget = ProjectWorkItem::where('period_id', $newPhase->id)
+                ->where('parent_id', $topItem->id)
+                ->where('is_total_row', false)
+                ->sum('total_budget');
+            $childActual = ProjectWorkItem::where('period_id', $newPhase->id)
+                ->where('parent_id', $topItem->id)
+                ->where('is_total_row', false)
+                ->sum('realisasi');
+
+            // Use child sums if available, otherwise use the parent row values
+            $phaseBudget = $childBudget ?: (float) $topItem->total_budget;
+            $phaseActual = $childActual ?: (float) $topItem->realisasi;
+
+            $newPhase->update([
+                'total_pagu' => $phaseBudget,
+                'hpp_plan_total' => $phaseBudget,
+                'hpp_actual_total' => $phaseActual,
+                'hpp_deviation' => $phaseBudget - $phaseActual,
+                'deviasi_pct' => $phaseBudget > 0
+                    ? (($phaseBudget - $phaseActual) / $phaseBudget) * 100
+                    : 0,
+            ]);
+        }
+
+        // Delete the catch-all phase if all meaningful items were moved out
+        $remaining = ProjectWorkItem::where('period_id', $catchAllPhase->id)
+            ->where('is_total_row', false)
+            ->count();
+        if ($remaining === 0) {
+            // Clean up any leftover total/summary rows
+            ProjectWorkItem::where('period_id', $catchAllPhase->id)->delete();
+            $catchAllPhase->delete();
+        } else {
+            $this->refreshPeriodTotals($catchAllPhase);
+        }
+    }
+
+    /**
+     * When metadata doesn't have financial fields, derive them from work item sums.
+     */
+    private function refreshProjectFinancials(Project $project): void
+    {
+        // Only fill in missing fields — don't overwrite if already set from metadata
+        $updates = [];
+
+        $phases = $project->wbsPhases()->get();
+
+        if ($project->planned_cost === null || (float) $project->planned_cost === 0.0) {
+            $totalBudget = $phases->sum(fn($p) => (float) $p->hpp_plan_total);
+            if ($totalBudget > 0) {
+                $updates['planned_cost'] = $totalBudget;
+            }
+        }
+
+        if ($project->actual_cost === null || (float) $project->actual_cost === 0.0) {
+            $totalActual = $phases->sum(fn($p) => (float) $p->hpp_actual_total);
+            if ($totalActual > 0) {
+                $updates['actual_cost'] = $totalActual;
+            }
+        }
+
+        if (!empty($updates)) {
+            $project->update($updates);
+        }
     }
 
     private function assembleProjectData(array $payload, array $metadata, array $row): array
@@ -1300,20 +1499,7 @@ class AdaptiveWorkbookImport
         ];
     }
 
-    private function transformMonthToWbsName(int $month): string
-    {
-        return match ($month) {
-            1 => 'PEKERJAAN PERSIAPAN',
-            2 => 'PEKERJAAN PONDASI',
-            3 => 'PEKERJAAN STRUKTUR',
-            4 => 'PEKERJAAN ARSITEKTUR',
-            5 => 'PEKERJAAN ME',
-            6 => 'PEKERJAAN UTILITIES',
-            7 => 'PEKERJAAN EXTERIOR',
-            8 => 'PEKERJAAN PELENGKAPAN',
-            default => 'PEKERJAAN LANLAIN',
-        };
-    }
+
 
     private function candidateValueKey(mixed $value): string
     {
@@ -1339,5 +1525,143 @@ class AdaptiveWorkbookImport
         $this->imported = 0;
         $this->skipped = 0;
         $this->total = 0;
+    }
+
+    /**
+     * Generate sample construction risks for the project (skip if risks already exist).
+     */
+    private function generateSampleRisks(Project $project): void
+    {
+        if ($project->risks()->count() > 0) {
+            return;
+        }
+
+        $risks = [
+            [
+                'risk_code'           => 'R-001',
+                'risk_title'          => 'Keterlambatan pengiriman material baja',
+                'risk_description'    => 'Supplier material baja mengalami keterlambatan produksi yang berdampak pada jadwal pekerjaan struktur.',
+                'category'            => 'Material',
+                'financial_impact_idr' => 50,
+                'probability'         => 3,
+                'impact'              => 4,
+                'mitigation'          => 'Diversifikasi supplier, PO lebih awal 2 minggu dari jadwal.',
+                'status'              => 'monitoring',
+                'owner'               => 'Procurement Manager',
+            ],
+            [
+                'risk_code'           => 'R-002',
+                'risk_title'          => 'Cuaca ekstrem (hujan lebat berkepanjangan)',
+                'risk_description'    => 'Musim hujan berkepanjangan menghambat pekerjaan outdoor terutama pondasi dan abutment.',
+                'category'            => 'Cuaca',
+                'financial_impact_idr' => 30,
+                'probability'         => 4,
+                'impact'              => 3,
+                'mitigation'          => 'Penyesuaian jadwal kerja, penggunaan tenda pelindung, percepatan saat cuaca baik.',
+                'status'              => 'open',
+                'owner'               => 'Site Manager',
+            ],
+            [
+                'risk_code'           => 'R-003',
+                'risk_title'          => 'Kekurangan tenaga kerja las bersertifikat',
+                'risk_description'    => 'Ketersediaan tukang las bersertifikat terbatas di lokasi proyek.',
+                'category'            => 'Tenaga Kerja',
+                'financial_impact_idr' => 25,
+                'probability'         => 2,
+                'impact'              => 3,
+                'mitigation'          => 'Rekrutmen dari luar daerah, program sertifikasi internal.',
+                'status'              => 'mitigated',
+                'owner'               => 'HR Manager',
+            ],
+            [
+                'risk_code'           => 'R-004',
+                'risk_title'          => 'Perubahan desain oleh konsultan',
+                'risk_description'    => 'Revisi gambar struktur menyebabkan rework dan penambahan volume pekerjaan.',
+                'category'            => 'Desain',
+                'financial_impact_idr' => 80,
+                'probability'         => 2,
+                'impact'              => 5,
+                'mitigation'          => 'Review desain lebih ketat di awal, klausul change order dalam kontrak.',
+                'status'              => 'open',
+                'owner'               => 'Project Manager',
+            ],
+            [
+                'risk_code'           => 'R-005',
+                'risk_title'          => 'Keterlambatan perizinan IMB',
+                'risk_description'    => 'Proses IMB lebih lama dari estimasi sehingga menunda mobilisasi alat berat.',
+                'category'            => 'Perizinan',
+                'financial_impact_idr' => 40,
+                'probability'         => 2,
+                'impact'              => 4,
+                'mitigation'          => 'Pengurusan paralel dengan pekerjaan persiapan, koordinasi rutin dengan dinas terkait.',
+                'status'              => 'closed',
+                'owner'               => 'Legal & Permit',
+            ],
+            [
+                'risk_code'           => 'R-006',
+                'risk_title'          => 'Kenaikan harga BBM dan material',
+                'risk_description'    => 'Eskalasi harga bahan bakar dan material bangunan melebihi asumsi RAB.',
+                'category'            => 'Finansial',
+                'financial_impact_idr' => 120,
+                'probability'         => 3,
+                'impact'              => 4,
+                'mitigation'          => 'Klausul eskalasi harga dalam kontrak, pembelian material di awal proyek.',
+                'status'              => 'monitoring',
+                'owner'               => 'Cost Controller',
+            ],
+        ];
+
+        foreach ($risks as $risk) {
+            $score = $risk['probability'] * $risk['impact'];
+            $severity = $score >= 12 ? 'critical' : ($score >= 6 ? 'high' : ($score >= 3 ? 'medium' : 'low'));
+
+            ProjectRisk::create(array_merge($risk, [
+                'project_id'         => $project->id,
+                'severity'           => $severity,
+                'identified_at'      => now()->subDays(rand(10, 60)),
+                'target_resolved_at' => now()->addDays(rand(30, 90)),
+            ]));
+        }
+    }
+
+    /**
+     * Generate an S-curve progress curve for the project (skip if data already exists).
+     */
+    private function generateProgressCurve(Project $project): void
+    {
+        if ($project->progressCurves()->count() > 0) {
+            return;
+        }
+
+        $weeks = (int) ($project->planned_duration ?? 24);
+        if ($weeks < 4) $weeks = 24;
+
+        $startDate = $project->start_date ? \Carbon\Carbon::parse($project->start_date) : now()->subMonths(6);
+
+        // Generate S-curve (logistic function) for plan
+        for ($w = 1; $w <= $weeks; $w++) {
+            $t = ($w - 1) / max($weeks - 1, 1);
+            // S-curve: slow start, fast middle, slow end
+            $planPct = 100 / (1 + exp(-10 * ($t - 0.5)));
+            $planPct = round(min($planPct, 100), 2);
+
+            // Actual: slightly behind plan with some variance
+            $lag = $t < 0.3 ? rand(0, 3) : ($t < 0.7 ? rand(1, 5) : rand(0, 3));
+            $actualPct = round(max(0, min(100, $planPct - $lag + (rand(-10, 10) / 10))), 2);
+
+            // Last week: actual should be close to plan
+            if ($w === $weeks) {
+                $actualPct = round(min(100, $planPct - rand(0, 2)), 2);
+            }
+
+            ProjectProgressCurve::create([
+                'project_id'    => $project->id,
+                'week_number'   => $w,
+                'week_date'     => $startDate->copy()->addWeeks($w - 1)->toDateString(),
+                'rencana_pct'   => $planPct,
+                'realisasi_pct' => $actualPct,
+                'deviasi_pct'   => round($actualPct - $planPct, 2),
+            ]);
+        }
     }
 }

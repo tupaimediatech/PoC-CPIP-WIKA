@@ -21,6 +21,7 @@ class IngestionFile extends Model
         'skipped_rows',
         'errors',
         'processed_at',
+        'user_id',
     ];
 
     protected $casts = [
