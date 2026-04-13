@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(ColumnAliasSeeder::class);
+        $this->call(HarsatHistorySeeder::class);
         $this->call(DemoFlowSeeder::class);
     }
 }
