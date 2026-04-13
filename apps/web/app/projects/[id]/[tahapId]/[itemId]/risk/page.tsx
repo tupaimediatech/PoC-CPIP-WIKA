@@ -5,38 +5,35 @@ import { useRouter, useParams } from "next/navigation";
 import PageHeader from "@/components/analytics/PageHeader";
 import SCurveChart from "@/components/analytics/SCurveChart";
 import { projectApi } from "@/lib/api";
-import type { ProjectRisk, ProgressCurveResponse } from "@/types/project";
+import type { RiskTimelineResponse } from "@/types/project";
 import { DEMO_MODE } from "@/lib/demo";
 import mockData from "@/data/mock-data.json";
 
-const SEVERITY_COLOR: Record<string, string> = {
-  critical: "text-red-600",
-  high: "text-orange-500",
-  medium: "text-yellow-600",
-  low: "text-green-600",
-};
-
 export default function Level7Page() {
-  const router = useRouter();
-  const params = useParams();
+  const router    = useRouter();
+  const params    = useParams();
   const projectId = Number(params.id);
 
-  const [risks, setRisks] = useState<ProjectRisk[]>([]);
-  const [curve, setCurve] = useState<ProgressCurveResponse["data"] | null>(null);
+  const [data, setData]       = useState<RiskTimelineResponse["data"] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (DEMO_MODE) {
-      setRisks(mockData.level7.risks as unknown as ProjectRisk[]);
-      setCurve(mockData.level7.progressCurve as unknown as ProgressCurveResponse["data"]);
+      setData({
+        risks:      mockData.level7.risks as any,
+        risks_meta: { total: mockData.level7.risks.length, open_count: 0, critical_count: 0, total_financial_impact: 0 },
+        timeline:   mockData.level7.progressCurve?.timeline as any ?? null,
+        spi_value:  mockData.level7.progressCurve?.spi_value ?? 0,
+        spi_status: mockData.level7.progressCurve?.spi_status ?? "-",
+        sCurve:     mockData.level7.progressCurve?.sCurve as any ?? null,
+      });
       setLoading(false);
       return;
     }
-    Promise.all([projectApi.risks(projectId), projectApi.progressCurve(projectId)])
-      .then(([riskRes, curveRes]) => {
-        setRisks(riskRes.data);
-        setCurve(curveRes.data);
-      })
+
+    projectApi
+      .riskTimeline(projectId)
+      .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [projectId]);
@@ -49,7 +46,10 @@ export default function Level7Page() {
       </div>
     );
 
-  const spi = curve?.spi_value ?? 0;
+  if (!data) return <div className="p-8 text-gray-400">Data tidak ditemukan</div>;
+
+  const { risks, timeline, spi_value: spi, spi_status, sCurve } = data;
+
   const spiColor = spi >= 1.0 ? "text-green-600" : spi >= 0.9 ? "text-yellow-600" : "text-red-600";
 
   return (
@@ -60,7 +60,6 @@ export default function Level7Page() {
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-[#F9FAFB] border-b border-gray-100">
-              {/* Header disesuaikan jumlahnya dengan gambar (5 kolom) */}
               <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Risiko</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Deskripsi Kejadian</th>
@@ -76,35 +75,36 @@ export default function Level7Page() {
                 </td>
               </tr>
             ) : (
-              risks.map((risk, idx) => (
-                <tr key={risk.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
-                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{risk.category ?? "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{risk.risk_title}</td>
+              risks.map((risk, idx) => {
+                const statusColor =
+                  risk.status === "open"       ? "bg-red-50 border-red-100 text-red-600" :
+                  risk.status === "monitoring" ? "bg-yellow-50 border-yellow-100 text-yellow-600" :
+                  risk.status === "mitigated"  ? "bg-green-50 border-green-100 text-green-600" :
+                                                  "bg-gray-50 border-gray-100 text-gray-500";
+                const dotColor =
+                  risk.status === "open"       ? "bg-red-500" :
+                  risk.status === "monitoring" ? "bg-yellow-500" :
+                  risk.status === "mitigated"  ? "bg-green-500" : "bg-gray-400";
 
-                  {/* Kolom Dampak: Menampilkan data dari API dengan gaya panah di gambar */}
-                  <td className="px-4 py-4 text-[14px] text-red-600 font-medium">
-                    <div className="flex items-center gap-1">
-                      <span>↑</span>
-                      <span>
-                        {risk.financial_impact_idr
-                          ? `+Rp${Number(risk.financial_impact_idr).toLocaleString("id-ID")}`
-                          : risk.impact_days
-                            ? `+${risk.impact_days} hari`
-                            : "-"}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFF9E6] border border-[#FEF3C7] w-fit">
-                      <div className="w-2 h-2 rounded-full bg-[#D97706]" />
-                      {/* Status tetap mengambil dari API (misal: 'At Risk') */}
-                      <span className="text-[#D97706] text-[12px] font-bold">{risk.status ?? "At Risk"}</span>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                return (
+                  <tr key={risk.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
+                    <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{risk.category ?? "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-700">{risk.risk_title}</td>
+                    <td className="px-4 py-4 text-[14px] text-red-600 font-medium">
+                      {risk.financial_impact_idr
+                        ? `+Rp${Number(risk.financial_impact_idr).toLocaleString("id-ID")}`
+                        : "-"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[12px] font-bold w-fit ${statusColor}`}>
+                        <div className={`w-2 h-2 rounded-full ${dotColor}`} />
+                        {risk.status ?? "-"}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -112,27 +112,29 @@ export default function Level7Page() {
 
       <h2 className="text-[18px] font-bold text-[#1B1C1F] mb-4">Level 7B Project Timeline</h2>
 
-      {curve?.timeline ? (
+      {timeline && (
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div className="border border-gray-100 rounded-xl p-5">
             <p className="text-[13px] font-bold text-[#1B1C1F] mb-1">Data Rencana</p>
-            <p className="text-[14px] text-gray-600">{curve.timeline.planned ?? "Data tidak tersedia"}</p>
+            <p className="text-[14px] text-gray-600">{timeline.planned ?? "Data tidak tersedia"}</p>
           </div>
           <div className="border border-gray-100 rounded-xl p-5">
             <p className="text-[13px] font-bold text-[#1B1C1F] mb-1">Data Aktual</p>
             <p className="text-[14px] text-gray-600">
-              {curve.timeline.actual ?? "Data tidak tersedia"}
-              {curve.timeline.delay_months > 0 && <span className="text-red-600 font-bold ml-1">({curve.timeline.delay_note})</span>}
+              {timeline.actual ?? "Data tidak tersedia"}
+              {timeline.delay_months > 0 && (
+                <span className="text-red-600 font-bold ml-1">({timeline.delay_note})</span>
+              )}
             </p>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {curve?.sCurve && (
+      {sCurve && (
         <>
           <h3 className="text-[16px] font-bold text-[#1B1C1F] mb-4">Visualisasi</h3>
           <div className="mb-8">
-            <SCurveChart months={curve.sCurve.months} plan={curve.sCurve.plan} actual={curve.sCurve.actual} />
+            <SCurveChart months={sCurve.months} plan={sCurve.plan} actual={sCurve.actual} />
           </div>
         </>
       )}
@@ -147,9 +149,11 @@ export default function Level7Page() {
       <div className="border border-gray-100 rounded-xl p-6 mb-8 flex items-center gap-8">
         <p className={`text-[48px] font-bold ${spiColor}`}>{spi.toFixed(2)}</p>
         <div>
-          <p className={`text-[16px] font-bold ${spiColor} mb-1`}>{curve?.spi_status}</p>
+          <p className={`text-[16px] font-bold ${spiColor} mb-1`}>{spi_status}</p>
           <p className="text-[14px] text-gray-600 leading-relaxed">
-            {`The SPI value of ${spi.toFixed(2)} indicates ${spi >= 1 ? "the project is ahead of or on schedule." : "the project is behind schedule."}`}
+            {spi >= 1
+              ? `SPI ${spi.toFixed(2)} — proyek berjalan sesuai atau lebih cepat dari rencana.`
+              : `SPI ${spi.toFixed(2)} — proyek mengalami keterlambatan jadwal.`}
           </p>
         </div>
       </div>

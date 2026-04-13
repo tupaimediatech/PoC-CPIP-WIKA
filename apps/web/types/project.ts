@@ -1,7 +1,18 @@
-export type ProjectStatus = 'good' | 'warning' | 'critical' | 'unknown';
-export type Division = 'Infrastructure' | 'Building';
-export type IngestionStatus = 'pending' | 'processing' | 'success' | 'failed' | 'partial';
-export type AliasContext = 'project' | 'work_item' | 'material' | 'equipment' | 'period' | 's_curve';
+export type ProjectStatus = "good" | "warning" | "critical" | "unknown";
+export type Division = "Infrastructure" | "Building";
+export type IngestionStatus =
+  | "pending"
+  | "processing"
+  | "success"
+  | "failed"
+  | "partial";
+export type AliasContext =
+  | "project"
+  | "work_item"
+  | "material"
+  | "equipment"
+  | "period"
+  | "s_curve";
 
 export interface Project {
   id: number;
@@ -238,6 +249,12 @@ export interface WorkItemLevel4 {
   deviasi_pct: number;
   is_total_row: boolean;
   children: WorkItemLevel4[];
+  volume: number | null;
+  satuan: string | null;
+  internalPrice: number | null;
+  harsatInternal: number | null;
+  totalCost: number | null;
+  unit: string | null;
 }
 
 export interface WorkItemLevel4ListResponse {
@@ -251,9 +268,11 @@ export interface WorkItemLevel4ListResponse {
 // Level 5 — material/vendor
 export interface MaterialLogLevel5 {
   id: number;
+  work_item_id: number | null;
   material_type: string | null;
-  volume: number;
+  volume: number | null;
   satuan: string | null;
+  is_discount: boolean;
   vendor: {
     nama: string | null;
     tahunPerolehan: string | null;
@@ -386,7 +405,7 @@ export type DashboardFilters = {
   year: string;
 };
 
-export type InsightLevel = 'info' | 'warning' | 'critical';
+export type InsightLevel = "info" | "warning" | "critical";
 
 export interface InsightBullet {
   level: InsightLevel;
@@ -407,7 +426,7 @@ export interface IngestionLog {
   total_rows: number;
   success_rows: number;
   failed_rows: number;
-  status: 'SUCCESS' | 'FAILED' | 'PARTIAL' | 'PENDING' | 'PROCESSING';
+  status: "SUCCESS" | "FAILED" | "PARTIAL" | "PENDING" | "PROCESSING";
   processed_at: string | null;
 }
 
@@ -434,4 +453,66 @@ export interface ColumnAlias {
 
 export interface ColumnAliasListResponse {
   data: ColumnAlias[];
+}
+
+// ── Consolidated single-call response types ───────────────────────────────────
+
+export interface WorkItemSummary {
+  id: number;
+  name: string;
+  item_no: string | null;
+  volume: number | null;
+  satuan: string | null;
+}
+
+/** GET /work-items/{id}/detail — Level 4 Detail */
+export interface WorkItemDetailResponse {
+  data: {
+    tahap: string;
+    rabInternal: number;
+    workItem: WorkItemSummary;
+    materials: MaterialLogLevel5[];
+  };
+}
+
+/** GET /materials/{id} — Level 5 */
+export interface MaterialDetailResponse {
+  data: {
+    tahap: string;
+    workItem: WorkItemSummary | null;
+    material: MaterialLogLevel5;
+  };
+}
+
+/** GET /work-items/{id}/hpp — Level 6 */
+export interface WorkItemHppResponse {
+  data: {
+    tahap: string;
+    rabInternal: number;
+    realisasi: number;
+    workItem: WorkItemSummary;
+    cpi: number;
+    insight: InsightResponse;
+  };
+}
+
+/** GET /projects/{id}/risk-timeline — Level 7 */
+export interface RiskTimelineResponse {
+  data: {
+    risks: ProjectRisk[];
+    risks_meta: {
+      total: number;
+      open_count: number;
+      critical_count: number;
+      total_financial_impact: number;
+    };
+    timeline: ProjectTimeline | null;
+    spi_value: number;
+    spi_status: string;
+    sCurve: {
+      months: string[];
+      plan: number[];
+      actual: number[];
+    } | null;
+  };
 }

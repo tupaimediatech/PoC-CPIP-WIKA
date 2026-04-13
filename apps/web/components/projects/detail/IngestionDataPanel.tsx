@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { periodApi, projectApi } from "@/lib/api";
+import { wbsApi, projectApi } from "@/lib/api";
 import type {
   EquipmentLogListResponse,
   MaterialLogListResponse,
@@ -47,7 +47,10 @@ function formatCurrency(value: string | number | null | undefined): string {
   }).format(numeric);
 }
 
-function formatNumber(value: string | number | null | undefined, digits = 2): string {
+function formatNumber(
+  value: string | number | null | undefined,
+  digits = 2,
+): string {
   if (value === null || value === undefined || value === "") {
     return "—";
   }
@@ -93,7 +96,10 @@ function formatDate(value: string | null | undefined): string {
   }).format(date);
 }
 
-function flattenWorkItems(items: ProjectWorkItem[], depth = 0): FlattenedWorkItem[] {
+function flattenWorkItems(
+  items: ProjectWorkItem[],
+  depth = 0,
+): FlattenedWorkItem[] {
   return items.flatMap((item) => [
     { ...item, depth },
     ...flattenWorkItems(item.children ?? [], depth + 1),
@@ -127,9 +133,15 @@ export default function IngestionDataPanel({ projectId }: Props) {
   const [workItems, setWorkItems] = useState<ProjectWorkItem[]>([]);
   const [materials, setMaterials] = useState<ProjectMaterialLog[]>([]);
   const [equipment, setEquipment] = useState<ProjectEquipmentLog[]>([]);
-  const [progressCurves, setProgressCurves] = useState<ProjectProgressCurve[]>([]);
-  const [materialMeta, setMaterialMeta] = useState<MaterialLogListResponse["meta"] | null>(null);
-  const [equipmentMeta, setEquipmentMeta] = useState<EquipmentLogListResponse["meta"] | null>(null);
+  const [progressCurves, setProgressCurves] = useState<ProjectProgressCurve[]>(
+    [],
+  );
+  const [materialMeta, setMaterialMeta] = useState<
+    MaterialLogListResponse["meta"] | null
+  >(null);
+  const [equipmentMeta, setEquipmentMeta] = useState<
+    EquipmentLogListResponse["meta"] | null
+  >(null);
   const [loadingPeriods, setLoadingPeriods] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(true);
   const [error, setError] = useState("");
@@ -186,9 +198,9 @@ export default function IngestionDataPanel({ projectId }: Props) {
     let cancelled = false;
 
     Promise.all([
-      periodApi.workItems(activePeriodId),
-      periodApi.materials(activePeriodId),
-      periodApi.equipment(activePeriodId),
+      wbsApi.workItems(activePeriodId),
+      wbsApi.materials(activePeriodId),
+      wbsApi.equipment(activePeriodId),
     ])
       .then(([workRes, materialRes, equipmentRes]) => {
         if (cancelled) {
@@ -218,7 +230,8 @@ export default function IngestionDataPanel({ projectId }: Props) {
     };
   }, [activePeriodId]);
 
-  const activePeriod = periods.find((period) => period.id === activePeriodId) ?? null;
+  const activePeriod =
+    periods.find((period) => period.id === activePeriodId) ?? null;
   const flattenedWorkItems = useMemo(
     () => flattenWorkItems(workItems),
     [workItems],
@@ -239,7 +252,8 @@ export default function IngestionDataPanel({ projectId }: Props) {
         <div>
           <h2 className="text-lg font-bold text-gray-900">Ingested Data</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Data berikut berasal dari hasil ingestion yang sudah tersimpan di database.
+            Data berikut berasal dari hasil ingestion yang sudah tersimpan di
+            database.
           </p>
         </div>
 
@@ -280,7 +294,8 @@ export default function IngestionDataPanel({ projectId }: Props) {
         </div>
       ) : periods.length === 0 ? (
         <div className="mt-5 rounded-xl border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-400">
-          Belum ada period atau rincian ingestion yang tersimpan untuk project ini.
+          Belum ada period atau rincian ingestion yang tersimpan untuk project
+          ini.
         </div>
       ) : (
         <div className="space-y-5 pt-5">
@@ -288,7 +303,9 @@ export default function IngestionDataPanel({ projectId }: Props) {
             <StatCard
               label="Period"
               value={activePeriod?.period ?? "—"}
-              hint={activePeriod?.report_source ?? "Sumber laporan tidak tersedia"}
+              hint={
+                activePeriod?.report_source ?? "Sumber laporan tidak tersedia"
+              }
             />
             <StatCard
               label="Project Manager"
@@ -297,7 +314,11 @@ export default function IngestionDataPanel({ projectId }: Props) {
             />
             <StatCard
               label="File Ingestion"
-              value={activePeriod?.ingestion_file_id ? `#${activePeriod.ingestion_file_id}` : "—"}
+              value={
+                activePeriod?.ingestion_file_id
+                  ? `#${activePeriod.ingestion_file_id}`
+                  : "—"
+              }
               hint="Referensi file sumber"
             />
           </div>
@@ -406,14 +427,22 @@ export default function IngestionDataPanel({ projectId }: Props) {
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {flattenedWorkItems.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
+                      <td
+                        colSpan={6}
+                        className="px-4 py-8 text-center text-sm text-gray-400"
+                      >
                         Belum ada work item yang tersimpan.
                       </td>
                     </tr>
                   ) : (
                     flattenedWorkItems.map((item) => (
-                      <tr key={item.id} className={item.is_total_row ? "bg-blue-50/40" : ""}>
-                        <td className="px-4 py-3 text-gray-500">{item.item_no ?? "—"}</td>
+                      <tr
+                        key={item.id}
+                        className={item.is_total_row ? "bg-blue-50/40" : ""}
+                      >
+                        <td className="px-4 py-3 text-gray-500">
+                          {item.item_no ?? "—"}
+                        </td>
                         <td className="px-4 py-3 text-gray-800">
                           <div
                             className={`truncate ${item.is_total_row ? "font-bold" : "font-medium"}`}
@@ -475,16 +504,23 @@ export default function IngestionDataPanel({ projectId }: Props) {
                   <tbody className="divide-y divide-gray-100 bg-white">
                     {materials.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
+                        <td
+                          colSpan={6}
+                          className="px-4 py-8 text-center text-sm text-gray-400"
+                        >
                           Belum ada material log yang tersimpan.
                         </td>
                       </tr>
                     ) : (
                       materials.map((item) => (
                         <tr key={item.id}>
-                          <td className="px-4 py-3 text-gray-700">{item.supplier_name ?? "—"}</td>
+                          <td className="px-4 py-3 text-gray-700">
+                            {item.supplier_name ?? "—"}
+                          </td>
                           <td className="px-4 py-3 text-gray-800">
-                            <div className="font-medium">{item.material_type ?? "—"}</div>
+                            <div className="font-medium">
+                              {item.material_type ?? "—"}
+                            </div>
                             {item.is_discount && (
                               <span className="mt-1 inline-block rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
                                 Discount
@@ -494,7 +530,9 @@ export default function IngestionDataPanel({ projectId }: Props) {
                           <td className="px-4 py-3 text-right text-gray-600">
                             {formatNumber(item.qty, 4)}
                           </td>
-                          <td className="px-4 py-3 text-gray-600">{item.satuan ?? "—"}</td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {item.satuan ?? "—"}
+                          </td>
                           <td className="px-4 py-3 text-right text-gray-600">
                             {formatCurrency(item.harga_satuan)}
                           </td>
@@ -542,14 +580,19 @@ export default function IngestionDataPanel({ projectId }: Props) {
                   <tbody className="divide-y divide-gray-100 bg-white">
                     {equipment.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
+                        <td
+                          colSpan={6}
+                          className="px-4 py-8 text-center text-sm text-gray-400"
+                        >
                           Belum ada equipment log yang tersimpan.
                         </td>
                       </tr>
                     ) : (
                       equipment.map((item) => (
                         <tr key={item.id}>
-                          <td className="px-4 py-3 text-gray-700">{item.vendor_name ?? "—"}</td>
+                          <td className="px-4 py-3 text-gray-700">
+                            {item.vendor_name ?? "—"}
+                          </td>
                           <td className="px-4 py-3 font-medium text-gray-800">
                             {item.equipment_name ?? "—"}
                           </td>
@@ -590,7 +633,10 @@ export default function IngestionDataPanel({ projectId }: Props) {
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {progressCurves.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
+                      <td
+                        colSpan={6}
+                        className="px-4 py-8 text-center text-sm text-gray-400"
+                      >
                         Belum ada data progress curve yang tersimpan.
                       </td>
                     </tr>
