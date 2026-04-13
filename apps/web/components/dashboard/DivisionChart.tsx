@@ -309,13 +309,15 @@ export default function DivisionChart({ data }: Props) {
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2">
-              <p className="text-[13px] leading-relaxed text-gray-600">
-                <span className="text-primary-blue font-extrabold text-[14px]">
-                  Building outperforms Infrastructure
-                </span>
-                , especially in cost control. Both divisions
-                are behind schedule, but the delay is more critical in Infrastructure.
-              </p>
+              {divisions.length > 0 ? (
+                <p className="text-[13px] leading-relaxed text-gray-600">
+                  {divisions.map(([name, d]) => `${name}: CPI ${formatKpi(d.avg_cpi)}, SPI ${formatKpi(d.avg_spi)}`).join(" | ")}
+                </p>
+              ) : (
+                <p className="text-[13px] leading-relaxed text-gray-400">
+                  No division data available yet. Upload project data to see insights.
+                </p>
+              )}
             </div>
           </div>
         </div>
