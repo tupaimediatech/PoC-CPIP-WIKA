@@ -57,7 +57,7 @@ jobs:
             docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
-              -p 8074:8080 \
+              -p 2083:8080 \
               -v cpip-data:/var/www/html/database \
               -v cpip-storage:/var/www/html/storage/app \
               -e APP_ENV=production \
