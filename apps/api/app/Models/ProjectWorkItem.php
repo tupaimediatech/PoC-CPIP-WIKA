@@ -12,7 +12,7 @@ class ProjectWorkItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'period_id',
+        'wbs_id',
         'parent_id',
         'level',
         'item_no',
@@ -44,17 +44,9 @@ class ProjectWorkItem extends Model
         'is_total_row'    => 'boolean',
     ];
 
-    public function period(): BelongsTo
-    {
-        return $this->belongsTo(ProjectWbs::class, 'period_id');
-    }
-
-    /**
-     * Alias for clarity - this belongs to a WBS phase
-     */
     public function wbsPhase(): BelongsTo
     {
-        return $this->belongsTo(ProjectWbs::class, 'period_id');
+        return $this->belongsTo(ProjectWbs::class, 'wbs_id');
     }
 
     public function parent(): BelongsTo

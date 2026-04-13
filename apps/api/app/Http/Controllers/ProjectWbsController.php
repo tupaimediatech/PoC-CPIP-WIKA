@@ -21,11 +21,9 @@ class ProjectWbsController extends Controller
         $phases = $wbsPhases->map(fn(ProjectWbs $wbs) => [
             'id'          => $wbs->id,
             'name'        => $wbs->name_of_work_phase,
-            'bqExternal'  => (float) $wbs->total_pagu,        // nilai dari owner/client
-            'rabInternal' => (float) $wbs->hpp_plan_total,    // HPP internal (RAB)
-            'realisasi'   => (float) $wbs->hpp_actual_total,  // realisasi biaya
-            'deviasi'     => (float) $wbs->hpp_deviation,     // deviasi %
-            'deviasiPct'  => (float) ($wbs->deviasi_pct ?? 0),
+            'bqExternal'  => (float) $wbs->bq_external,
+            'rabInternal' => (float) $wbs->rab_internal,
+            'deviasi'     => (float) $wbs->bq_external - (float) $wbs->rab_internal,
         ]);
 
         return response()->json([
@@ -66,8 +64,8 @@ class ProjectWbsController extends Controller
         return response()->json([
             'data' => [
                 'tahap'       => $wbsModel->name_of_work_phase,
-                'rabInternal' => (float) $wbsModel->hpp_plan_total,
-                'bqExternal'  => (float) $wbsModel->total_pagu,
+                'rabInternal' => (float) $wbsModel->rab_internal,
+                'bqExternal'  => (float) $wbsModel->bq_external,
                 'items'       => $workItems,
             ],
         ]);

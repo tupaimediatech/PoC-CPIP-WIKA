@@ -54,6 +54,9 @@ class WorkbookFieldMapper
         'work_item' => [
             'item_no',
             'item_name',
+            'volume',
+            'satuan',
+            'harsat_internal',
             'budget_awal',
             'addendum',
             'total_budget',
@@ -228,6 +231,23 @@ class WorkbookFieldMapper
             'kateogri' => 'item_name',
             'item_pekerjaan' => 'item_name',
             'b_item_pekerjaan' => 'item_name',
+            // volume
+            'volume' => 'volume',
+            'vol' => 'volume',
+            'kuantitas' => 'volume',
+            'quantity' => 'volume',
+            // satuan
+            'satuan' => 'satuan',
+            'unit' => 'satuan',
+            'uom' => 'satuan',
+            // harsat_internal
+            'harsat_internal' => 'harsat_internal',
+            'harsat' => 'harsat_internal',
+            'harga_satuan_internal' => 'harsat_internal',
+            'harga_satuan' => 'harsat_internal',
+            'unit_price' => 'harsat_internal',
+            'harga_internal' => 'harsat_internal',
+            // budget & realisasi
             'budget_awal' => 'budget_awal',
             'anggaran_awal' => 'budget_awal',
             'plan_hpp' => 'total_budget',
@@ -400,6 +420,8 @@ class WorkbookFieldMapper
             'total_budget',
             'realisasi',
             'deviasi',
+            'volume',
+            'harsat_internal',
             'qty',
             'harga_satuan',
             'total_tagihan',
@@ -473,10 +495,66 @@ class WorkbookFieldMapper
         $raw = trim((string) $value);
         $isNegative = str_starts_with($raw, '(') && str_ends_with($raw, ')');
         $normalized = str_replace(['(', ')'], '', $raw);
-        $normalized = str_replace(['.', ','], ['', '.'], $normalized);
+        $normalized = trim($normalized);
+
+        // Detect number format by looking at positions of dots and commas.
+        $hasDot   = str_contains($normalized, '.');
+        $hasComma = str_contains($normalized, ',');
+
+        if ($hasDot && $hasComma) {
+            // Both present: whichever comes last is the decimal separator.
+            // e.g. "1,234.56" → international  |  "1.234,56" → Indonesian
+            if (strrpos($normalized, '.') > strrpos($normalized, ',')) {
+                // International: remove commas (thousands), keep dot (decimal)
+                $normalized = str_replace(',', '', $normalized);
+            } else {
+                // Indonesian: remove dots (thousands), convert comma to dot (decimal)
+                $normalized = str_replace('.', '', $normalized);
+                $normalized = str_replace(',', '.', $normalized);
+            }
+        } elseif ($hasComma && !$hasDot) {
+            // Only commas present.
+            $commaCount = substr_count($normalized, ',');
+            $lastCommaPos = strrpos($normalized, ',');
+            $beforeComma  = substr($normalized, 0, $lastCommaPos);
+            $afterComma   = substr($normalized, $lastCommaPos + 1);
+
+            // Treat as thousands separator when:
+            //   - multiple commas (e.g. "1,234,567"), OR
+            //   - exactly one comma with exactly 3 digits after AND the integer part
+            //     before it is ≤ 3 digits (e.g. "1,500" → 1500, but NOT "45000000000,000"
+            //     which has 11 digits before the comma → decimal → 45000000000.000)
+            $isThousands = $commaCount > 1
+                || (strlen($afterComma) === 3 && strlen(preg_replace('/\D/', '', $beforeComma)) <= 3);
+
+            if ($isThousands) {
+                $normalized = str_replace(',', '', $normalized);
+            } else {
+                // Comma is decimal separator (e.g. "3,14" or "45000000000,000")
+                $normalized = str_replace(',', '.', $normalized);
+            }
+        } elseif ($hasDot && !$hasComma) {
+            // Only dots present.
+            $dotCount    = substr_count($normalized, '.');
+            $lastDotPos  = strrpos($normalized, '.');
+            $beforeDot   = substr($normalized, 0, $lastDotPos);
+            $afterDot    = substr($normalized, $lastDotPos + 1);
+
+            // Treat as thousands separator when multiple dots, or exactly one dot
+            // with exactly 3 digits after AND ≤ 3 digits before it (e.g. "1.500" → 1500,
+            // but NOT "45000000000.000" → 45000000000.000 = 45 billion).
+            $isThousands = $dotCount > 1
+                || (strlen($afterDot) === 3 && strlen(preg_replace('/\D/', '', $beforeDot)) <= 3);
+
+            if ($isThousands) {
+                $normalized = str_replace('.', '', $normalized);
+            }
+            // else: dot is decimal separator (e.g. "3.14" or "45000000000.000")
+        }
+
         $normalized = preg_replace('/[^\d.\-]/', '', $normalized);
-        $normalized = preg_replace('/\.-$/', '', $normalized);
-        $normalized = preg_replace('/\.$/', '', $normalized);
+        $normalized = preg_replace('/\.-$/', '', (string) $normalized);
+        $normalized = preg_replace('/\.$/', '', (string) $normalized);
 
         if (!is_numeric($normalized)) {
             return null;
@@ -679,11 +757,36 @@ class WorkbookFieldMapper
         }
 
         if (preg_match('/^[IVX]+\.?$/', $itemNo)) return 0;
-        if (preg_match('/^\d+\.\d+\.\d+/', $itemNo)) return 2;
-        if (preg_match('/^\d+\.\d+/', $itemNo)) return 1;
+
+        // Count dot-separated segments to determine depth.
+        // e.g. "1" → 0, "1.1" → 1, "1.1.1" → 2, "1.1.1.1" → 3
+        if (preg_match('/^[\d]+(?:\.[\d]+)+/', $itemNo, $m)) {
+            $segments = explode('.', rtrim($m[0], '.'));
+            return count($segments) - 1;
+        }
+
         if (preg_match('/^\d+\.?$/', $itemNo)) return 0;
 
         return 1;
+    }
+
+    /**
+     * Resolve the nearest existing ancestor from parentMap when the direct
+     * parent level is missing (e.g. Excel jumps from level 1 to level 3).
+     */
+    public function resolveParentId(int $level, array $parentMap): ?int
+    {
+        if ($level === 0) {
+            return null;
+        }
+
+        for ($l = $level - 1; $l >= 0; $l--) {
+            if (isset($parentMap[$l])) {
+                return $parentMap[$l];
+            }
+        }
+
+        return null;
     }
 
     /**

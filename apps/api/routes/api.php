@@ -46,12 +46,18 @@ Route::get('/wbs-phases/{wbsModel}/work-items',               [WorkItemControlle
 Route::get('/wbs-phases/{wbsModel}/materials',                [MaterialLogController::class, 'index']);
 Route::get('/wbs-phases/{wbsModel}/equipment',                [EquipmentLogController::class, 'index']);
 
-// Work item specific endpoints (Level 5 - per work item)
+// Work item specific endpoints
+Route::get('/work-items/{workItem}/detail',                   [WorkItemController::class, 'detail']);
+Route::get('/work-items/{workItem}/hpp',                      [WorkItemController::class, 'hpp']);
 Route::get('/work-items/{workItem}/materials',                [MaterialLogController::class, 'showByWorkItem']);
 Route::get('/work-items/{workItem}/equipment',                [EquipmentLogController::class, 'showByWorkItem']);
 
+// Material detail endpoint (Level 5)
+Route::get('/materials/{material}',                           [MaterialLogController::class, 'show']);
+
 Route::get('/projects/{project}/progress-curve',   [ProgressCurveController::class, 'index']);
 Route::get('/projects/{project}/risks',            [ProjectRiskController::class, 'index']);
+Route::get('/projects/{project}/risk-timeline',    [ProjectController::class, 'riskTimeline']);
 
 Route::get('/ingestion-files',                     [ProjectController::class, 'ingestionFiles']);
 Route::get('/ingestion-files/{ingestionFile}/download', [ProjectController::class, 'download']);

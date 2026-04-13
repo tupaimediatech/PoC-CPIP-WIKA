@@ -18,6 +18,7 @@ class Project extends Model
         'division',
         'sbu',
         'owner',
+        'project_manager',
         'profit_center',
         'type_of_contract',
         'contract_type',

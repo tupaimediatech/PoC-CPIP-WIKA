@@ -52,6 +52,30 @@ class MaterialLogController extends Controller
     }
 
     /**
+     * Level 5 — detail satu material beserta konteks work item dan tahap.
+     * Cukup satu API call dari [subItemId]/page.tsx.
+     */
+    public function show(ProjectMaterialLog $material): JsonResponse
+    {
+        $workItem = $material->workItem;
+        $wbs      = $workItem?->wbsPhase ?? $material->wbsPhase;
+
+        return response()->json([
+            'data' => [
+                'tahap'    => $wbs?->name_of_work_phase ?? '-',
+                'workItem' => $workItem ? [
+                    'id'      => $workItem->id,
+                    'name'    => $workItem->item_name,
+                    'item_no' => $workItem->item_no,
+                    'volume'  => $workItem->volume !== null ? (float) $workItem->volume : null,
+                    'satuan'  => $workItem->satuan,
+                ] : null,
+                'material' => $this->mapMaterialLog($material),
+            ],
+        ]);
+    }
+
+    /**
      * Map a material log to the frontend format.
      */
     private function mapMaterialLog($log): array

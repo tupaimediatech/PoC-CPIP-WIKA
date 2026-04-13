@@ -37,6 +37,7 @@ class CompleteProjectSeeder extends Seeder
                 'division'             => 'Infrastructure',
                 'sbu'                  => 'Jembatan',
                 'owner'                => 'Pemerintah',
+                'project_manager'      => 'Ir. Budi Santoso, M.T.',
                 'profit_center'        => 'Building Construction Division',
                 'type_of_contract'     => 'Design & Build',  // Jenis Kontrak
                 'contract_type'        => 'Lumpsum',         // Tipe Kontrak
@@ -74,18 +75,9 @@ class CompleteProjectSeeder extends Seeder
                 'name_of_work_phase' => 'PEKERJAAN PONDASI',
             ],
             [
-                'client_name'        => 'PT Waskita Karya (Persero) Tbk',
-                'project_manager'    => 'Ir. Budi Santoso, M.T.',
-                'report_source'      => 'file_import',
-                'progress_prev_pct'  => 0.00,
-                'progress_this_pct'  => 8.50,
-                'progress_total_pct' => 8.50,
-                'contract_value'     => 850000000000,  // dalam Rupiah penuh
-                'addendum_value'     => 0,
-                'total_pagu'         => 850000000000,
-                'hpp_plan_total'     => 780000000000,
-                'hpp_actual_total'   => 65000000000,
-                'hpp_deviation'      => 715000000000,
+                'report_source' => 'file_import',
+                'bq_external'   => 850000000000,
+                'rab_internal'  => 780000000000,
             ]
         );
 
@@ -96,18 +88,9 @@ class CompleteProjectSeeder extends Seeder
                 'name_of_work_phase' => 'PEKERJAAN STRUKTUR',
             ],
             [
-                'client_name'        => 'PT Waskita Karya (Persero) Tbk',
-                'project_manager'    => 'Ir. Budi Santoso, M.T.',
-                'report_source'      => 'file_import',
-                'progress_prev_pct'  => 8.50,
-                'progress_this_pct'  => 12.30,
-                'progress_total_pct' => 20.80,
-                'contract_value'     => 850000000000,
-                'addendum_value'     => 50000000000,
-                'total_pagu'         => 900000000000,
-                'hpp_plan_total'     => 780000000000,
-                'hpp_actual_total'   => 156000000000,
-                'hpp_deviation'      => 624000000000,
+                'report_source' => 'file_import',
+                'bq_external'   => 900000000000,
+                'rab_internal'  => 780000000000,
             ]
         );
 
@@ -120,7 +103,7 @@ class CompleteProjectSeeder extends Seeder
             // Work Item 1: Level 0 (Category)
             $category1 = ProjectWorkItem::updateOrCreate(
                 [
-                    'period_id' => $wbsPhase->id,
+                    'wbs_id' => $wbsPhase->id,
                     'item_no'   => 'I.',
                 ],
                 [
@@ -141,7 +124,7 @@ class CompleteProjectSeeder extends Seeder
             // Work Item 2: Level 1 (Sub-item under Category 1)
             ProjectWorkItem::updateOrCreate(
                 [
-                    'period_id' => $wbsPhase->id,
+                    'wbs_id' => $wbsPhase->id,
                     'item_no'   => '1.1',
                 ],
                 [
@@ -162,7 +145,7 @@ class CompleteProjectSeeder extends Seeder
             // Work Item 3: Level 0 (Category 2)
             $category2 = ProjectWorkItem::updateOrCreate(
                 [
-                    'period_id' => $wbsPhase->id,
+                    'wbs_id' => $wbsPhase->id,
                     'item_no'   => 'II.',
                 ],
                 [
@@ -183,7 +166,7 @@ class CompleteProjectSeeder extends Seeder
             // Work Item 4: Level 1 (Sub-item under Category 2)
             ProjectWorkItem::updateOrCreate(
                 [
-                    'period_id' => $wbsPhase->id,
+                    'wbs_id' => $wbsPhase->id,
                     'item_no'   => '2.1',
                 ],
                 [
@@ -211,7 +194,7 @@ class CompleteProjectSeeder extends Seeder
             // Material Log 1
             ProjectMaterialLog::updateOrCreate(
                 [
-                    'period_id'  => $wbsPhase->id,
+                    'wbs_id'  => $wbsPhase->id,
                     'supplier_name' => 'PT Beton Jaya Makmur',
                     'material_type' => 'Beton K-350',
                 ],
@@ -235,7 +218,7 @@ class CompleteProjectSeeder extends Seeder
             // Material Log 2
             ProjectMaterialLog::updateOrCreate(
                 [
-                    'period_id'  => $wbsPhase->id,
+                    'wbs_id'  => $wbsPhase->id,
                     'supplier_name' => 'PT Krakatau Steel',
                     'material_type' => 'Besi Ulir D16',
                 ],
@@ -266,7 +249,7 @@ class CompleteProjectSeeder extends Seeder
             // Equipment Log 1
             ProjectEquipmentLog::updateOrCreate(
                 [
-                    'period_id'       => $wbsPhase->id,
+                    'wbs_id'       => $wbsPhase->id,
                     'vendor_name'     => 'PT United Tractors',
                     'equipment_name'  => 'Excavator PC200-8',
                 ],
@@ -283,7 +266,7 @@ class CompleteProjectSeeder extends Seeder
             // Equipment Log 2
             ProjectEquipmentLog::updateOrCreate(
                 [
-                    'period_id'       => $wbsPhase->id,
+                    'wbs_id'       => $wbsPhase->id,
                     'vendor_name'     => 'PT Komatsu Indonesia',
                     'equipment_name'  => 'Mobile Crane 50 Ton',
                 ],

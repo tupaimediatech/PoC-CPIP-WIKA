@@ -622,7 +622,7 @@ class ProjectUploadTest extends TestCase
         $this->assertNotNull($period);
 
         $this->assertDatabaseHas('project_material_logs', [
-            'period_id' => $period->id,
+            'wbs_id' => $period->id,
             'material_type' => 'beton k-350',
         ]);
 

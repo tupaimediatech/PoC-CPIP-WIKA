@@ -60,13 +60,12 @@ class AdaptiveWorkbookImport
             $primaryProject = $this->resolvePrimaryProject($projects, $payload['metadata']);
 
             if ($primaryProject !== null && $this->hasPeriodPayload($payload)) {
-                $wbsPhase = $this->upsertPeriod($primaryProject, $payload['metadata'], $ingestionFileId);
-
-                $this->syncWorkItems($wbsPhase, $payload['work_items']);
-                $this->syncMaterialLogs($wbsPhase, $payload['materials']);
-                $this->syncEquipmentLogs($wbsPhase, $payload['equipments']);
+                $wbsPhases = $this->syncWbsPhases($primaryProject, $payload, $ingestionFileId);
                 $this->syncSCurves($primaryProject, $payload['s_curves']);
-                $this->refreshPeriodTotals($wbsPhase);
+
+                foreach ($wbsPhases as $wbsPhase) {
+                    $this->refreshPeriodTotals($wbsPhase);
+                }
             }
         });
 
@@ -647,10 +646,57 @@ class AdaptiveWorkbookImport
         return $projects;
     }
 
-    private function upsertPeriod(Project $project, array $metadata, ?int $ingestionFileId): ProjectWbs
+    private function syncWbsPhases(Project $project, array $payload, ?int $ingestionFileId): array
+    {
+        $groups = $this->groupWorkItemsByRoot($payload['work_items'] ?? [], $payload['metadata']);
+
+        if (empty($groups)) {
+            $wbsPhase = $this->upsertPeriod($project, $payload['metadata'], $ingestionFileId);
+            $this->syncWorkItems($wbsPhase, $payload['work_items']);
+            $this->syncMaterialLogs($wbsPhase, $payload['materials']);
+            $this->syncEquipmentLogs($wbsPhase, $payload['equipments']);
+
+            return [$wbsPhase];
+        }
+
+        $wbsPhases = [];
+
+        foreach ($groups as $index => $group) {
+            $wbsPhase = $this->upsertPeriod(
+                $project,
+                $payload['metadata'],
+                $ingestionFileId,
+                $group['name'],
+            );
+
+            $this->syncWorkItems($wbsPhase, $group['rows']);
+
+            if ($index === 0) {
+                $this->syncMaterialLogs($wbsPhase, $payload['materials']);
+                $this->syncEquipmentLogs($wbsPhase, $payload['equipments']);
+
+                if (count($groups) > 1 && (!empty($payload['materials']) || !empty($payload['equipments']))) {
+                    $this->addWarningOnce(
+                        'Workbook menghasilkan beberapa root work item. Material dan equipment saat ini masih ditempelkan ke WBS root pertama karena belum ada pemetaan root yang eksplisit.'
+                    );
+                }
+            }
+
+            $wbsPhases[] = $wbsPhase;
+        }
+
+        return $wbsPhases;
+    }
+
+    private function upsertPeriod(
+        Project $project,
+        array $metadata,
+        ?int $ingestionFileId,
+        ?string $overrideName = null,
+    ): ProjectWbs
     {
         // For adaptive import, use 'period' from metadata or generate default WBS name
-        $wbsName = $metadata['name_of_work_phase'] ?? $metadata['period'] ?? 'PEKERJAAN UMUM';
+        $wbsName = $overrideName ?? $metadata['name_of_work_phase'] ?? $metadata['period'] ?? 'PEKERJAAN UMUM';
 
         // If period is in YYYY-MM format, transform to "PEKERJAAN XXX"
         if (preg_match('/^\d{4}-\d{2}$/', $wbsName)) {
@@ -658,26 +704,70 @@ class AdaptiveWorkbookImport
             $wbsName = $this->transformMonthToWbsName((int) $monthNum);
         }
 
-        $contractValue = $metadata['contract_value'] ?? (float) $project->contract_value;
-        $addendumValue = $metadata['addendum_value'] ?? null;
-        $totalPagu = $metadata['total_pagu']
-            ?? ($contractValue !== null && $addendumValue !== null ? $contractValue + $addendumValue : null);
+        // Propagate project_manager to the project record if found in file
+        if (!empty($metadata['project_manager']) && empty($project->project_manager)) {
+            $project->update(['project_manager' => $metadata['project_manager']]);
+        }
 
         return ProjectWbs::updateOrCreate(
             ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
             [
                 'ingestion_file_id' => $ingestionFileId,
-                'client_name' => $metadata['client_name'] ?? $metadata['owner'] ?? $project->owner,
-                'project_manager' => $metadata['project_manager'] ?? null,
-                'report_source' => 'adaptive_scan',
-                'progress_prev_pct' => $metadata['progress_prev_pct'] ?? null,
-                'progress_this_pct' => $metadata['progress_this_pct'] ?? null,
-                'progress_total_pct' => $metadata['progress_total_pct'] ?? $metadata['progress_pct'] ?? null,
-                'contract_value' => $contractValue,
-                'addendum_value' => $addendumValue,
-                'total_pagu' => $totalPagu,
+                'report_source'     => 'adaptive_scan',
             ]
         );
+    }
+
+    private function groupWorkItemsByRoot(array $rows, array $metadata): array
+    {
+        if (empty($rows)) {
+            return [];
+        }
+
+        $groups = [];
+        $currentGroup = null;
+        $fallbackName = $metadata['name_of_work_phase'] ?? $metadata['period'] ?? 'PEKERJAAN UMUM';
+
+        foreach ($rows as $row) {
+            $itemName = trim((string) ($row['item_name'] ?? ''));
+            if ($itemName === '') {
+                continue;
+            }
+
+            $itemNo = trim((string) ($row['item_no'] ?? ''));
+            $level = $this->mapper()->detectLevel($itemNo, $itemName);
+
+            if ($level === 0) {
+                if ($currentGroup !== null && !empty($currentGroup['rows'])) {
+                    $groups[] = $currentGroup;
+                }
+
+                $currentGroup = [
+                    'name' => $itemName,
+                    'rows' => [$row],
+                ];
+                continue;
+            }
+
+            if ($currentGroup === null) {
+                $currentGroup = [
+                    'name' => $fallbackName,
+                    'rows' => [],
+                ];
+            }
+
+            $currentGroup['rows'][] = $row;
+        }
+
+        if ($currentGroup !== null && !empty($currentGroup['rows'])) {
+            $groups[] = $currentGroup;
+        }
+
+        if (count($groups) <= 1) {
+            return [];
+        }
+
+        return $groups;
     }
 
     private function syncWorkItems(ProjectWbs $wbsPhase, array $rows): void
@@ -703,23 +793,26 @@ class AdaptiveWorkbookImport
 
             $itemNo = trim((string) ($row['item_no'] ?? ''));
             $level = $this->mapper()->detectLevel($itemNo, $itemName);
-            $parentId = $level > 0 ? ($parentMap[$level - 1] ?? null) : null;
+            $parentId = $this->mapper()->resolveParentId($level, $parentMap);
             $isTotalRow = str_contains(strtolower($itemName), 'total') || str_contains(strtolower($itemName), 'jumlah');
 
             $item = ProjectWorkItem::create([
-                'period_id' => $wbsPhase->id,
-                'parent_id' => $parentId,
-                'level' => $level,
-                'item_no' => $itemNo ?: null,
-                'item_name' => $itemName,
-                'sort_order' => $sortOrder++,
-                'budget_awal' => $row['budget_awal'] ?? null,
-                'addendum' => $row['addendum'] ?? 0,
-                'total_budget' => $row['total_budget'] ?? null,
-                'realisasi' => $row['realisasi'] ?? null,
-                'deviasi' => $row['deviasi'] ?? null,
-                'deviasi_pct' => $row['deviasi_pct'] ?? null,
-                'is_total_row' => $isTotalRow,
+                'wbs_id'       => $wbsPhase->id,
+                'parent_id'       => $parentId,
+                'level'           => $level,
+                'item_no'         => $itemNo ?: null,
+                'item_name'       => $itemName,
+                'sort_order'      => $sortOrder++,
+                'volume'          => $row['volume'] ?? null,
+                'satuan'          => $row['satuan'] ?? null,
+                'harsat_internal' => $row['harsat_internal'] ?? null,
+                'budget_awal'     => $row['budget_awal'] ?? null,
+                'addendum'        => $row['addendum'] ?? 0,
+                'total_budget'    => $row['total_budget'] ?? null,
+                'realisasi'       => $row['realisasi'] ?? null,
+                'deviasi'         => $row['deviasi'] ?? null,
+                'deviasi_pct'     => $row['deviasi_pct'] ?? null,
+                'is_total_row'    => $isTotalRow,
             ]);
 
             $parentMap[$level] = $item->id;
@@ -750,7 +843,7 @@ class AdaptiveWorkbookImport
                 || str_contains(strtolower($materialType), 'potongan');
 
             ProjectMaterialLog::create([
-                'period_id' => $wbsPhase->id,
+                'wbs_id' => $wbsPhase->id,
                 'work_item_id' => null,
                 'supplier_name' => $supplierName ?: 'Unknown',
                 'material_type' => $materialType ?: 'Unknown',
@@ -795,7 +888,7 @@ class AdaptiveWorkbookImport
             }
 
             ProjectEquipmentLog::create([
-                'period_id' => $wbsPhase->id,
+                'wbs_id' => $wbsPhase->id,
                 'work_item_id' => null,
                 'vendor_name' => $vendorName,
                 'equipment_name' => $equipmentName,
@@ -845,21 +938,14 @@ class AdaptiveWorkbookImport
 
     private function refreshPeriodTotals(ProjectWbs $wbsPhase): void
     {
-        $hppPlan = ProjectWorkItem::where('period_id', $wbsPhase->id)
+        $rabInternal = ProjectWorkItem::where('wbs_id', $wbsPhase->id)
             ->whereNull('parent_id')
             ->where('is_total_row', false)
             ->sum('total_budget');
 
-        $hppActual = ProjectWorkItem::where('period_id', $wbsPhase->id)
-            ->whereNull('parent_id')
-            ->where('is_total_row', false)
-            ->sum('realisasi');
-
-        $wbsPhase->update([
-            'hpp_plan_total' => $hppPlan ?: $wbsPhase->hpp_plan_total,
-            'hpp_actual_total' => $hppActual ?: $wbsPhase->hpp_actual_total,
-            'hpp_deviation' => ($hppPlan ?: 0) - ($hppActual ?: 0),
-        ]);
+        if ($rabInternal) {
+            $wbsPhase->update(['rab_internal' => $rabInternal]);
+        }
     }
 
     private function assembleProjectData(array $payload, array $metadata, array $row): array

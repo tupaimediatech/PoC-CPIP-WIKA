@@ -609,4 +609,57 @@ class ProjectController extends Controller
         // Pola A: default flat tabular
         return new ProjectImport();
     }
+
+    /**
+     * Level 7 — risks + progress curve in one call.
+     * Replaces the two separate API calls in risk/page.tsx.
+     */
+    public function riskTimeline(Project $project): JsonResponse
+    {
+        // Risks
+        $risks = $project->risks()
+            ->orderByRaw("CASE status WHEN 'open' THEN 0 WHEN 'monitoring' THEN 1 WHEN 'mitigated' THEN 2 ELSE 3 END")
+            ->orderByRaw("CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END")
+            ->get();
+
+        // Progress curve
+        $curves = $project->progressCurves()
+            ->orderBy('week_number')
+            ->get();
+
+        $sCurve = null;
+        if ($curves->isNotEmpty()) {
+            $byMonth = $curves->groupBy(fn($c) => $c->week_date->format('M'));
+            $sCurve  = [
+                'months' => $byMonth->keys()->toArray(),
+                'plan'   => $byMonth->map(fn($g) => round((float) $g->last()->rencana_pct, 1))->values()->toArray(),
+                'actual' => $byMonth->map(fn($g) => round((float) $g->last()->realisasi_pct, 1))->values()->toArray(),
+            ];
+        }
+
+        $spi       = (float) $project->spi;
+        $spiStatus = match (true) {
+            $spi >= 1.0 => 'On Schedule',
+            $spi >= 0.9 => 'Slight Delay',
+            $spi >= 0.8 => 'Moderate Delay',
+            default     => 'Critical Delay',
+        };
+
+        return response()->json([
+            'data' => [
+                'risks'      => $risks,
+                'risks_meta' => [
+                    'total'                  => $risks->count(),
+                    'open_count'             => $risks->where('status', 'open')->count(),
+                    'critical_count'         => $risks->where('severity', 'critical')->count(),
+                    'total_financial_impact' => $risks->where('status', '!=', 'closed')
+                        ->sum(fn($r) => (float) $r->financial_impact_idr),
+                ],
+                'timeline'   => $project->timeline,
+                'spi_value'  => $spi,
+                'spi_status' => $spiStatus,
+                'sCurve'     => $sCurve,
+            ],
+        ]);
+    }
 }

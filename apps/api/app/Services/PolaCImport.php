@@ -88,17 +88,13 @@ class PolaCImport
             };
         }
 
-        // Update HPP totals
-        $hppPlan   = ProjectWorkItem::where('period_id', $period->id)
+        // Update RAB internal from computed work item totals
+        $rabInternal = ProjectWorkItem::where('wbs_id', $period->id)
             ->whereNull('parent_id')->where('is_total_row', false)->sum('total_budget');
-        $hppActual = ProjectWorkItem::where('period_id', $period->id)
-            ->whereNull('parent_id')->where('is_total_row', false)->sum('realisasi');
 
-        $period->update([
-            'hpp_plan_total'   => $hppPlan ?: $period->hpp_plan_total,
-            'hpp_actual_total' => $hppActual ?: $period->hpp_actual_total,
-            'hpp_deviation'    => ($hppPlan ?: 0) - ($hppActual ?: 0),
-        ]);
+        if ($rabInternal) {
+            $period->update(['rab_internal' => $rabInternal]);
+        }
 
         return [
             'total'                => $this->total,
@@ -201,8 +197,6 @@ class PolaCImport
             ]
         );
 
-        $totalPagu = ($meta['contract_value'] ?? 0) + ($meta['addendum_value'] ?? 0);
-
         $wbsName = $meta['name_of_work_phase'] ?? $meta['period'] ?? 'PEKERJAAN UMUM';
 
         // If period is in YYYY-MM format, transform to "PEKERJAAN XXX"
@@ -211,17 +205,16 @@ class PolaCImport
             $wbsName = $this->transformMonthToWbsName((int) $monthNum);
         }
 
+        // Propagate project_manager to the project record if found in file
+        if (!empty($meta['project_manager']) && empty($project->project_manager)) {
+            $project->update(['project_manager' => $meta['project_manager']]);
+        }
+
         $wbsPhase = ProjectWbs::updateOrCreate(
             ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
             [
-                'ingestion_file_id'  => $ingestionFileId,
-                'client_name'        => $meta['client_name'] ?? null,
-                'project_manager'    => $meta['project_manager'] ?? null,
-                'report_source'      => 'file_import',
-                'progress_total_pct' => $meta['progress_total_pct'] ?? null,
-                'contract_value'     => $meta['contract_value'] ?? null,
-                'addendum_value'     => $meta['addendum_value'] ?? null,
-                'total_pagu'         => $totalPagu ?: null,
+                'ingestion_file_id' => $ingestionFileId,
+                'report_source'     => 'file_import',
             ]
         );
 
@@ -268,10 +261,10 @@ class PolaCImport
 
             $itemNo   = trim((string) ($data['item_no'] ?? ''));
             $level    = $this->mapper->detectLevel($itemNo, $itemName);
-            $parentId = $level > 0 ? ($parentMap[$level - 1] ?? null) : null;
+            $parentId = $this->mapper->resolveParentId($level, $parentMap);
 
             $item = ProjectWorkItem::create([
-                'period_id'    => $periodId,
+                'wbs_id'    => $periodId,
                 'parent_id'    => $parentId,
                 'level'        => $level,
                 'item_no'      => $itemNo ?: null,
@@ -327,7 +320,7 @@ class PolaCImport
                           str_contains(strtolower($materialType), 'potongan');
 
             ProjectMaterialLog::create([
-                'period_id'     => $periodId,
+                'wbs_id'     => $periodId,
                 'work_item_id'  => null,
                 'supplier_name' => $supplierName ?: 'Unknown',
                 'material_type' => $materialType ?: 'Unknown',
@@ -384,7 +377,7 @@ class PolaCImport
             $this->total++;
 
             ProjectEquipmentLog::create([
-                'period_id'      => $periodId,
+                'wbs_id'      => $periodId,
                 'work_item_id'   => null,
                 'vendor_name'    => $vendorName,
                 'equipment_name' => $equipmentName,
