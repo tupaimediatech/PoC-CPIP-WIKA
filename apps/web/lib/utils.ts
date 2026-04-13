@@ -12,14 +12,18 @@ export function toNum(value: string | number | null | undefined): number {
 }
 
 /**
- * Format angka (dalam Juta) jadi tampilan currency.
- * >= 1000 M → Triliun, sisanya → Miliar
+ * Format angka (dalam Juta) jadi tampilan currency IDR penuh.
+ *
+ * Konversi: Juta × 1.000.000 → IDR, lalu format dengan titik ribuan.
+ *   - 2.800 Juta  → "Rp2.800.000.000"
+ *   - 87.263 Juta  → "Rp87.263.000.000"
+ *   - 1.750 Juta  → "Rp1.750.000.000"
  */
-export function formatCurrency(valueInMillion: string | number | null | undefined): string {
-  const val = toNum(valueInMillion);
+export function formatCurrency(valueInJuta: string | number | null | undefined): string {
+  const val = toNum(valueInJuta);
   if (Number.isNaN(val)) return '—';
-  if (val >= 1000) return `Rp ${(val / 1000).toFixed(2)} T`;
-  return `Rp ${val.toFixed(0)} M`;
+  const idr = Math.round(val * 1_000_000);
+  return `Rp${idr.toLocaleString('id-ID')}`;
 }
 
 /**

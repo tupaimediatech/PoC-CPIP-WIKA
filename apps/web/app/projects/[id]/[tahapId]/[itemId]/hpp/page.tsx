@@ -7,50 +7,37 @@ import PageHeader from "@/components/analytics/PageHeader";
 import ActionButton from "@/components/analytics/ActionButton";
 import BackButton from "@/components/analytics/BackButton";
 import { projectApi, periodApi } from "@/lib/api";
-import type { InsightResponse, WorkItemLevel4 } from "@/types/project";
-import { DEMO_MODE } from "@/lib/demo";
-import mockData from "@/data/mock-data.json";
-
-function formatM(value: number): string {
-  const formatted = (value / 1_000_000_000).toFixed(1);
-  return `Rp${formatted} M`;
-}
+import type { InsightResponse, HppSummaryResponse } from "@/types/project";
+import { formatCurrency } from "@/lib/utils";
 
 export default function Level6Page() {
   const params = useParams();
   const projectId = Number(params.id);
   const tahapId = Number(params.tahapId);
-  const itemId = Number(params.itemId);
 
   const [insight, setInsight] = useState<InsightResponse | null>(null);
-  const [apiData, setApiData] = useState<any | null>(null);
-  const [workItem, setWorkItem] = useState<WorkItemLevel4 | null>(null);
+  const [hpp, setHpp] = useState<HppSummaryResponse["data"] | null>(null);
+  const [cpi, setCpi] = useState<number | null>(null);
+  const [phaseName, setPhaseName] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (DEMO_MODE) {
-      setApiData(mockData.level6.apiRawData); // Asumsi struktur mock mengikuti API
-      setInsight({ summary: mockData.level6.summaryInsight, recommendations: [] } as unknown as InsightResponse);
-      const items = (mockData.level4 as any).items;
-      setWorkItem(items.find((i: any) => i.id === itemId) ?? items[0] ?? null);
-      setLoading(false);
-      return;
-    }
-
     Promise.all([
       projectApi.insight(projectId),
-      periodApi.workItems(tahapId), // Mengambil data sesuai JSON yang Anda berikan
+      projectApi.detail(projectId),
+      periodApi.hppSummary(tahapId),
+      projectApi.periods(projectId),
     ])
-      .then(([insightRes, workItemsRes]) => {
+      .then(([insightRes, detailRes, hppRes, periodsRes]) => {
         setInsight(insightRes);
-        setApiData(workItemsRes.data);
-
-        const found = workItemsRes.data.items.find((i: any) => i.id === itemId);
-        setWorkItem(found ?? null);
+        setCpi(parseFloat(detailRes.data.cpi ?? "0"));
+        setHpp(hppRes.data);
+        const phase = periodsRes.data.phases?.find((p: any) => p.id === tahapId);
+        setPhaseName(phase?.name ?? periodsRes.data.project_name ?? "Project");
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [projectId, tahapId, itemId]);
+  }, [projectId, tahapId]);
 
   if (loading)
     return (
@@ -60,110 +47,75 @@ export default function Level6Page() {
       </div>
     );
 
-  // --- LOGIKA PERHITUNGAN DATA API ---
-
-  const totalRABInternal = apiData?.rabInternal || 0;
-  const totalBQExternal = apiData?.bqExternal || 0;
-
-  // 1. Hitung Actual Cost (AC) -> Total dari kolom 'realisasi'
-  const totalActualCost = apiData?.items?.reduce((acc: number, curr: any) => acc + (Number(curr.realisasi) || 0), 0) || 0;
-
-  // 2. Hitung Earned Value (EV) -> Total dari kolom 'totalBiaya' (Budgeted Cost of Work Performed)
-  const totalEarnedValue = apiData?.items?.reduce((acc: number, curr: any) => acc + (Number(curr.totalBiaya) || 0), 0) || 0;
-
-  // 3. Hitung CPI (CPI = EV / AC)
-  const calculatedCPI = totalActualCost > 0 ? totalEarnedValue / totalActualCost : 0;
-
-  const cpiColor = calculatedCPI >= 1.0 ? "text-green-600" : calculatedCPI >= 0.9 ? "text-yellow-600" : "text-red-600";
-  const cpiStatus = calculatedCPI >= 1.0 ? "Under Budget" : calculatedCPI >= 0.9 ? "Near Budget" : "Over Budget";
-
-  // Data baris tabel HPP
-  const hppRows = [
-    {
-      id: 1,
-      name: "Biaya Langsung (BL)",
-      sub: "(Material, Upah, Alat, Subkon)",
-      tender: totalBQExternal * 0.85,
-      rkp: totalRABInternal * 0.85,
-      actual: totalActualCost * 0.85,
-    },
-    {
-      id: 2,
-      name: "Biaya Tidak Langsung (BTL)",
-      sub: "(Sekretariat, Pegawai, Kendaraan, Umum)",
-      tender: totalBQExternal * 0.15,
-      rkp: totalRABInternal * 0.15,
-      actual: totalActualCost * 0.15,
-    },
-  ];
+  const cpiVal = cpi ?? 0;
+  const cpiColor = cpiVal >= 1.0 ? "text-green-600" : cpiVal >= 0.9 ? "text-yellow-600" : "text-red-600";
+  const cpiStatus = cpiVal >= 1.0 ? "Under Budget" : cpiVal >= 0.9 ? "Near Budget" : "Over Budget";
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
       <PageHeader
-        title={`Level 6 Analisa HPP & CPI - ${apiData?.tahap || "Project"}`}
-        pills={[
-          { label: "Tahap", value: apiData?.tahap || "-" },
-          ...(workItem ? [{ label: "Item", value: workItem.name }] : []),
-          ...(workItem ? [{ label: "Volume", value: `${workItem.volume} ${workItem.unit}` }] : []),
-        ]}
+        title={`Level 6 Analisa HPP & CPI - ${phaseName}`}
+        pills={[{ label: "Tahap", value: phaseName }]}
         onExport={() => {}}
       />
 
-      {/* Tabel HPP */}
-      <div className="overflow-hidden border border-gray-100 rounded-xl mb-8">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-[#F9FAFB] border-b border-gray-100">
-              <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase w-12">#</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase">Komponen HPP</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase">HPP Tender (BQ)</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase">HPP RKP (Internal)</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase">Realization (Actual)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {hppRows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{row.id}</td>
-                <td className="px-4 py-4">
-                  <p className="text-[14px] font-semibold text-[#1B1C1F]">{row.name}</p>
-                  <p className="text-[12px] text-gray-400 mt-1">{row.sub}</p>
-                </td>
-                <td className="px-4 py-4 text-[14px] text-gray-700 font-medium">{formatM(row.tender)}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700 font-medium">{formatM(row.rkp)}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700 font-medium">{formatM(row.actual)}</td>
+      {hpp && hpp.rows.length > 0 ? (
+        <div className="overflow-hidden border border-gray-100 rounded-xl mb-8">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-[#F9FAFB] border-b border-gray-100">
+                <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">
+                  Komponen HPP (Harga Pokok Produksi)
+                </th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">HPP Tender</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">HPP RKP</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Realization</th>
               </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="bg-[#F9FAFB] border-t-2">
-              <td className="px-6 py-4" />
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">TOTAL HPP</td>
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatM(totalBQExternal)}</td>
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatM(totalRABInternal)}</td>
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatM(totalActualCost)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {hpp.rows.map((row, idx) => (
+                <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium align-top">{idx + 1}</td>
+                  <td className="px-4 py-4">
+                    <p className="text-[14px] font-semibold text-[#1B1C1F]">{row.name}</p>
+                    <p className="text-[12px] text-gray-400 mt-1">({row.sub})</p>
+                  </td>
+                  <td className="px-4 py-4 text-[14px] text-gray-700 font-medium text-left align-top">{formatCurrency(row.budget)}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-700 font-medium text-left align-top">{formatCurrency(row.budget)}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-700 font-medium text-left align-top">{formatCurrency(row.realisasi)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-[#F9FAFB] border-t-2">
+                <td className="px-6 py-4" />
+                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">TOTAL HPP</td>
+                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-left">{formatCurrency(hpp.total_budget)}</td>
+                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-left">{formatCurrency(hpp.total_budget)}</td>
+                <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-left">{formatCurrency(hpp.total_realisasi)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      ) : (
+        <div className="mb-8 py-10 text-center text-gray-400 border border-gray-100 rounded-xl">No HPP data available for this period</div>
+      )}
 
-      {/* Visual Indicator */}
+      {/* Visual Indicator section */}
       <h3 className="text-[16px] font-bold text-[#1B1C1F] mb-4">Visual Indicator</h3>
       <div className="grid grid-cols-2 gap-6 mb-8">
-        {/* CPI Card */}
         <div className="border border-gray-100 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-7 h-7 bg-[#2563EB] rounded-lg flex items-center justify-center">
               <ChartBarIcon size={16} className="text-white" weight="fill" />
             </div>
-            <span className="text-[14px] font-bold text-[#1B1C1F]">Cost Performance Index (CPI)</span>
+            <span className="text-[14px] font-bold text-[#1B1C1F]">Cost Performance Index</span>
           </div>
-          <p className={`text-[48px] font-bold text-center mb-2 ${cpiColor}`}>{calculatedCPI.toFixed(2)}</p>
+          <p className={`text-[48px] font-bold text-center mb-2 ${cpiColor}`}>{cpiVal.toFixed(2)}</p>
           <p className="text-[14px] font-bold text-center text-[#1B1C1F]">{cpiStatus}</p>
-          <p className="text-[11px] text-gray-400 text-center mt-4 italic">Rumus: Total Budgeted Cost / Total Actual Cost</p>
         </div>
 
-        {/* Insight Card */}
         <div className="border border-gray-100 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-7 h-7 bg-[#2563EB] rounded-lg flex items-center justify-center">
@@ -171,13 +123,13 @@ export default function Level6Page() {
             </div>
             <span className="text-[14px] font-bold text-[#1B1C1F]">Summary Insight</span>
           </div>
-          <p className="text-[14px] text-gray-600 leading-relaxed">{insight?.summary.text ?? "Data insight belum tersedia untuk periode ini."}</p>
+          <p className="text-[14px] text-gray-600 leading-relaxed">{insight?.summary.text ?? "No insight available."}</p>
         </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <BackButton label="Back to Dashboard" href={`/projects/${projectId}`} />
-        <ActionButton label="Cek Risk & Timeline" href={`/projects/${projectId}/${tahapId}/${itemId}/risk`} />
+        <BackButton label="Back to Level 5" href={`/projects/${params.id}/${params.tahapId}/${params.itemId}`} />
+        <ActionButton label="Cek Risk & Timeline" href={`/projects/${params.id}/${params.tahapId}/${params.itemId}/risk`} />
       </div>
     </div>
   );

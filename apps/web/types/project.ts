@@ -190,7 +190,8 @@ export interface FilterOptionsResponse {
   year: number[];
   consultant: string[];
   profit_center: string[];
-  project_duration: string[];
+  type_of_contract: string[];
+  partner_name: string[];
 }
 
 export interface SummaryResponse {
@@ -248,7 +249,57 @@ export interface WorkItemLevel4ListResponse {
   };
 }
 
-// Level 5 — material/vendor
+// Level 5 — work item detail (vendor/contract monitoring)
+export interface WorkItemDetailLevel5 {
+  id: number;
+  item_name: string;
+  item_no: string | null;
+  tahap: string | null;
+  volume: number;
+  satuan: string | null;
+  harsat_internal: number;
+  total_budget: number;
+  realisasi: number;
+  cost_category: string | null;
+  cost_subcategory: string | null;
+  bobot_pct: number;
+  progress_plan_pct: number;
+  progress_actual_pct: number;
+  planned_value: number;
+  earned_value: number;
+  actual_cost_item: number;
+  harsat_actual: number;
+  vendor_name: string | null;
+  po_number: string | null;
+  vendor_contract_value: number;
+  termin_paid: number;
+  retention: number;
+  outstanding_debt: number;
+  data_source: string | null;
+  notes: string | null;
+}
+
+export interface WorkItemDetailResponse {
+  data: WorkItemDetailLevel5;
+}
+
+// Level 6 — HPP summary
+export interface HppRow {
+  name: string;
+  sub: string;
+  budget: number;
+  realisasi: number;
+}
+
+export interface HppSummaryResponse {
+  data: {
+    rows: HppRow[];
+    total_budget: number;
+    total_realisasi: number;
+  };
+}
+
+// Level 5 — material/vendor (legacy)
 export interface MaterialLogLevel5 {
   id: number;
   material_type: string | null;
@@ -326,6 +377,13 @@ export interface ProgressCurveResponse {
   };
 }
 
+export interface AffectedProject {
+  id: number;
+  project_code: string;
+  project_name: string;
+  status: ProjectStatus;
+}
+
 export interface FileUploadResult {
   file_id: number;
   file_name: string;
@@ -343,6 +401,7 @@ export interface FileUploadResult {
   field_conflicts?: Record<string, unknown>;
   project_row_trace?: Record<string, unknown>;
   project_row_conflicts?: Record<string, unknown>;
+  projects_affected?: AffectedProject[];
 }
 
 export interface UploadResponse {
