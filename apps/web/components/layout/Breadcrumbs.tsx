@@ -1,6 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import React from "react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   HouseIcon,
@@ -19,25 +21,21 @@ import { projectApi, periodApi } from "@/lib/api";
 type BreadcrumbItem = {
   Icon: React.ElementType<IconProps>;
   label: string;
+  href?: string;
 };
 
 const STATIC_BREADCRUMBS: Record<string, BreadcrumbItem[]> = {
   "/": [
-    { Icon: HouseIcon, label: "Home" },
+    { Icon: HouseIcon, label: "Home", href: "/" },
     { Icon: PresentationChartIcon, label: "Infographic Summary" },
   ],
   "/projects": [
-    { Icon: ChartBarIcon, label: "Projects Analytics" },
+    { Icon: ChartBarIcon, label: "Projects Analytics", href: "/" },
     { Icon: FileTextIcon, label: "All Projects" },
-    { Icon: FunnelIcon, label: "Filtered Results" },
   ],
   "/upload": [
-    { Icon: HouseIcon, label: "Home" },
+    { Icon: HouseIcon, label: "Home", href: "/" },
     { Icon: UploadIcon, label: "Data Management" },
-  ],
-  "/reports": [
-    { Icon: PresentationChartIcon, label: "Projects Analytics" },
-    { Icon: FileTextIcon, label: "Reports & Pareto" },
   ],
 };
 
@@ -62,8 +60,8 @@ function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
     }
 
     const base: BreadcrumbItem[] = [
-      { Icon: ChartBarIcon, label: "Projects Analytics" },
-      { Icon: FileTextIcon, label: "All Projects" },
+      { Icon: ChartBarIcon, label: "Projects Analytics", href: "/" },
+      { Icon: FileTextIcon, label: "All Projects", href: "/projects" },
     ];
 
     const fetches: Promise<void>[] = [];
@@ -106,16 +104,28 @@ function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
 
     Promise.all(fetches).then(() => {
       // Level 3: project detail
-      base.push({ Icon: FileTextIcon, label: projectName });
+      base.push({
+        Icon: FileTextIcon,
+        label: projectName,
+        href: `/projects/${projectId}`,
+      });
 
       if (tahapId && !isNaN(tahapId)) {
         // Level 4: phase detail
-        base.push({ Icon: TreeStructureIcon, label: phaseName });
+        base.push({
+          Icon: TreeStructureIcon,
+          label: phaseName,
+          href: `/projects/${projectId}/${tahapId}`,
+        });
       }
 
       if (itemId && !isNaN(itemId)) {
         // Level 5: work item detail
-        base.push({ Icon: BuildingOfficeIcon, label: itemName });
+        base.push({
+          Icon: BuildingOfficeIcon,
+          label: itemName,
+          href: `/projects/${projectId}/${tahapId}/${itemId}`,
+        });
       }
 
       if (lastSeg === "hpp") {
@@ -143,8 +153,8 @@ export default function Breadcrumbs() {
   } else if (pathname.startsWith("/projects/")) {
     // Still loading dynamic breadcrumbs
     items = [
-      { Icon: ChartBarIcon, label: "Projects Analytics" },
-      { Icon: FileTextIcon, label: "All Projects" },
+      { Icon: ChartBarIcon, label: "Projects Analytics", href: "/" },
+      { Icon: FileTextIcon, label: "All Projects", href: "/projects" },
       { Icon: FileTextIcon, label: "..." },
     ];
   } else {
@@ -159,16 +169,20 @@ export default function Breadcrumbs() {
             const isLast = index === items.length - 1;
             const { Icon } = item;
 
+            const content = (
+              <div className={`flex items-center gap-1.5 ${!isLast && item.href ? "cursor-pointer hover:opacity-70 transition-opacity" : ""}`}>
+                <span className={isLast ? "text-gray-900" : "text-gray-500"}>
+                  <Icon size={14} weight={isLast ? "fill" : "regular"} />
+                </span>
+                <span className={`text-[12px] ${isLast ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>{item.label}</span>
+              </div>
+            );
+
             return (
               <div key={index} className="flex items-center gap-2">
                 {index > 0 && <CaretRightIcon size={8} className="text-gray-400" />}
 
-                <div className="flex items-center gap-1.5">
-                  <span className={isLast ? "text-gray-900" : "text-gray-500"}>
-                    <Icon size={14} weight={isLast ? "fill" : "regular"} />
-                  </span>
-                  <span className={`text-[12px] ${isLast ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>{item.label}</span>
-                </div>
+                {!isLast && item.href ? <Link href={item.href}>{content}</Link> : content}
               </div>
             );
           })}

@@ -57,7 +57,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="fixed top-0 left-0 h-screen flex flex-col bg-sidebar border-r border-gray-200 text-dark-gray antialiased transition-[width] duration-300 ease-in-out overflow-hidden"
+      className="fixed top-5 left-0 h-screen flex flex-col bg-sidebar border-r border-gray-200 text-dark-gray antialiased transition-[width] duration-300 ease-in-out overflow-hidden"
       style={{ width: `${width}px` }}
     >
       <div
