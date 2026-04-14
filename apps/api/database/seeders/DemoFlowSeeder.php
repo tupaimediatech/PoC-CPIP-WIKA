@@ -10,6 +10,7 @@ use App\Models\ProjectMaterialLog;
 use App\Models\ProjectEquipmentLog;
 use App\Models\ProjectProgressCurve;
 use App\Models\ProjectRisk;
+use App\Models\ProjectHppItem;
 use Illuminate\Database\Seeder;
 
 class DemoFlowSeeder extends Seeder
@@ -417,6 +418,185 @@ class DemoFlowSeeder extends Seeder
         $this->command->info("   - Excavation equipment → work_item_id: {$excavationEmbankment->id}");
         $this->command->info("   - Soil Improvement equipment → work_item_id: {$soilImprovement->id}");
         $this->command->info("   - Flexible Pavement equipment → work_item_id: {$flexiblePavement->id}");
+
+        // ============================================================
+        // LEVEL 6: HPP ITEMS (HPP Tender / HPP RKP / Realization)
+        // ============================================================
+
+        // HPP for Clearing & Grubbing
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $clearingGrubbing->id, 'resource_name' => 'Jasa Potong Rumput & Pembersihan'],
+            [
+                'resource_type'          => 'subkon',
+                'volume'                 => 125000,
+                'satuan'                 => 'm2',
+                'hpp_tender'             => 18000,
+                'hpp_rkp'                => 15000,
+                'realisasi'              => 14000,
+                'total_tender'           => 2250000000,
+                'total_rkp'              => 1875000000,
+                'total_realisasi'        => 1750000000,
+                'deviasi_rkp_realisasi'  => 125000000,
+                'deviasi_pct'            => 6.6667,
+            ]
+        );
+
+        // HPP for Excavation & Embankment
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $excavationEmbankment->id, 'resource_name' => 'Material Timbunan (Tanah Merah)'],
+            [
+                'resource_type'          => 'material',
+                'volume'                 => 450000,
+                'satuan'                 => 'm3',
+                'hpp_tender'             => 95000,
+                'hpp_rkp'                => 85000,
+                'realisasi'              => 82000,
+                'total_tender'           => 42750000000,
+                'total_rkp'              => 38250000000,
+                'total_realisasi'        => 36900000000,
+                'deviasi_rkp_realisasi'  => 1350000000,
+                'deviasi_pct'            => 3.5294,
+            ]
+        );
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $excavationEmbankment->id, 'resource_name' => 'Operator Excavator'],
+            [
+                'resource_type'          => 'upah',
+                'volume'                 => 1800,
+                'satuan'                 => 'jam',
+                'hpp_tender'             => 150000,
+                'hpp_rkp'                => 120000,
+                'realisasi'              => 125000,
+                'total_tender'           => 270000000,
+                'total_rkp'              => 216000000,
+                'total_realisasi'        => 225000000,
+                'deviasi_rkp_realisasi'  => -9000000,
+                'deviasi_pct'            => -4.1667,
+            ]
+        );
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $excavationEmbankment->id, 'resource_name' => 'Excavator Komatsu PC200-8'],
+            [
+                'resource_type'          => 'alat',
+                'volume'                 => 1800,
+                'satuan'                 => 'jam',
+                'hpp_tender'             => 600000,
+                'hpp_rkp'                => 550000,
+                'realisasi'              => 550000,
+                'total_tender'           => 1080000000,
+                'total_rkp'              => 990000000,
+                'total_realisasi'        => 990000000,
+                'deviasi_rkp_realisasi'  => 0,
+                'deviasi_pct'            => 0,
+            ]
+        );
+
+        // HPP for Soil Improvement
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $soilImprovement->id, 'resource_name' => 'Prefabricated Vertical Drain (PVD)'],
+            [
+                'resource_type'          => 'material',
+                'volume'                 => 85000,
+                'satuan'                 => 'meter',
+                'hpp_tender'             => 520000,
+                'hpp_rkp'                => 450000,
+                'realisasi'              => 460000,
+                'total_tender'           => 44200000000,
+                'total_rkp'              => 38250000000,
+                'total_realisasi'        => 39100000000,
+                'deviasi_rkp_realisasi'  => -850000000,
+                'deviasi_pct'            => -2.2222,
+            ]
+        );
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $soilImprovement->id, 'resource_name' => 'PVD Installation Machine'],
+            [
+                'resource_type'          => 'alat',
+                'volume'                 => 1200,
+                'satuan'                 => 'jam',
+                'hpp_tender'             => 1350000,
+                'hpp_rkp'                => 1200000,
+                'realisasi'              => 1200000,
+                'total_tender'           => 1620000000,
+                'total_rkp'              => 1440000000,
+                'total_realisasi'        => 1440000000,
+                'deviasi_rkp_realisasi'  => 0,
+                'deviasi_pct'            => 0,
+            ]
+        );
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $soilImprovement->id, 'resource_name' => 'Tukang Pasang PVD'],
+            [
+                'resource_type'          => 'upah',
+                'volume'                 => 2400,
+                'satuan'                 => 'jam',
+                'hpp_tender'             => 100000,
+                'hpp_rkp'                => 85000,
+                'realisasi'              => 88000,
+                'total_tender'           => 240000000,
+                'total_rkp'              => 204000000,
+                'total_realisasi'        => 211200000,
+                'deviasi_rkp_realisasi'  => -7200000,
+                'deviasi_pct'            => -3.5294,
+            ]
+        );
+
+        // HPP for Flexible Pavement
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $flexiblePavement->id, 'resource_name' => 'Aspal Hotmix AC-WC'],
+            [
+                'resource_type'          => 'material',
+                'volume'                 => 280000,
+                'satuan'                 => 'm2',
+                'hpp_tender'             => 950000,
+                'hpp_rkp'                => 850000,
+                'realisasi'              => 780000,
+                'total_tender'           => 266000000000,
+                'total_rkp'              => 238000000000,
+                'total_realisasi'        => 218400000000,
+                'deviasi_rkp_realisasi'  => 19600000000,
+                'deviasi_pct'            => 8.2353,
+            ]
+        );
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $flexiblePavement->id, 'resource_name' => 'Asphalt Mixing Plant (AMP)'],
+            [
+                'resource_type'          => 'alat',
+                'volume'                 => 450,
+                'satuan'                 => 'jam',
+                'hpp_tender'             => 4000000,
+                'hpp_rkp'                => 3500000,
+                'realisasi'              => 3500000,
+                'total_tender'           => 1800000000,
+                'total_rkp'              => 1575000000,
+                'total_realisasi'        => 1575000000,
+                'deviasi_rkp_realisasi'  => 0,
+                'deviasi_pct'            => 0,
+            ]
+        );
+        ProjectHppItem::updateOrCreate(
+            ['work_item_id' => $flexiblePavement->id, 'resource_name' => 'Pekerjaan Gelar & Compaction'],
+            [
+                'resource_type'          => 'subkon',
+                'volume'                 => 1,
+                'satuan'                 => 'ls',
+                'hpp_tender'             => 8500000000,
+                'hpp_rkp'                => 7500000000,
+                'realisasi'              => 7200000000,
+                'total_tender'           => 8500000000,
+                'total_rkp'              => 7500000000,
+                'total_realisasi'        => 7200000000,
+                'deviasi_rkp_realisasi'  => 300000000,
+                'deviasi_pct'            => 4.0,
+            ]
+        );
+
+        $this->command->info("✅ Level 6: Created HPP items (Tender/RKP/Realization)");
+        $this->command->info("   HPP Items linked to work_item_id:");
+        $this->command->info("   - Clearing & Grubbing → {$clearingGrubbing->id} (1 resource)");
+        $this->command->info("   - Excavation → {$excavationEmbankment->id} (3 resources)");
+        $this->command->info("   - Soil Improvement → {$soilImprovement->id} (3 resources)");
+        $this->command->info("   - Flexible Pavement → {$flexiblePavement->id} (3 resources)");
 
         // ============================================================
         // LEVEL 7B: PROGRESS CURVE (S-Curve data)

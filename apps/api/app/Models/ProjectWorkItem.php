@@ -76,4 +76,9 @@ class ProjectWorkItem extends Model
     {
         return $this->hasMany(ProjectEquipmentLog::class, 'work_item_id');
     }
+
+    public function hppItems(): HasMany
+    {
+        return $this->hasMany(ProjectHppItem::class, 'work_item_id');
+    }
 }

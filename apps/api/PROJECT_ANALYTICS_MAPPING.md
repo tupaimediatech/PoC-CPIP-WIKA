@@ -191,45 +191,48 @@
 
 ---
 
-### Level 6: Analisa HPP & CPI
+### Level 6: Analisa HPP (Tender / RKP / Realisasi)
 
 **Frontend Route:** `/projects/[id]/[tahapId]/[itemId]/hpp`
 
-**API Endpoint:** `GET /api/projects/{id}/insight`
+**API Endpoints:**
+- `GET /api/work-items/{workItem}/hpp` — HPP items for a specific work item
+- `GET /api/wbs-phases/{wbsModel}/hpp` — All HPP items aggregated for entire WBS phase
 
-**Primary Tables:** `projects`, `project_wbs`, `project_work_items`
+**Primary Tables:** `project_work_items`, `project_hpp_items`
 
-**Columns Used - projects:**
-```php
-- id               // Project ID
-- project_code     // Display
-- project_name     // Display
-- planned_cost     // For HPP calculation
-- actual_cost      // For HPP calculation
-- contract_value   // For profit calculation
-- cpi              // CPI indicator
-- status           // Status display
-```
-
-**Columns Used - project_wbs:**
-```php
-- hpp_plan_total   // Planned HPP aggregate
-- hpp_actual_total // Actual HPP aggregate
-- hpp_deviation    // HPP deviation
-```
+**project_hpp_items is a child table from project_work_items!**
 
 **Columns Used - project_work_items:**
 ```php
-- total_budget     // Per-item budget
-- realisasi        // Per-item realization
-- deviasi          // Per-item deviation
+- id               // itemId (used as workItem parameter)
+- item_name        // Item name display
+- total_budget     // Budget display
+- realisasi        // Realization display
+```
+
+**Columns Used - project_hpp_items:**
+```php
+- id                      // HPP Item ID
+- work_item_id            // FK to project_work_items (FILTERED by this)
+- resource_type           // material | upah | alat | subkon | overhead
+- resource_name           // e.g. "Beton K-350", "Tukang Batu", "Excavator PC200"
+- hpp_tender              // Unit price at tender/BQ stage (IDR)
+- hpp_rkp                 // Unit price at internal plan/RKP stage (IDR)
+- realisasi               // Actual unit price (IDR)
+- total_tender            // volume × hpp_tender (stored)
+- total_rkp               // volume × hpp_rkp (stored)
+- total_realisasi         // volume × realisasi (stored)
+- deviasi_rkp_realisasi   // total_rkp - total_realisasi
+- deviasi_pct             // (deviasi / total_rkp) * 100
 ```
 
 **Display Data:**
-- HPP breakdown (Biaya Langsung vs Biaya Tidak Langsung)
-- Plan vs Actual comparisons
-- CPI indicator with visual status
-- Summary insights
+- HPP breakdown by resource type (material, upah, alat, subkon, overhead)
+- 3-way cost comparison: HPP Tender vs HPP RKP vs Realisasi per resource
+- Summary totals (aggregate tender, RKP, realisasi across all resources)
+- Deviasi per resource (positive = under budget, negative = over budget)
+- CPI from projects table for overall status indicator
 - Action button: "Cek Risk & Timeline" (to Level 7A/7B)
 
 ---
@@ -301,9 +304,9 @@
 
 ```
 projects (1) ──── (N) project_wbs ──── (N) project_work_items
-    │                    │                      
-    │ (1)                │ (1)                  
-    │                    │                      
+    │                    │                      │
+    │ (1)                │ (1)                  ├──(N) project_hpp_items [Level 6]
+    │                    │                      │
     └──(N) project_progress_curves      (N) project_material_logs
                           │                      
                           │ (1)                  
@@ -440,6 +443,7 @@ ingestion_files (1) ──── (N) project_wbs
 | `project_work_items` | Level 3, 4 | Work breakdown structure, HPP items |
 | `project_material_logs` | Level 5 | Material/vendor tracking |
 | `project_equipment_logs` | Level 5 | Equipment/vendor tracking |
+| `project_hpp_items` | Level 6 | HPP Tender/RKP/Realisasi per resource |
 | `project_progress_curves` | Level 7B | Weekly S-curve timeline data |
 | `project_risks` | Level 7A | Risk register |
 
@@ -455,6 +459,7 @@ ingestion_files (1) ──── (N) project_wbs
 | `project_material_logs` | `work_item_id` | `project_work_items` | `id` | Many-to-One (opt) |
 | `project_equipment_logs` | `period_id` | `project_wbs` | `id` | Many-to-One |
 | `project_equipment_logs` | `work_item_id` | `project_work_items` | `id` | Many-to-One (opt) |
+| `project_hpp_items` | `work_item_id` | `project_work_items` | `id` | Many-to-One |
 | `project_progress_curves` | `project_id` | `projects` | `id` | Many-to-One |
 | `project_risks` | `project_id` | `projects` | `id` | Many-to-One |
 | `projects` | `ingestion_file_id` | `ingestion_files` | `id` | Many-to-One (opt) |
@@ -480,6 +485,7 @@ ingestion_files (1) ──── (N) project_wbs
 | `project_work_items` | WBS/HPP breakdown | `id` |
 | `project_material_logs` | Material tracking | `id` |
 | `project_equipment_logs` | Equipment tracking | `id` |
+| `project_hpp_items` | HPP Tender/RKP/Realisasi | `id` |
 | `project_progress_curves` | Weekly S-curve data | `id` |
 | `project_risks` | Risk register | `id` |
 | `ingestion_files` | Excel upload tracking | `id` |
@@ -537,6 +543,10 @@ GET    /api/work-items/{workItem}/materials            - Materials filtered by S
 # Equipment (IMPORTANT: Two different endpoints)
 GET    /api/wbs-phases/{wbsModel}/equipment            - ALL equipment for WBS phase (not filtered by work item)
 GET    /api/work-items/{workItem}/equipment            - Equipment filtered by SPECIFIC work item only
+
+# HPP Analysis (Level 6 - NEW)
+GET    /api/work-items/{workItem}/hpp                  - HPP items for SPECIFIC work item (Tender/RKP/Realisasi)
+GET    /api/wbs-phases/{wbsModel}/hpp                  - ALL HPP items aggregated for entire WBS phase
 ```
 
 ### Deprecated Endpoints

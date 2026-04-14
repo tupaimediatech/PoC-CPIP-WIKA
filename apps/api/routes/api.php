@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ColumnAliasController;
 use App\Http\Controllers\EquipmentLogController;
 use App\Http\Controllers\HarsatController;
+use App\Http\Controllers\HppItemController;
 use App\Http\Controllers\MaterialLogController;
 use App\Http\Controllers\ProgressCurveController;
 use App\Http\Controllers\ProjectController;
@@ -41,6 +42,10 @@ Route::get('/wbs-phases/{wbsModel}/equipment',                [EquipmentLogContr
 // Work item specific endpoints (Level 5 - per work item)
 Route::get('/work-items/{workItem}/materials',                [MaterialLogController::class, 'showByWorkItem']);
 Route::get('/work-items/{workItem}/equipment',                [EquipmentLogController::class, 'showByWorkItem']);
+
+// Level 6 — HPP analysis
+Route::get('/work-items/{workItem}/hpp',                      [HppItemController::class, 'index']);
+Route::get('/wbs-phases/{wbsModel}/hpp',                      [HppItemController::class, 'indexByWbs']);
 
 Route::get('/projects/{project}/progress-curve',   [ProgressCurveController::class, 'index']);
 Route::get('/projects/{project}/risks',            [ProjectRiskController::class, 'index']);
