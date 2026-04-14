@@ -35,6 +35,7 @@ class WorkbookFieldMapper
             'project_name',
             'project_year',
             'division',
+            'sbu',
             'owner',
             'client_name',
             'project_manager',
@@ -81,6 +82,9 @@ class WorkbookFieldMapper
             'outstanding_debt',
             'data_source',
             'notes',
+            'cpi',
+            'spi',
+            'sbu',
         ],
         'material' => [
             'supplier_name',
@@ -238,15 +242,21 @@ class WorkbookFieldMapper
             'periode_laporan' => 'period',
             'bulan' => 'period',
             'periode' => 'period',
+            'pemberi_tugas' => 'client_name',
+            'sbu_utama' => 'sbu',
+            'sbu' => 'sbu',
+            'durasi' => 'planned_duration',
         ],
         'work_item' => [
             'nomor' => 'item_no',
             'no' => 'item_no',
             'a_no' => 'item_no',
+            'wbs' => 'item_no',
             'nama_item' => 'item_name',
             'uraian' => 'item_name',
-            'kategori' => 'item_name',
-            'kateogri' => 'item_name',
+            'uraian_pekerjaan' => 'item_name',
+            'kategori' => 'cost_category',
+            'kateogri' => 'cost_category',
             'item_pekerjaan' => 'item_name',
             'b_item_pekerjaan' => 'item_name',
             // Volume, unit, unit price
@@ -257,6 +267,7 @@ class WorkbookFieldMapper
             'harga_satuan' => 'harsat_internal',
             'harsat' => 'harsat_internal',
             'harsat_aktual' => 'harsat_actual',
+            'harsat_budget' => 'harsat_internal',
             'satuan' => 'satuan',
             'unit' => 'satuan',
             // Budget fields
@@ -295,9 +306,17 @@ class WorkbookFieldMapper
             'actual_cost_ac' => 'actual_cost_item',
             'actual_cost' => 'actual_cost_item',
             'ac' => 'actual_cost_item',
+            // EVM with slash notation
+            'pv_bcws' => 'planned_value',
+            'ev_bcwp' => 'earned_value',
+            'ac_acwp' => 'actual_cost_item',
+            'cpi' => 'cpi',
+            'spi' => 'spi',
             // Embedded vendor
             'vendor' => 'vendor_name',
             'nama_vendor' => 'vendor_name',
+            'vendor_subkon' => 'vendor_name',
+            'vendor_subkontraktor' => 'vendor_name',
             'nomor_po' => 'po_number',
             'no_po' => 'po_number',
             'nilai_kontrak_vendor' => 'vendor_contract_value',
@@ -308,8 +327,12 @@ class WorkbookFieldMapper
             'retensi' => 'retention',
             'sisa_hutang' => 'outstanding_debt',
             'sisa_kewajiban' => 'outstanding_debt',
+            // SBU
+            'sbu' => 'sbu',
+            'sbu_utama' => 'sbu',
             // Audit
             'sumber_data' => 'data_source',
+            'sumber_dokumen' => 'data_source',
             'source' => 'data_source',
             'notes' => 'notes',
             'catatan' => 'notes',
@@ -320,13 +343,18 @@ class WorkbookFieldMapper
             'vendor' => 'supplier_name',
             'nama_supplier' => 'supplier_name',
             'deskripsi_vendor' => 'supplier_name',
+            'vendor_subkontraktor' => 'supplier_name',
+            'vendor_subkon' => 'supplier_name',
             'material' => 'material_type',
             'jenis_material' => 'material_type',
             'nama_material' => 'material_type',
+            'lingkup_pekerjaan' => 'material_type',
+            'lingkup' => 'material_type',
             'qty' => 'qty',
             'jumlah' => 'qty',
             'satuan' => 'satuan',
             'unit' => 'satuan',
+            'nilai_kontrak' => 'total_tagihan',
             'harga_satuan' => 'harga_satuan',
             'harga' => 'harga_satuan',
             'total_tagihan' => 'total_tagihan',
@@ -404,7 +432,9 @@ class WorkbookFieldMapper
     public function normalizeHeader(string $value): string
     {
         $value = strtolower(trim($value));
-        $value = preg_replace('/[\s\-\(\)\.\/:]+/', '_', $value);
+        // Strip common unit suffixes like (Juta Rp), (%), (m), (bulan), etc.
+        $value = preg_replace('/\s*\([^)]*(?:rp|idr|juta|ribu|persen|%|m|bulan|hari|unit|meter)[^)]*\)\s*/i', '', $value);
+        $value = preg_replace('/[\s\n\r\t\-\(\)\.\/:]+/', '_', $value);
         $value = preg_replace('/[^\w]/', '', $value);
 
         return rtrim((string) $value, '_');

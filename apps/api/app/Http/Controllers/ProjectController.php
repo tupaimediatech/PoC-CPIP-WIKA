@@ -597,18 +597,19 @@ class ProjectController extends Controller
      */
     private function resolveImporter(string $filePath): object
     {
+        $spreadsheet = IOFactory::load($filePath);
+        $sheetCount  = $spreadsheet->getSheetCount();
+
+        // Pola C: multi-sheet files → PolaCImport (structured multi-sheet parser)
+        if ($sheetCount > 1) {
+            return new PolaCImport();
+        }
+
+        // Single-sheet files: try Adaptive first, then Pola B, then Pola A
         $adaptiveImporter = new AdaptiveWorkbookImport();
 
         if ($adaptiveImporter->supports($filePath)) {
             return $adaptiveImporter;
-        }
-
-        $spreadsheet = IOFactory::load($filePath);
-        $sheetCount  = $spreadsheet->getSheetCount();
-
-        // Pola C: more than 1 sheet
-        if ($sheetCount > 1) {
-            return new PolaCImport();
         }
 
         // Pola B: single sheet with mixed zones (detect HPP + vendor sections)

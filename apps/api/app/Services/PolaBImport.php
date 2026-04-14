@@ -65,7 +65,7 @@ class PolaBImport
 
         // Upsert project — financial/operational fields are nullable when not in file
         $project = Project::firstOrCreate(
-            ['project_code' => $meta['project_code']],
+            ['project_code' => $meta['project_code'], 'user_id' => Auth::id()],
             [
                 'project_name'      => $meta['project_name'] ?? $meta['project_code'],
                 'division'          => $meta['division'] ?? null,
@@ -78,7 +78,6 @@ class PolaBImport
                 'progress_pct'      => $meta['progress_total_pct'] ?? null,
                 'project_year'      => $meta['project_year'] ?? now()->year,
                 'ingestion_file_id' => $ingestionFileId,
-                'user_id'           => Auth::id(),
             ]
         );
 

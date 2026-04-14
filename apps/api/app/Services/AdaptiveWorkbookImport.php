@@ -641,10 +641,9 @@ class AdaptiveWorkbookImport
             $integer = fn($key) => isset($data[$key]) && $data[$key] !== '' ? (int)   $data[$key] : null;
 
             $project = Project::updateOrCreate(
-                ['project_code' => trim((string) $data['project_code'])],
+                ['project_code' => trim((string) $data['project_code']), 'user_id' => Auth::id()],
                 [
                     'ingestion_file_id' => $ingestionFileId,
-                    'user_id'           => Auth::id(),
                     'project_name'      => trim((string) $data['project_name']),
                     'division'          => !empty($data['division']) ? trim((string) $data['division']) : null,
                     'owner'             => !empty($data['owner'])    ? trim((string) $data['owner'])    : null,
