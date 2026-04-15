@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated, clearToken, setUser } from "@/lib/auth";
+import { authApi } from "@/lib/api";
 
 const PUBLIC_PATHS = ["/login"];
 
@@ -17,11 +18,35 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
     if (!isPublic && !authed) {
       router.replace("/login");
-    } else if (isPublic && authed) {
-      router.replace("/");
-    } else {
-      setChecked(true);
+      return;
     }
+
+    if (isPublic && authed) {
+      router.replace("/");
+      return;
+    }
+
+    if (!isPublic && authed) {
+      // Validate token against backend
+      authApi
+        .me()
+        .then((res) => {
+          // Refresh stored user data
+          if (res.data) {
+            setUser(res.data);
+          }
+          setChecked(true);
+        })
+        .catch(() => {
+          // Token is invalid/expired — clear and redirect
+          clearToken();
+          router.replace("/login");
+        });
+      return;
+    }
+
+    // Public path, not authed — just show the page
+    setChecked(true);
   }, [pathname, router]);
 
   if (!checked) {

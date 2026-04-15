@@ -1,6 +1,7 @@
 "use client";
 
 import { CaretDown } from "@phosphor-icons/react";
+import { getUser } from "@/lib/auth";
 
 export default function DynamicHeader() {
   return (
@@ -14,7 +15,7 @@ export default function DynamicHeader() {
 
       <div className="flex items-center gap-4">
         <span className="text-[14px] font-medium text-[#1B1C1F]">
-          Rista Mulia Putri
+          {getUser()?.name ?? "—"}
         </span>
         <div className="flex items-center gap-2">
           <div className="w-[30px] h-[30px] bg-primary-blue rounded-full shrink-0"></div>

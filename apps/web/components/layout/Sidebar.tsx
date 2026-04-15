@@ -16,7 +16,7 @@ import {
 } from "@phosphor-icons/react";
 import { useSidebar } from "@/components/layout/SidebarContext";
 import { authApi } from "@/lib/api";
-import { clearToken } from "@/lib/auth";
+import { clearToken, getUser } from "@/lib/auth";
 
 const menuGroups = [
   {
@@ -178,8 +178,8 @@ export default function Sidebar() {
             <div className="w-9 h-9 rounded-full bg-primary-blue shrink-0 border border-gray-200 shadow-sm"></div>
             {!collapsed && (
               <div className="overflow-hidden text-left">
-                <p className="text-[13px] font-bold text-dark-gray truncate leading-tight">Rista Mulia Putri</p>
-                <p className="text-[11px] text-gray-500 truncate">ristamulia@gmail.com</p>
+                <p className="text-[13px] font-bold text-dark-gray truncate leading-tight">{getUser()?.name ?? "—"}</p>
+                <p className="text-[11px] text-gray-500 truncate">{getUser()?.email ?? "—"}</p>
               </div>
             )}
           </div>

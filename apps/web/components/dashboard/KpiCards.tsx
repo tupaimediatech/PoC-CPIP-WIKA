@@ -64,10 +64,10 @@ export default function KpiCards({ data, filters, onChange }: Props) {
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        <KpiCard label="Total Projects" value={data.total_projects} trendLabel="+3 vs Last Year" trendPositive={true} icon={ProjectorScreenIcon} />
-        <KpiCard label="Average Unit Rate" value="Rp12.5 juta/m²" trendLabel="+4% vs Last Year" trendPositive={true} icon={StackOverflowLogoIcon} />
-        <KpiCard label="Average CPI" value={formatKpi(data.avg_cpi)} trendLabel="-0.05 vs Last Year" trendPositive={false} icon={MoneyWavyIcon} />
-        <KpiCard label="Average SPI" value={formatKpi(data.avg_spi)} trendLabel="-0.02 vs Last Year" trendPositive={false} icon={CalendarBlankIcon} />
+        <KpiCard label="Total Projects" value={data.total_projects || "—"} icon={ProjectorScreenIcon} />
+        <KpiCard label="Average Unit Rate" value="—" icon={StackOverflowLogoIcon} />
+        <KpiCard label="Average CPI" value={data.total_projects > 0 ? formatKpi(data.avg_cpi) : "—"} icon={MoneyWavyIcon} />
+        <KpiCard label="Average SPI" value={data.total_projects > 0 ? formatKpi(data.avg_spi) : "—"} icon={CalendarBlankIcon} />
       </div>
     </div>
   );
@@ -99,16 +99,11 @@ function FilterSelect({ label, value, options, onChange }: { label: string; valu
   );
 }
 
-function KpiCard({ label, value, trendLabel, trendPositive, icon: Icon }: {
+function KpiCard({ label, value, icon: Icon }: {
   label: string;
   value: string | number;
-  trendLabel: string;
-  trendPositive: boolean;
   icon: PhosphorIcon;
 }) {
-  const trendColor = trendPositive ? 'text-green-600' : 'text-red-600';
-  const TrendIcon = trendPositive ? ArrowUpIcon : ArrowDownIcon;
-
   return (
     <div className="flex flex-col bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all" style={{ height: '147px' }}>
       <div className="flex items-center justify-between mb-2" style={{ height: '26px' }}>
@@ -124,10 +119,6 @@ function KpiCard({ label, value, trendLabel, trendPositive, icon: Icon }: {
       </div>
       <div className="mt-1">
         <h2 className="text-[32px] font-bold text-[#1B1C1F] leading-tight">{value}</h2>
-      </div>
-      <div className="mt-auto flex items-center gap-1.5">
-        <TrendIcon size={14} className={trendColor} />
-        <span className={`text-[13px] font-bold ${trendColor}`}>{trendLabel}</span>
       </div>
     </div>
   );

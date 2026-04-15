@@ -35,6 +35,7 @@ class WorkbookFieldMapper
             'project_name',
             'project_year',
             'division',
+            'sbu',
             'owner',
             'client_name',
             'project_manager',
@@ -54,12 +55,36 @@ class WorkbookFieldMapper
         'work_item' => [
             'item_no',
             'item_name',
+            'volume',
+            'satuan',
+            'harsat_internal',
+            'volume_actual',
+            'harsat_actual',
+            'cost_category',
+            'cost_subcategory',
             'budget_awal',
             'addendum',
             'total_budget',
             'realisasi',
             'deviasi',
             'deviasi_pct',
+            'bobot_pct',
+            'progress_plan_pct',
+            'progress_actual_pct',
+            'planned_value',
+            'earned_value',
+            'actual_cost_item',
+            'vendor_name',
+            'po_number',
+            'vendor_contract_value',
+            'termin_paid',
+            'retention',
+            'outstanding_debt',
+            'data_source',
+            'notes',
+            'cpi',
+            'spi',
+            'sbu',
         ],
         'material' => [
             'supplier_name',
@@ -217,23 +242,43 @@ class WorkbookFieldMapper
             'periode_laporan' => 'period',
             'bulan' => 'period',
             'periode' => 'period',
+            'pemberi_tugas' => 'client_name',
+            'sbu_utama' => 'sbu',
+            'sbu' => 'sbu',
+            'durasi' => 'planned_duration',
         ],
         'work_item' => [
             'nomor' => 'item_no',
             'no' => 'item_no',
             'a_no' => 'item_no',
+            'wbs' => 'item_no',
             'nama_item' => 'item_name',
             'uraian' => 'item_name',
-            'kategori' => 'item_name',
-            'kateogri' => 'item_name',
+            'uraian_pekerjaan' => 'item_name',
+            'kategori' => 'cost_category',
+            'kateogri' => 'cost_category',
             'item_pekerjaan' => 'item_name',
             'b_item_pekerjaan' => 'item_name',
+            // Volume, unit, unit price
+            'volume_budget' => 'volume',
+            'vol_budget' => 'volume',
+            'volume_aktual' => 'volume_actual',
+            'vol_aktual' => 'volume_actual',
+            'harga_satuan' => 'harsat_internal',
+            'harsat' => 'harsat_internal',
+            'harsat_aktual' => 'harsat_actual',
+            'harsat_budget' => 'harsat_internal',
+            'satuan' => 'satuan',
+            'unit' => 'satuan',
+            // Budget fields
             'budget_awal' => 'budget_awal',
             'anggaran_awal' => 'budget_awal',
             'plan_hpp' => 'total_budget',
             'c_plan_hpp' => 'total_budget',
             'addendum' => 'addendum',
             'total_budget' => 'total_budget',
+            'nilai_budget' => 'total_budget',
+            'nilai_aktual' => 'realisasi',
             'realisasi' => 'realisasi',
             'realisasi_itd' => 'realisasi',
             'actual_itd' => 'realisasi',
@@ -242,19 +287,74 @@ class WorkbookFieldMapper
             'selisih' => 'deviasi',
             'e_deviasi' => 'deviasi',
             'deviasi_pct' => 'deviasi_pct',
+            // Cost categorization
+            'kategori_biaya' => 'cost_category',
+            'sub_kategori' => 'cost_subcategory',
+            // Progress & EVM
+            'bobot_pekerjaan' => 'bobot_pct',
+            'bobot' => 'bobot_pct',
+            'progress_plan' => 'progress_plan_pct',
+            'rencana_progress' => 'progress_plan_pct',
+            'actual_progress' => 'progress_actual_pct',
+            'progress_aktual' => 'progress_actual_pct',
+            'planned_value_pv' => 'planned_value',
+            'planned_value' => 'planned_value',
+            'pv' => 'planned_value',
+            'earned_value_ev' => 'earned_value',
+            'earned_value' => 'earned_value',
+            'ev' => 'earned_value',
+            'actual_cost_ac' => 'actual_cost_item',
+            'actual_cost' => 'actual_cost_item',
+            'ac' => 'actual_cost_item',
+            // EVM with slash notation
+            'pv_bcws' => 'planned_value',
+            'ev_bcwp' => 'earned_value',
+            'ac_acwp' => 'actual_cost_item',
+            'cpi' => 'cpi',
+            'spi' => 'spi',
+            // Embedded vendor
+            'vendor' => 'vendor_name',
+            'nama_vendor' => 'vendor_name',
+            'vendor_subkon' => 'vendor_name',
+            'vendor_subkontraktor' => 'vendor_name',
+            'nomor_po' => 'po_number',
+            'no_po' => 'po_number',
+            'nilai_kontrak_vendor' => 'vendor_contract_value',
+            'kontrak_vendor' => 'vendor_contract_value',
+            'termin_dibayar' => 'termin_paid',
+            'termin' => 'termin_paid',
+            'retensi_5' => 'retention',
+            'retensi' => 'retention',
+            'sisa_hutang' => 'outstanding_debt',
+            'sisa_kewajiban' => 'outstanding_debt',
+            // SBU
+            'sbu' => 'sbu',
+            'sbu_utama' => 'sbu',
+            // Audit
+            'sumber_data' => 'data_source',
+            'sumber_dokumen' => 'data_source',
+            'source' => 'data_source',
+            'notes' => 'notes',
+            'catatan' => 'notes',
+            'keterangan' => 'notes',
         ],
         'material' => [
             'supplier' => 'supplier_name',
             'vendor' => 'supplier_name',
             'nama_supplier' => 'supplier_name',
             'deskripsi_vendor' => 'supplier_name',
+            'vendor_subkontraktor' => 'supplier_name',
+            'vendor_subkon' => 'supplier_name',
             'material' => 'material_type',
             'jenis_material' => 'material_type',
             'nama_material' => 'material_type',
+            'lingkup_pekerjaan' => 'material_type',
+            'lingkup' => 'material_type',
             'qty' => 'qty',
             'jumlah' => 'qty',
             'satuan' => 'satuan',
             'unit' => 'satuan',
+            'nilai_kontrak' => 'total_tagihan',
             'harga_satuan' => 'harga_satuan',
             'harga' => 'harga_satuan',
             'total_tagihan' => 'total_tagihan',
@@ -332,7 +432,9 @@ class WorkbookFieldMapper
     public function normalizeHeader(string $value): string
     {
         $value = strtolower(trim($value));
-        $value = preg_replace('/[\s\-\(\)\.\/:]+/', '_', $value);
+        // Strip common unit suffixes like (Juta Rp), (%), (m), (bulan), etc.
+        $value = preg_replace('/\s*\([^)]*(?:rp|idr|juta|ribu|persen|%|m|bulan|hari|unit|meter)[^)]*\)\s*/i', '', $value);
+        $value = preg_replace('/[\s\n\r\t\-\(\)\.\/:]+/', '_', $value);
         $value = preg_replace('/[^\w]/', '', $value);
 
         return rtrim((string) $value, '_');
@@ -400,6 +502,17 @@ class WorkbookFieldMapper
             'total_budget',
             'realisasi',
             'deviasi',
+            'volume',
+            'harsat_internal',
+            'volume_actual',
+            'harsat_actual',
+            'planned_value',
+            'earned_value',
+            'actual_cost_item',
+            'vendor_contract_value',
+            'termin_paid',
+            'retention',
+            'outstanding_debt',
             'qty',
             'harga_satuan',
             'total_tagihan',
@@ -411,6 +524,9 @@ class WorkbookFieldMapper
             'progress_this_pct',
             'progress_total_pct',
             'deviasi_pct',
+            'bobot_pct',
+            'progress_plan_pct',
+            'progress_actual_pct',
             'rencana_pct',
             'realisasi_pct' => $this->parsePercentage($value),
             'planned_duration',
@@ -470,10 +586,46 @@ class WorkbookFieldMapper
             return null;
         }
 
+        // If already a number, return directly
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
         $raw = trim((string) $value);
         $isNegative = str_starts_with($raw, '(') && str_ends_with($raw, ')');
         $normalized = str_replace(['(', ')'], '', $raw);
-        $normalized = str_replace(['.', ','], ['', '.'], $normalized);
+
+        // Detect number format:
+        // International: 2,800.50 (comma = thousands, dot = decimal)
+        // Indonesian:    2.800,50 (dot = thousands, comma = decimal)
+        $lastDot = strrpos($normalized, '.');
+        $lastComma = strrpos($normalized, ',');
+
+        if ($lastDot !== false && $lastComma !== false) {
+            if ($lastDot > $lastComma) {
+                // International: 2,800.50 — dot is decimal
+                $normalized = str_replace(',', '', $normalized);
+            } else {
+                // Indonesian: 2.800,50 — comma is decimal
+                $normalized = str_replace('.', '', $normalized);
+                $normalized = str_replace(',', '.', $normalized);
+            }
+        } elseif ($lastComma !== false && substr_count($normalized, ',') === 1) {
+            // Could be "2,5" (decimal) or "2,800" (thousands)
+            $afterComma = substr($normalized, $lastComma + 1);
+            if (strlen($afterComma) === 3 && ctype_digit($afterComma)) {
+                // "2,800" — likely thousands separator
+                $normalized = str_replace(',', '', $normalized);
+            } else {
+                // "2,5" or "2,50" — likely decimal
+                $normalized = str_replace(',', '.', $normalized);
+            }
+        } elseif ($lastComma !== false) {
+            // Multiple commas: "1,000,000" — thousands separator
+            $normalized = str_replace(',', '', $normalized);
+        }
+        // Single dot with no comma: already fine as-is
+
         $normalized = preg_replace('/[^\d.\-]/', '', $normalized);
         $normalized = preg_replace('/\.-$/', '', $normalized);
         $normalized = preg_replace('/\.$/', '', $normalized);
