@@ -20,6 +20,8 @@ import type {
   ProjectPhaseListResponse,
   WorkItemLevel4ListResponse,
   MaterialLogLevel5ListResponse,
+  WorkItemDetailResponse,
+  HppSummaryResponse,
   RiskListResponse,
   ProgressCurveResponse,
 } from "@/types/project";
@@ -216,9 +218,15 @@ export const projectApi = {
 export const periodApi = {
   workItems: (periodId: number): Promise<WorkItemLevel4ListResponse> => api.get(`/wbs-phases/${periodId}/work-items`).then((r) => r.data),
 
-  materials: (periodId: number): Promise<MaterialLogLevel5ListResponse> => api.get(`/work-items/${periodId}/materials`).then((r) => r.data),
+  materials: (periodId: number): Promise<MaterialLogLevel5ListResponse> => api.get(`/wbs-phases/${periodId}/materials`).then((r) => r.data),
 
-  equipment: (periodId: number): Promise<EquipmentLogListResponse> => api.get(`/periods/${periodId}/equipment`).then((r) => r.data),
+  equipment: (periodId: number): Promise<EquipmentLogListResponse> => api.get(`/wbs-phases/${periodId}/equipment`).then((r) => r.data),
+
+  hppSummary: (periodId: number): Promise<HppSummaryResponse> => api.get(`/wbs-phases/${periodId}/hpp-summary`).then((r) => r.data),
+};
+
+export const workItemApi = {
+  detail: (id: number): Promise<WorkItemDetailResponse> => api.get(`/work-items/${id}`).then((r) => r.data),
 };
 
 export const ingestionApi = {

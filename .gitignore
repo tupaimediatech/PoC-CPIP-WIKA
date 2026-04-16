@@ -4,3 +4,4 @@ apps/.claude/
 # OS
 .DS_Store
 Thumbs.db
+.vercel

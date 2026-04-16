@@ -7,11 +7,8 @@ import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { projectApi } from "@/lib/api";
 import type { Project, FilterOptionsResponse } from "@/types/project";
-import { formatKpi, kpiColor } from "@/lib/utils";
-import { DEMO_MODE } from "@/lib/demo";
-import mockData from "@/data/mock-data.json";
+import { formatCurrency, formatKpi, kpiColor } from "@/lib/utils";
 
-// Mapping key disesuaikan dengan struktur data API yang Anda berikan
 const FILTER_GRID: {
   key: keyof Project;
   label: string;
@@ -50,23 +47,16 @@ export default function ProjectsPage() {
   // Load Initial Data (API)
   useEffect(() => {
     setLoading(true);
-    if (DEMO_MODE) {
-      const data = mockData.projects as unknown as Project[];
-      setAllProjects(data);
-      setFilterOptions(mockData.filterOptions as unknown as FilterOptionsResponse);
-      setLoading(false);
-    } else {
-      Promise.all([
-        projectApi.list(), // Ambil semua data tanpa params agar bisa difilter di FE
-        projectApi.filterOptions(),
-      ])
-        .then(([res, options]) => {
-          setAllProjects(res.data);
-          setFilterOptions(options);
-        })
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    Promise.all([
+      projectApi.list(),
+      projectApi.filterOptions(),
+    ])
+      .then(([res, options]) => {
+        setAllProjects(res.data);
+        setFilterOptions(options);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSearch = () => {
@@ -178,7 +168,7 @@ export default function ProjectsPage() {
               <tr className="bg-[#F9FAFB] border-b border-gray-100">
                 <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Unit Rate (m²/km)</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nilai Kontrak</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Gross Profit</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">SPI</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">CPI</th>
@@ -191,7 +181,7 @@ export default function ProjectsPage() {
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{project.project_name}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">
-                    {project.contract_value ? `Rp${Number(project.contract_value).toLocaleString("id-ID")}` : "-"}
+                    {formatCurrency(project.contract_value)}
                   </td>
                   <td className="px-4 py-4 text-[14px] text-gray-700">{project.gross_profit_pct ? `${project.gross_profit_pct}%` : "-"}</td>
                   <td className={`px-4 py-4 text-[14px] font-bold ${kpiColor(String(project.spi))}`}>

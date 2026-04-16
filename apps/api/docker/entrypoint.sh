@@ -1,25 +1,21 @@
 #!/bin/sh
 set -e
 
-echo "==> Waiting for database..."
-# Tunggu PostgreSQL siap
-until php -r "
-    \$conn = pg_connect('host=' . getenv('DB_HOST') . 
-        ' port=' . getenv('DB_PORT') . 
-        ' dbname=' . getenv('DB_DATABASE') . 
-        ' user=' . getenv('DB_USERNAME') . 
-        ' password=' . getenv('DB_PASSWORD'));
-    if (!\$conn) exit(1);
-    pg_close(\$conn);
-    exit(0);
-" 2>/dev/null; do
-    echo "Database not ready, retrying in 2s..."
-    sleep 2
-done
-echo "==> Database ready."
+echo "==> Setting up SQLite database..."
+if [ ! -f /var/www/html/database/database.sqlite ]; then
+    touch /var/www/html/database/database.sqlite
+    chown www-data:www-data /var/www/html/database/database.sqlite
+    chmod 664 /var/www/html/database/database.sqlite
+fi
+
+echo "==> Generating app key if needed..."
+php artisan key:generate --force --no-interaction 2>/dev/null || true
 
 echo "==> Running migrations..."
 php artisan migrate --force
+
+echo "==> Seeding database..."
+php artisan db:seed --force 2>/dev/null || true
 
 echo "==> Optimizing Laravel..."
 php artisan config:cache

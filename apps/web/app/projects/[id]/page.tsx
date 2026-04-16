@@ -6,14 +6,7 @@ import { ArrowSquareOutIcon, ArrowUpIcon, ArrowDownIcon } from "@phosphor-icons/
 import PageHeader from "@/components/analytics/PageHeader";
 import BackButton from "@/components/analytics/BackButton";
 import { projectApi } from "@/lib/api";
-import { DEMO_MODE } from "@/lib/demo";
-import mockData from "@/data/mock-data.json";
-
-function formatRupiah(value: string | number): string {
-  const numericValue = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(numericValue)) return "Rp0";
-  return `Rp${numericValue.toLocaleString("id-ID")}`;
-}
+import { formatCurrency } from "@/lib/utils";
 
 export default function Level3Page() {
   const router = useRouter();
@@ -24,11 +17,6 @@ export default function Level3Page() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (DEMO_MODE) {
-      setData(mockData.level3);
-      setLoading(false);
-      return;
-    }
     projectApi
       .periods(projectId)
       .then((res) => setData(res.data))
@@ -72,9 +60,9 @@ export default function Level3Page() {
             <tr className="bg-[#F9FAFB] border-b border-gray-100">
               <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Tahap Pekerjaan</th>
-              <th className="px-4 py-4 text-right text-[12px] font-bold text-gray-500 uppercase tracking-wider">BQ External</th>
-              <th className="px-4 py-4 text-right text-[12px] font-bold text-gray-500 uppercase tracking-wider">RAB Internal</th>
-              <th className="px-4 py-4 text-right text-[12px] font-bold text-gray-500 uppercase tracking-wider">Deviasi (%)</th>
+              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">BQ External</th>
+              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">RAB Internal</th>
+              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Deviasi (%)</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Action</th>
             </tr>
           </thead>
@@ -83,9 +71,9 @@ export default function Level3Page() {
               <tr key={phase.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{index + 1}</td>
                 <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{phase.name}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700 text-right">{formatRupiah(phase.bqExternal)}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700 text-right">{formatRupiah(phase.rabInternal)}</td>
-                <td className="px-4 py-4 text-right">
+                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(phase.bqExternal)}</td>
+                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(phase.rabInternal)}</td>
+                <td className="px-4 py-4">
                   <div
                     className={`inline-flex items-center gap-1 text-[14px] font-bold ${phase.deviasiPct >= 0 ? "text-green-600" : "text-red-600"}`}
                   >
@@ -108,9 +96,9 @@ export default function Level3Page() {
             <tr className="bg-[#F9FAFB] border-t border-gray-200">
               <td className="px-6 py-4" />
               <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">TOTAL</td>
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-right">{formatRupiah(totalBq)}</td>
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F] text-right">{formatRupiah(totalRab)}</td>
-              <td className="px-4 py-4 text-right">
+              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalBq)}</td>
+              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalRab)}</td>
+              <td className="px-4 py-4">
                 <span className={`text-[14px] font-bold ${totalDeviasiPct >= 0 ? "text-green-600" : "text-red-600"}`}>
                   {totalDeviasiPct.toFixed(1)}%
                 </span>

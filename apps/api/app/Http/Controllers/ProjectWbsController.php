@@ -46,11 +46,20 @@ class ProjectWbsController extends Controller
     {
         abort_unless($wbsModel->project_id === $project->id, 404);
 
-        $workItems = $wbsModel->workItems()
-            ->whereNull('parent_id')
-            ->with('children')
-            ->orderBy('sort_order')
-            ->get()
+        // Option A: show children only (skip redundant parent row that matches the phase name).
+        // If children exist (parent_id IS NOT NULL), show only those.
+        // If flat list (all parent_id IS NULL), show all non-total rows.
+        $hasChildren = $wbsModel->workItems()->whereNotNull('parent_id')->exists();
+
+        $query = $wbsModel->workItems()
+            ->where('is_total_row', false)
+            ->orderBy('sort_order');
+
+        if ($hasChildren) {
+            $query->whereNotNull('parent_id');
+        }
+
+        $workItems = $query->get()
             ->map(fn($item) => [
                 'id'             => $item->id,
                 'name'           => $item->item_name,
@@ -61,6 +70,7 @@ class ProjectWbsController extends Controller
                 'realisasi'      => (float) $item->realisasi,
                 'deviasi'        => (float) $item->deviasi,
                 'deviasi_pct'    => (float) ($item->deviasi_pct ?? 0),
+                'is_total_row'   => (bool) $item->is_total_row,
             ]);
 
         return response()->json([

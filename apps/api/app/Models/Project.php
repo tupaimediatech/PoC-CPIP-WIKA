@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Services\KpiCalculatorService;
+use Illuminate\Support\Facades\Auth;
 
 class Project extends Model
 {
@@ -30,6 +32,7 @@ class Project extends Model
         'contract_value',
         'planned_cost',
         'actual_cost',
+        'hpp',
         'planned_duration',
         'actual_duration',
         'progress_pct',
@@ -40,12 +43,14 @@ class Project extends Model
         'spi',
         'status',
         'ingestion_file_id',
+        'user_id',
     ];
 
     protected $casts = [
         'contract_value'   => 'decimal:2',
         'planned_cost'     => 'decimal:2',
         'actual_cost'      => 'decimal:2',
+        'hpp'             => 'decimal:2',
         'progress_pct'     => 'decimal:2',
         'project_year'     => 'integer',
         'start_date'       => 'date',
@@ -56,8 +61,20 @@ class Project extends Model
     ];
 
     
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
+
     protected static function booted(): void
     {
+        // Scope all queries to the authenticated user's projects
+        static::addGlobalScope('owned', function (Builder $builder) {
+            if (Auth::check()) {
+                $builder->where('projects.user_id', Auth::id());
+            }
+        });
+
         static::saving(function (Project $project) {
             if (empty($project->project_year)) {
                 $project->project_year = (int) now()->format('Y');

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, DragEvent, ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
 import { projectApi } from "@/lib/api";
-import type { UploadResponse, FileUploadResult } from "@/types/project";
+import type { UploadResponse, FileUploadResult, AffectedProject } from "@/types/project";
 import IngestionHistory from "@/components/upload/IngestionHistory";
-import { MonitorArrowUp, Table, UploadSimple } from "@phosphor-icons/react";
+import { MonitorArrowUp, Table, UploadSimple, ArrowSquareOut } from "@phosphor-icons/react";
 import { STATUS_CONFIG } from "@/lib/constants/status";
 
 type UploadState = "idle" | "dragging" | "uploading" | "done" | "error";
@@ -127,6 +128,7 @@ function toUploadError(error: unknown): UploadErrorLike {
 }
 
 export default function UploadExcel() {
+  const router = useRouter();
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploadResponse, setUploadResponse] = useState<UploadResponse | null>(
@@ -262,16 +264,14 @@ export default function UploadExcel() {
 
   return (
     <div
-      className="bg-white flex flex-col items-center"
+      className="bg-white flex flex-col w-full"
       style={{
-        width: "1139px",
         minHeight: "1024px",
-        padding: "10px",
-        margin: "16px",
+        padding: "24px 32px",
         boxSizing: "border-box",
       }}
     >
-      <div className="w-full max-w-6xl space-y-4">
+      <div className="w-full space-y-4">
         <header className="mb-2">
           <h1 className="text-lg font-bold text-dark-gray">Upload File</h1>
         </header>
@@ -576,6 +576,35 @@ export default function UploadExcel() {
                 </p>
               </div>
             </div>
+
+            {(() => {
+              const allAffected: AffectedProject[] = uploadResponse.results
+                ?.flatMap((r) => r.projects_affected ?? []) ?? [];
+              const unique = allAffected.filter(
+                (p, i, arr) => arr.findIndex((q) => q.id === p.id) === i
+              );
+              if (unique.length === 0) return null;
+              return (
+                <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                    Projects Affected ({unique.length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {unique.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => router.push(`/projects/${p.id}`)}
+                        className="flex items-center gap-2 w-full text-left text-sm hover:bg-white rounded-md px-2 py-1.5 transition-colors group"
+                      >
+                        <span className="font-mono text-xs text-gray-400">{p.project_code}</span>
+                        <span className="text-gray-800 font-medium truncate flex-1">{p.project_name}</span>
+                        <ArrowSquareOut size={14} className="text-gray-300 group-hover:text-blue-500 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {!uploadResponse.success && errorSummary.length > 0 && (
               <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-4 space-y-2">
