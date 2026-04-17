@@ -19,6 +19,25 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ProjectController extends Controller
 {
+    public function buildingCpiList(): JsonResponse
+    {
+        return $this->divisionKpiList('Building', 'cpi');
+    }
+
+    public function buildingSpiList(): JsonResponse
+    {
+        return $this->divisionKpiList('Building', 'spi');
+    }
+
+    public function infrastructureCpiList(): JsonResponse
+    {
+        return $this->divisionKpiList('Infrastructure', 'cpi');
+    }
+
+    public function infrastructureSpiList(): JsonResponse
+    {
+        return $this->divisionKpiList('Infrastructure', 'spi');
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -637,5 +656,25 @@ class ProjectController extends Controller
 
         // Pola A: default flat tabular
         return new ProjectImport();
+    }
+
+    private function divisionKpiList(string $division, string $kpiColumn): JsonResponse
+    {
+        $projects = Project::query()
+            ->where('division', $division)
+            ->select([
+                'profit_center',
+                'project_name',
+                $kpiColumn,
+                'division',
+            ])
+            ->orderByRaw("{$kpiColumn} IS NULL")
+            ->orderByDesc($kpiColumn)
+            ->orderBy('project_name')
+            ->get();
+
+        return response()->json([
+            'data' => $projects,
+        ]);
     }
 }

@@ -24,6 +24,7 @@ class ProjectApiTest extends TestCase
             'project_name' => 'Test Project',
             'division' => 'Infrastructure',
             'owner' => 'Test Owner',
+            'profit_center' => 'Test Profit Center',
             'contract_value' => 500,
             'planned_cost' => 400,
             'actual_cost' => 450,
@@ -41,6 +42,14 @@ class ProjectApiTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure(['data', 'meta'])
             ->assertJsonPath('meta.total', 0);
+    }
+
+    #[Test]
+    public function it_returns_empty_building_cpi_list(): void
+    {
+        $this->getJson('/api/projects/building/cpi')
+            ->assertOk()
+            ->assertExactJson(['data' => []]);
     }
 
     #[Test]
@@ -97,6 +106,205 @@ class ProjectApiTest extends TestCase
         $data = $response->json('data');
 
         $this->assertLessThan((float) $data[1]['cpi'], (float) $data[0]['cpi']);
+    }
+
+    #[Test]
+    public function it_returns_building_projects_ordered_by_cpi_descending_with_selected_columns(): void
+    {
+        $this->makeProject([
+            'project_code' => 'BLD-01',
+            'project_name' => 'Building Alpha',
+            'division' => 'Building',
+            'profit_center' => 'Building PC A',
+            'planned_cost' => 500,
+            'actual_cost' => 400,
+            'planned_duration' => 12,
+            'actual_duration' => 12,
+        ]);
+        $this->makeProject([
+            'project_code' => 'BLD-02',
+            'project_name' => 'Building Beta',
+            'division' => 'Building',
+            'profit_center' => 'Building PC B',
+            'planned_cost' => 500,
+            'actual_cost' => 450,
+            'planned_duration' => 12,
+            'actual_duration' => 12,
+        ]);
+        $this->makeProject([
+            'project_code' => 'INF-01',
+            'project_name' => 'Infra One',
+            'division' => 'Infrastructure',
+            'profit_center' => 'Infra PC',
+        ]);
+
+        $response = $this->getJson('/api/projects/building/cpi');
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonMissingPath('data.0.spi');
+
+        $data = $response->json('data');
+
+        $this->assertSame('Building', $data[0]['division']);
+        $this->assertSame('Building', $data[1]['division']);
+        $this->assertSame(['profit_center', 'project_name', 'cpi', 'division'], array_keys($data[0]));
+        $this->assertSame('Building Alpha', $data[0]['project_name']);
+        $this->assertGreaterThan((float) $data[1]['cpi'], (float) $data[0]['cpi']);
+    }
+
+    #[Test]
+    public function it_returns_building_projects_ordered_by_spi_descending_with_selected_columns(): void
+    {
+        $this->makeProject([
+            'project_code' => 'BLD-01',
+            'project_name' => 'Building Alpha',
+            'division' => 'Building',
+            'profit_center' => 'Building PC A',
+            'planned_duration' => 12,
+            'actual_duration' => 10,
+        ]);
+        $this->makeProject([
+            'project_code' => 'BLD-02',
+            'project_name' => 'Building Beta',
+            'division' => 'Building',
+            'profit_center' => 'Building PC B',
+            'planned_duration' => 12,
+            'actual_duration' => 15,
+        ]);
+        $this->makeProject([
+            'project_code' => 'INF-01',
+            'project_name' => 'Infra One',
+            'division' => 'Infrastructure',
+            'profit_center' => 'Infra PC',
+        ]);
+
+        $response = $this->getJson('/api/projects/building/spi');
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonMissingPath('data.0.cpi');
+
+        $data = $response->json('data');
+
+        $this->assertSame(['profit_center', 'project_name', 'spi', 'division'], array_keys($data[0]));
+        $this->assertSame('Building Alpha', $data[0]['project_name']);
+        $this->assertGreaterThan((float) $data[1]['spi'], (float) $data[0]['spi']);
+    }
+
+    #[Test]
+    public function it_returns_infrastructure_projects_ordered_by_cpi_descending_with_selected_columns(): void
+    {
+        $this->makeProject([
+            'project_code' => 'INF-01',
+            'project_name' => 'Infra Alpha',
+            'division' => 'Infrastructure',
+            'profit_center' => 'Infra PC A',
+            'planned_cost' => 600,
+            'actual_cost' => 500,
+        ]);
+        $this->makeProject([
+            'project_code' => 'INF-02',
+            'project_name' => 'Infra Beta',
+            'division' => 'Infrastructure',
+            'profit_center' => 'Infra PC B',
+            'planned_cost' => 600,
+            'actual_cost' => 580,
+        ]);
+        $this->makeProject([
+            'project_code' => 'BLD-01',
+            'project_name' => 'Building One',
+            'division' => 'Building',
+            'profit_center' => 'Building PC',
+        ]);
+
+        $response = $this->getJson('/api/projects/infrastructure/cpi');
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonMissingPath('data.0.spi');
+
+        $data = $response->json('data');
+
+        $this->assertSame(['profit_center', 'project_name', 'cpi', 'division'], array_keys($data[0]));
+        $this->assertSame('Infrastructure', $data[0]['division']);
+        $this->assertGreaterThan((float) $data[1]['cpi'], (float) $data[0]['cpi']);
+    }
+
+    #[Test]
+    public function it_returns_infrastructure_projects_ordered_by_spi_descending_with_selected_columns(): void
+    {
+        $this->makeProject([
+            'project_code' => 'INF-01',
+            'project_name' => 'Infra Alpha',
+            'division' => 'Infrastructure',
+            'profit_center' => 'Infra PC A',
+            'planned_duration' => 18,
+            'actual_duration' => 12,
+        ]);
+        $this->makeProject([
+            'project_code' => 'INF-02',
+            'project_name' => 'Infra Beta',
+            'division' => 'Infrastructure',
+            'profit_center' => 'Infra PC B',
+            'planned_duration' => 18,
+            'actual_duration' => 20,
+        ]);
+        $this->makeProject([
+            'project_code' => 'BLD-01',
+            'project_name' => 'Building One',
+            'division' => 'Building',
+            'profit_center' => 'Building PC',
+        ]);
+
+        $response = $this->getJson('/api/projects/infrastructure/spi');
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonMissingPath('data.0.cpi');
+
+        $data = $response->json('data');
+
+        $this->assertSame(['profit_center', 'project_name', 'spi', 'division'], array_keys($data[0]));
+        $this->assertSame('Infrastructure', $data[0]['division']);
+        $this->assertGreaterThan((float) $data[1]['spi'], (float) $data[0]['spi']);
+    }
+
+    #[Test]
+    public function it_allows_null_kpi_values_and_sorts_them_last_in_division_kpi_lists(): void
+    {
+        $this->makeProject([
+            'project_code' => 'BLD-01',
+            'project_name' => 'Building With KPI',
+            'division' => 'Building',
+            'profit_center' => 'Building PC A',
+            'planned_cost' => 500,
+            'actual_cost' => 400,
+            'planned_duration' => 12,
+            'actual_duration' => 12,
+        ]);
+        $this->makeProject([
+            'project_code' => 'BLD-02',
+            'project_name' => 'Building Without KPI',
+            'division' => 'Building',
+            'profit_center' => 'Building PC B',
+            'planned_cost' => null,
+            'actual_cost' => null,
+            'planned_duration' => null,
+            'actual_duration' => null,
+            'progress_pct' => null,
+        ]);
+
+        $cpiResponse = $this->getJson('/api/projects/building/cpi');
+        $spiResponse = $this->getJson('/api/projects/building/spi');
+
+        $cpiResponse->assertOk()->assertJsonCount(2, 'data');
+        $spiResponse->assertOk()->assertJsonCount(2, 'data');
+
+        $this->assertSame('Building With KPI', $cpiResponse->json('data.0.project_name'));
+        $this->assertNull($cpiResponse->json('data.1.cpi'));
+        $this->assertSame('Building With KPI', $spiResponse->json('data.0.project_name'));
+        $this->assertNull($spiResponse->json('data.1.spi'));
     }
 
     #[Test]
