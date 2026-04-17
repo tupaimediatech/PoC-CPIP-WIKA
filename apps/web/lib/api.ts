@@ -213,6 +213,24 @@ export const projectApi = {
   },
 
   delete: (id: number): Promise<{ message: string }> => api.delete(`/projects/${id}`).then((r) => r.data),
+
+  exportDashboard: (filters: ProjectFilters = {}): Promise<DashboardExportResponse> =>
+    api.get("/projects/export-dashboard", { params: filters }).then((r) => r.data),
+};
+
+export type DashboardExportResponse = {
+  generated_at: string;
+  filters: ProjectFilters;
+  summary: SummaryResponse;
+  sbu_distribution: SbuDistributionItem[];
+  filter_options: FilterOptionsResponse;
+  division_kpis: {
+    building_cpi: Project[];
+    building_spi: Project[];
+    infrastructure_cpi: Project[];
+    infrastructure_spi: Project[];
+  };
+  projects: ProjectListResponse;
 };
 
 export const periodApi = {
@@ -239,15 +257,50 @@ export const ingestionApi = {
   ingestionLog: (perPage = 15): Promise<IngestionLogResponse> => api.get("/ingestion-log", { params: { per_page: perPage } }).then((r) => r.data),
 };
 
-export const authApi = {
-  login: (email: string, password: string) => api.post("/auth/login", { email, password }).then((r) => r.data),
+export type LoginResponse = {
+  user: { id: number; name: string; email: string; role?: string };
+  token: string;
+  expires_at: string | null;
+};
 
-  register: (name: string, email: string, password: string, password_confirmation: string) =>
+export type SessionItem = {
+  id: number;
+  name: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  remember: boolean;
+  last_used_at: string | null;
+  created_at: string | null;
+  expires_at: string | null;
+  is_current: boolean;
+};
+
+function currentDeviceName(): string {
+  if (typeof navigator === "undefined") return "unknown";
+  return navigator.userAgent || "unknown";
+}
+
+export const authApi = {
+  login: (email: string, password: string, remember = false): Promise<LoginResponse> =>
+    api
+      .post("/auth/login", {
+        email,
+        password,
+        remember,
+        device_name: currentDeviceName(),
+      })
+      .then((r) => r.data),
+
+  register: (name: string, email: string, password: string, password_confirmation: string): Promise<LoginResponse> =>
     api.post("/auth/register", { name, email, password, password_confirmation }).then((r) => r.data),
 
   logout: () => api.post("/auth/logout").then((r) => r.data),
 
   me: () => api.get("/auth/me").then((r) => r.data),
+
+  sessions: (): Promise<{ data: SessionItem[] }> => api.get("/auth/sessions").then((r) => r.data),
+
+  revokeSession: (id: number) => api.delete(`/auth/sessions/${id}`).then((r) => r.data),
 };
 
 export type ColumnAliasFilters = {

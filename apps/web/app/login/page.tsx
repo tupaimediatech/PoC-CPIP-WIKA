@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
-import { setToken, setUser } from "@/lib/auth";
+import { setToken, setTokenExpiry, setUser } from "@/lib/auth";
 import ilustration from "@/public/Ilustration.svg";
 import wika from "@/public/WIKA.svg";
 import wikaNew from "@/public/WIka-new.svg";
@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +33,7 @@ export default function LoginPage() {
     try {
       let data: any;
       if (mode === "login") {
-        data = await authApi.login(email, password);
+        data = await authApi.login(email, password, remember);
       } else {
         if (password !== passwordConfirm) {
           setError("Password konfirmasi tidak cocok.");
@@ -43,6 +44,7 @@ export default function LoginPage() {
       }
 
       setToken(data.token);
+      setTokenExpiry(data.expires_at ?? null);
       setUser(data.user);
       router.push("/");
     } catch (err: any) {
@@ -159,9 +161,18 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* Lupa Password (Khusus Login) */}
+              {/* Remember Me + Lupa Password (Khusus Login) */}
               {mode === "login" && (
-                <div className="mt-2 text-right">
+                <div className="mt-2 flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 select-none cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-[#2543b5] focus:ring-[#2543b5]"
+                    />
+                    Remember me
+                  </label>
                   <a href="#" className="text-sm font-semibold text-[#2543b5] hover:underline">
                     Forgot Password?
                   </a>
