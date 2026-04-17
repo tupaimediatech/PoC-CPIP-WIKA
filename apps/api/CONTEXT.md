@@ -83,10 +83,10 @@ Satu proyek bisa punya banyak period (time-series). **Unique:** `project_id + pe
 | `progress_total_pct` | decimal(6,2)          | Total progress kumulatif (%)                   |
 | `contract_value`     | decimal(20,2)         | Snapshot nilai kontrak periode ini             |
 | `addendum_value`     | decimal(20,2)         | Nilai addendum                                 |
-| `total_pagu`         | decimal(20,2)         | contract_value + addendum_value                |
-| `hpp_plan_total`     | decimal(20,2)         | Aggregate dari work_items.total_budget (level 0)|
-| `hpp_actual_total`   | decimal(20,2)         | Aggregate dari work_items.realisasi (level 0)  |
-| `hpp_deviation`      | decimal(20,2)         | hpp_plan_total − hpp_actual_total              |
+| `bq_external`        | decimal(20,2)         | contract_value + addendum_value                |
+| `actual_costs`       | decimal(20,2)         | Aggregate dari work_items.total_budget (level 0)|
+| `realized_costs`     | decimal(20,2)         | Aggregate dari work_items.realisasi (level 0)  |
+| `hpp_deviation`      | decimal(20,2)         | actual_costs - realized_costs                  |
 
 ### `project_work_items` — HPP hierarkis per periode
 
@@ -438,7 +438,7 @@ PolaBImport::import($filePath, $ingestionFileId):
                    'period'     => $meta['period'] ?? now()->format('Y-m')]
            fill:  client_name, project_manager, report_source='file_import',
                   progress_prev_pct, progress_this_pct, progress_total_pct,
-                  contract_value, addendum_value, total_pagu
+                  contract_value, addendum_value, bq_external
        ) → $period
 
   4. ZONA 2 — parseWorkItems($hppRows, $period->id):
@@ -479,9 +479,9 @@ PolaBImport::import($filePath, $ingestionFileId):
            ])
 
   6. Refresh HPP totals pada period:
-       hpp_plan_total   = SUM(total_budget) WHERE parent_id IS NULL AND NOT is_total_row
-       hpp_actual_total = SUM(realisasi)    WHERE parent_id IS NULL AND NOT is_total_row
-       hpp_deviation    = hpp_plan_total - hpp_actual_total
+       actual_costs   = SUM(total_budget) WHERE parent_id IS NULL AND NOT is_total_row
+       realized_costs = SUM(realisasi)    WHERE parent_id IS NULL AND NOT is_total_row
+       hpp_deviation  = actual_costs - realized_costs
        period->update([...])
 
   7. Return: [total, imported, skipped, errors, unrecognized_columns]
@@ -533,7 +533,7 @@ PolaCImport::import($filePath, $ingestionFileId):
 
     ProjectPeriod::updateOrCreate([project_id, period], [
         client_name, project_manager, report_source='file_import',
-        progress_total_pct, contract_value, addendum_value, total_pagu
+        progress_total_pct, contract_value, addendum_value, bq_external
     ]) → $period
 
   Jika project/period null setelah Pass 1 → throw RuntimeException
@@ -582,7 +582,7 @@ PolaCImport::import($filePath, $ingestionFileId):
             fill:  rencana_pct, realisasi_pct, deviasi_pct, keterangan
         )
 
-  Refresh HPP totals → period->update([hpp_plan_total, hpp_actual_total, hpp_deviation])
+  Refresh HPP totals → period->update([actual_costs, realized_costs, hpp_deviation])
 
   Return: [total, imported, skipped, errors, unrecognized_columns]
 ```
@@ -658,7 +658,7 @@ AdaptiveWorkbookImport::import($filePath, $ingestionFileId):
     - Catat field_trace: [value, sheet, row, confidence, strategy]
 
   Derivasi otomatis (jika field tidak ditemukan):
-    - total_pagu = contract_value + addendum_value
+    - bq_external = contract_value + addendum_value
     - progress_pct ← progress_total_pct
     - owner ← client_name
 
@@ -672,7 +672,7 @@ AdaptiveWorkbookImport::import($filePath, $ingestionFileId):
       → row field override metadata field (row lebih spesifik)
       normalizeProjectData() → parse semua field sesuai tipe
       applyDerivedProjectDefaults():
-        - contract_value ← total_pagu jika tidak ada
+        - contract_value ← bq_external jika tidak ada
         - planned_cost ← SUM(level-0 total_budget dari work_items)
         - actual_cost  ← SUM(level-0 realisasi dari work_items)
         - planned_duration ← ceil(max_week_number / 4) dari s_curves
@@ -701,7 +701,7 @@ AdaptiveWorkbookImport::import($filePath, $ingestionFileId):
     ProjectPeriod::updateOrCreate([project_id, period], [
         client_name, project_manager, report_source='adaptive_scan',
         progress_prev_pct, progress_this_pct, progress_total_pct,
-        contract_value, addendum_value, total_pagu
+        contract_value, addendum_value, bq_external
     ]) → $period
 
   syncWorkItems($period, $payload['work_items']):
@@ -721,7 +721,7 @@ AdaptiveWorkbookImport::import($filePath, $ingestionFileId):
     Iterasi → ProjectProgressCurve::updateOrCreate([project_id, week_number], [...])
 
   refreshPeriodTotals($period):
-    Recalculate hpp_plan_total, hpp_actual_total, hpp_deviation
+    Recalculate actual_costs, realized_costs, hpp_deviation
 
   ── RETURN ────────────────────────────────────────────────────────────────
 

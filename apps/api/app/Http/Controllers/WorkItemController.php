@@ -135,8 +135,8 @@ class WorkItemController extends Controller
         return response()->json([
             'data' => [
                 'tahap'       => $wbsModel->name_of_work_phase,
-                'rabInternal' => (float) $wbsModel->hpp_plan_total,
-                'bqExternal'  => (float) $wbsModel->total_pagu,
+                'rabInternal' => (float) $wbsModel->actual_costs,
+                'bqExternal'  => (float) $wbsModel->bq_external,
                 'items'       => $items,
             ],
         ]);

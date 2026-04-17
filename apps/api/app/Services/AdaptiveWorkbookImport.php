@@ -480,10 +480,10 @@ class AdaptiveWorkbookImport
             }
         }
 
-        if (!isset($metadata['total_pagu']) && isset($metadata['contract_value'], $metadata['addendum_value'])) {
-            $metadata['total_pagu'] = $metadata['contract_value'] + $metadata['addendum_value'];
-            $fieldTrace['total_pagu'] = [
-                'value' => $metadata['total_pagu'],
+        if (!isset($metadata['bq_external']) && isset($metadata['contract_value'], $metadata['addendum_value'])) {
+            $metadata['bq_external'] = $metadata['contract_value'] + $metadata['addendum_value'];
+            $fieldTrace['bq_external'] = [
+                'value' => $metadata['bq_external'],
                 'sheet' => 'derived',
                 'row' => null,
                 'confidence' => min(
@@ -690,7 +690,7 @@ class AdaptiveWorkbookImport
 
         $contractValue = $metadata['contract_value'] ?? (float) $project->contract_value;
         $addendumValue = $metadata['addendum_value'] ?? null;
-        $totalPagu = $metadata['total_pagu']
+        $bqExternal = $metadata['bq_external']
             ?? ($contractValue !== null && $addendumValue !== null ? $contractValue + $addendumValue : null);
 
         return ProjectWbs::updateOrCreate(
@@ -705,7 +705,7 @@ class AdaptiveWorkbookImport
                 'progress_total_pct' => $metadata['progress_total_pct'] ?? $metadata['progress_pct'] ?? null,
                 'contract_value' => $contractValue,
                 'addendum_value' => $addendumValue,
-                'total_pagu' => $totalPagu,
+                'bq_external' => $bqExternal,
             ]
         );
     }
@@ -911,10 +911,16 @@ class AdaptiveWorkbookImport
         $totalPagu = (float) $wbsPhase->total_pagu;
 
         $wbsPhase->update([
+<<<<<<< Updated upstream
             'hpp_plan_total' => $plan,
             'hpp_actual_total' => $actual,
             'hpp_deviation' => ($plan ?: 0) - ($actual ?: 0),
             'deviasi_pct' => $totalPagu > 0 ? (($totalPagu - ($plan ?: 0)) / $totalPagu) * 100 : 0,
+=======
+            'actual_costs' => $hppPlan ?: $wbsPhase->actual_costs,
+            'realized_costs' => $hppActual ?: $wbsPhase->realized_costs,
+            'hpp_deviation' => ($hppPlan ?: 0) - ($hppActual ?: 0),
+>>>>>>> Stashed changes
         ]);
     }
 
@@ -1216,9 +1222,9 @@ class AdaptiveWorkbookImport
 
     private function applyDerivedProjectDefaults(array $data, array $payload): array
     {
-        if (!isset($data['contract_value']) && isset($data['total_pagu'])) {
-            $data['contract_value'] = $data['total_pagu'];
-            $this->addWarningOnce('contract_value diturunkan dari total_pagu.');
+        if (!isset($data['contract_value']) && isset($data['bq_external'])) {
+            $data['contract_value'] = $data['bq_external'];
+            $this->addWarningOnce('contract_value diturunkan dari bq_external.');
         }
 
         [$plannedCost, $actualCost] = $this->deriveCostsFromWorkItems($payload['work_items'] ?? []);

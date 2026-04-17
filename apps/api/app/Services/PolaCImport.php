@@ -99,6 +99,7 @@ class PolaCImport
             $hppActual = ProjectWorkItem::where('period_id', $phase->id)
                 ->where('is_total_row', false)->sum('realisasi');
 
+<<<<<<< Updated upstream
             if ($hppPlan || $hppActual) {
                 $phase->update([
                     'hpp_plan_total'   => $hppPlan ?: $phase->hpp_plan_total,
@@ -107,6 +108,13 @@ class PolaCImport
                 ]);
             }
         }
+=======
+        $period->update([
+            'actual_costs'     => $hppPlan ?: $period->actual_costs,
+            'realized_costs'   => $hppActual ?: $period->realized_costs,
+            'hpp_deviation'    => ($hppPlan ?: 0) - ($hppActual ?: 0),
+        ]);
+>>>>>>> Stashed changes
 
         return [
             'total'                => $this->total,
@@ -241,6 +249,33 @@ class PolaCImport
             ]
         );
 
+<<<<<<< Updated upstream
+=======
+        $totalPagu = ($meta['contract_value'] ?? 0) + ($meta['addendum_value'] ?? 0);
+
+        $wbsName = $meta['name_of_work_phase'] ?? $meta['period'] ?? 'PEKERJAAN UMUM';
+
+        // If period is in YYYY-MM format, transform to "PEKERJAAN XXX"
+        if (preg_match('/^\d{4}-\d{2}$/', $wbsName)) {
+            $monthNum = substr($wbsName, 5, 2);
+            $wbsName = $this->transformMonthToWbsName((int) $monthNum);
+        }
+
+        $wbsPhase = ProjectWbs::updateOrCreate(
+            ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
+            [
+                'ingestion_file_id'  => $ingestionFileId,
+                'client_name'        => $meta['client_name'] ?? null,
+                'project_manager'    => $meta['project_manager'] ?? null,
+                'report_source'      => 'file_import',
+                'progress_total_pct' => $meta['progress_total_pct'] ?? null,
+                'contract_value'     => $meta['contract_value'] ?? null,
+                'addendum_value'     => $meta['addendum_value'] ?? null,
+                'bq_external'        => $totalPagu ?: null,
+            ]
+        );
+
+>>>>>>> Stashed changes
         $this->imported++;
 
         // ── Parse summary table → create one WBS phase per Roman-numbered row ──

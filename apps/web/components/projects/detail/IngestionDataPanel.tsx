@@ -342,7 +342,7 @@ export default function IngestionDataPanel({ projectId }: Props) {
                 />
                 <StatCard
                   label="Total Pagu"
-                  value={formatCurrency(activePeriod.total_pagu)}
+                  value={formatCurrency(activePeriod.bq_external)}
                 />
                 <StatCard
                   label="Deviasi HPP"

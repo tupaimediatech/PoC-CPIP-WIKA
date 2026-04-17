@@ -99,7 +99,7 @@ class PolaBImport
                 'progress_total_pct' => $meta['progress_total_pct'] ?? null,
                 'contract_value'     => $meta['contract_value'] ?? null,
                 'addendum_value'     => $meta['addendum_value'] ?? null,
-                'total_pagu'         => $meta['total_pagu'] ?? null,
+                'bq_external'        => $meta['bq_external'] ?? null,
             ]
         );
 
@@ -129,8 +129,8 @@ class PolaBImport
         $totalPagu = (float) $wbsPhase->total_pagu;
 
         $wbsPhase->update([
-            'hpp_plan_total'   => $hppPlan,
-            'hpp_actual_total' => $hppActual,
+            'actual_costs'     => $hppPlan,
+            'realized_costs'   => $hppActual,
             'hpp_deviation'    => $hppPlan - $hppActual,
             'deviasi_pct'      => $totalPagu > 0 ? (($totalPagu - $hppPlan) / $totalPagu) * 100 : 0,
         ]);
@@ -196,7 +196,7 @@ class PolaBImport
         }
 
         if (isset($meta['contract_value'], $meta['addendum_value'])) {
-            $meta['total_pagu'] = $meta['contract_value'] + $meta['addendum_value'];
+            $meta['bq_external'] = $meta['contract_value'] + $meta['addendum_value'];
         }
 
         return $meta;

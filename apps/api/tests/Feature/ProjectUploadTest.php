@@ -529,7 +529,7 @@ class ProjectUploadTest extends TestCase
             ->assertJsonPath('field_trace.project_manager.value', 'Farah A')
             ->assertJsonPath('field_trace.contract_value.value', 45000000000)
             ->assertJsonPath('field_trace.addendum_value.value', -1500000000)
-            ->assertJsonPath('field_trace.total_pagu.value', 43500000000);
+            ->assertJsonPath('field_trace.bq_external.value', 43500000000);
 
         $this->assertDatabaseHas('projects', [
             'project_code' => 'WIKA-2024-05-RS',

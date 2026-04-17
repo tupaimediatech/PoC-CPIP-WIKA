@@ -105,8 +105,8 @@
 - id                    // WBS Phase ID for navigation (wbsModel / tahapId)
 - project_id            // FK to projects
 - name_of_work_phase    // as Nama Tahap Pekerjaan [WBS Phase name (e.g., "PEKERJAAN PONDASI", "PEKERJAAN STRUKTUR")]
-- total_pagu            // as BQ External
-- hpp_plan_total        // as RAB Internal
+- bq_external           // as BQ External
+- actual_costs          // as RAB Internal
 - deviasi_pct           // as Deviasi %
 ```
 
@@ -213,8 +213,8 @@
 
 **Columns Used - project_wbs:**
 ```php
-- hpp_plan_total   // Planned HPP aggregate
-- hpp_actual_total // Actual HPP aggregate
+- actual_costs     // Planned HPP aggregate
+- realized_costs   // Actual HPP aggregate
 - hpp_deviation    // HPP deviation
 ```
 
@@ -351,8 +351,8 @@ ingestion_files (1) ──── (N) project_wbs
 │  │  Columns: name_of_work_phase (WBS Phase Name), client_name,             │    │
 │  │           project_manager, report_source, progress_prev_pct,             │    │
 │  │           progress_this_pct, progress_total_pct, contract_value,         │    │
-│  │           addendum_value, total_pagu (BQ External),                       │    │
-│  │           hpp_plan_total (RAB Internal), hpp_actual_total,                │    │
+│  │           addendum_value, bq_external (BQ External),                      │    │
+│  │           actual_costs (RAB Internal), realized_costs,                    │    │
 │  │           hpp_deviation, deviasi_pct (calc)                               │    │
 │  └───────────────────────────────────────────────────────────────────────────┘    │
 │                                      │                                         │    │
@@ -583,7 +583,8 @@ GET    /api/periods/{periodModel}/equipment          - USE /work-items/{workItem
 | 2024-04-08 | 1.4 | Added ERD (Entity Relationship Diagram) section |
 | 2026-04-10 | 2.0 | **BREAKING**: Renamed `project_periods` → `project_wbs`, `period` → `name_of_work_phase`. Updated all API endpoints. |
 | 2026-04-10 | 2.1 | **UPDATED**: Added work-item filtered endpoints (`/api/work-items/{workItem}/materials`, `/api/work-items/{workItem}/equipment`) for Level 5. Clarified difference between WBS-level and work-item-level endpoints. |
+| 2026-04-17 | 2.2 | **UPDATED**: Renamed WBS cost fields to `bq_external`, `actual_costs`, and `realized_costs`. Frontend response labels such as `bqExternal`, `rabInternal`, and `realisasi` remain unchanged for compatibility. |
 
 ---
 
-*Last Updated: 2026-04-10*
+*Last Updated: 2026-04-17*

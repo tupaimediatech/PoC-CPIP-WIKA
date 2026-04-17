@@ -49,9 +49,9 @@ export interface ProjectPeriod {
   progress_total_pct: string | null;
   contract_value: string | null;
   addendum_value: string | null;
-  total_pagu: string | null;
-  hpp_plan_total: string | null;
-  hpp_actual_total: string | null;
+  bq_external: string | null;
+  actual_costs: string | null;
+  realized_costs: string | null;
   hpp_deviation: string | null;
   created_at: string;
   updated_at: string;
