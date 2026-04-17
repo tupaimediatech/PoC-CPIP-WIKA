@@ -8,6 +8,7 @@ use App\Models\ProjectMaterialLog;
 use App\Models\ProjectWbs;
 use App\Models\ProjectProgressCurve;
 use App\Models\ProjectWorkItem;
+use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
@@ -52,25 +53,28 @@ class PolaCImport
         $spreadsheet = IOFactory::load($filePath);
         $sheetNames  = $spreadsheet->getSheetNames();
 
-        $project = null;
-        $period  = null;
+        $project  = null;
+        $phaseMap = []; // Roman prefix => ProjectWbs model
 
-        // ── Pass 1: COVER sheet first to get project + period context ──────
+        // ── Pass 1: COVER sheet first to get project + WBS phases ─────────
         foreach ($sheetNames as $name) {
             $type = $this->detectSheetType($name);
             if ($type === self::SHEET_TYPE_COVER) {
-                $raw            = $spreadsheet->getSheetByName($name)->toArray(null, true, true, false);
-                [$project, $period] = $this->parseCoverSheet($raw, $ingestionFileId);
+                $raw = $spreadsheet->getSheetByName($name)->toArray(null, true, true, false);
+                [$project, $phaseMap] = $this->parseCoverSheet($raw, $ingestionFileId);
                 break;
             }
         }
 
-        if (!$project || !$period) {
+        if (!$project || empty($phaseMap)) {
             throw new \RuntimeException(
                 'Sheet COVER & SUMMARY tidak ditemukan atau tidak bisa diparse. ' .
                 'Sheets ditemukan: ' . implode(', ', $sheetNames)
             );
         }
+
+        // For sheets that need a single period_id fallback, use first phase
+        $defaultPhase = reset($phaseMap);
 
         // ── Pass 2: remaining sheets ───────────────────────────────────────
         foreach ($sheetNames as $name) {
@@ -80,25 +84,29 @@ class PolaCImport
             $raw = $spreadsheet->getSheetByName($name)->toArray(null, true, true, false);
 
             match ($type) {
-                self::SHEET_TYPE_HPP       => $this->parseHppSheet($raw, $period->id),
-                self::SHEET_TYPE_MATERIAL  => $this->parseMaterialSheet($raw, $period->id),
-                self::SHEET_TYPE_EQUIPMENT => $this->parseEquipmentSheet($raw, $period->id),
+                self::SHEET_TYPE_HPP       => $this->parseHppSheet($raw, $phaseMap, $defaultPhase->id),
+                self::SHEET_TYPE_MATERIAL  => $this->parseMaterialSheet($raw, $defaultPhase->id),
+                self::SHEET_TYPE_EQUIPMENT => $this->parseEquipmentSheet($raw, $defaultPhase->id),
                 self::SHEET_TYPE_SCURVE    => $this->parseSCurveSheet($raw, $project->id),
                 default                    => null,
             };
         }
 
-        // Update HPP totals
-        $hppPlan   = ProjectWorkItem::where('period_id', $period->id)
-            ->whereNull('parent_id')->where('is_total_row', false)->sum('total_budget');
-        $hppActual = ProjectWorkItem::where('period_id', $period->id)
-            ->whereNull('parent_id')->where('is_total_row', false)->sum('realisasi');
+        // Update HPP totals per phase
+        foreach ($phaseMap as $phase) {
+            $hppPlan   = ProjectWorkItem::where('period_id', $phase->id)
+                ->where('is_total_row', false)->sum('total_budget');
+            $hppActual = ProjectWorkItem::where('period_id', $phase->id)
+                ->where('is_total_row', false)->sum('realisasi');
 
-        $period->update([
-            'hpp_plan_total'   => $hppPlan ?: $period->hpp_plan_total,
-            'hpp_actual_total' => $hppActual ?: $period->hpp_actual_total,
-            'hpp_deviation'    => ($hppPlan ?: 0) - ($hppActual ?: 0),
-        ]);
+            if ($hppPlan || $hppActual) {
+                $phase->update([
+                    'hpp_plan_total'   => $hppPlan ?: $phase->hpp_plan_total,
+                    'hpp_actual_total' => $hppActual ?: $phase->hpp_actual_total,
+                    'hpp_deviation'    => ($hppPlan ?: 0) - ($hppActual ?: 0),
+                ]);
+            }
+        }
 
         return [
             'total'                => $this->total,
@@ -116,20 +124,24 @@ class PolaCImport
     {
         $lower = strtolower($name);
 
-        if (str_contains($lower, 'cover') || str_contains($lower, 'summary')) {
+        if (str_contains($lower, 'cover') || str_contains($lower, 'summary')
+            || str_contains($lower, 'ringkasan')) {
             return self::SHEET_TYPE_COVER;
         }
-        if (str_contains($lower, 'hpp') || str_contains($lower, 'rekap')) {
+        if (str_contains($lower, 'hpp') || str_contains($lower, 'rekap')
+            || str_contains($lower, 'biaya') || str_contains($lower, 'detail')) {
             return self::SHEET_TYPE_HPP;
         }
-        if (str_contains($lower, 'material')) {
+        if (str_contains($lower, 'material') || str_contains($lower, 'vendor')
+            || str_contains($lower, 'keuangan')) {
             return self::SHEET_TYPE_MATERIAL;
         }
         if (str_contains($lower, 'alat') || str_contains($lower, 'equipment')) {
             return self::SHEET_TYPE_EQUIPMENT;
         }
-        if (str_contains($lower, 'curva') || str_contains($lower, 'curve') ||
-            str_contains($lower, 's_curve') || str_contains($lower, 'progress')) {
+        if (str_contains($lower, 'curva') || str_contains($lower, 'curve')
+            || str_contains($lower, 's_curve') || str_contains($lower, 'progress')
+            || str_contains($lower, 'earned')) {
             return self::SHEET_TYPE_SCURVE;
         }
 
@@ -137,43 +149,70 @@ class PolaCImport
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // COVER & SUMMARY sheet → projects + project_periods
+    // COVER & SUMMARY sheet → project + multiple WBS phases
+    //
+    // Returns [$project, $phaseMap] where $phaseMap is keyed by Roman prefix
+    // e.g. ['I' => ProjectWbs, 'II' => ProjectWbs, ...]
     // ──────────────────────────────────────────────────────────────────────────
     private function parseCoverSheet(array $raw, ?int $ingestionFileId): array
     {
         $meta = [];
 
-        foreach ($raw as $row) {
-            $cells = array_values(array_filter($row, fn($c) => $c !== null && $c !== ''));
-            if (count($cells) < 2) continue;
+        // Only scan first rows for metadata (stop before table headers start)
+        $metaRows = array_slice($raw, 0, min(count($raw), 6));
+        foreach ($metaRows as $row) {
 
-            $rawKey = (string) $cells[0];
-            $key    = $this->mapper->resolveAlias($rawKey, 'project')
-                   ?? $this->mapper->normalizeHeader($rawKey);
-            $val    = $cells[1];
-
-            switch ($key) {
-                case 'project_code':       $meta['project_code']       = trim((string) $val); break;
-                case 'project_name':       $meta['project_name']       = trim((string) $val); break;
-                case 'client_name':
-                case 'owner':              $meta['client_name']        = trim((string) $val); break;
-                case 'project_manager':    $meta['project_manager']    = trim((string) $val); break;
-                case 'contract_value':     $meta['contract_value']     = $this->mapper->parseNumeric($val); break;
-                case 'addendum_value':     $meta['addendum_value']     = $this->mapper->parseNumeric($val); break;
-                case 'progress_pct':
-                case 'progress_total_pct': $meta['progress_total_pct'] = $this->mapper->parseNumeric($val); break;
-                case 'planned_cost':       $meta['planned_cost']       = $this->mapper->parseNumeric($val); break;
-                case 'actual_cost':        $meta['actual_cost']        = $this->mapper->parseNumeric($val); break;
-                case 'planned_duration':   $meta['planned_duration']   = (int) $val; break;
-                case 'actual_duration':    $meta['actual_duration']    = (int) $val; break;
-                case 'project_year':       $meta['project_year']       = (int) $val; break;
+            // Extract key-value pairs from every 2 columns (A:B, C:D, E:F, G:H, ...)
+            $pairs = [];
+            $values = array_values($row);
+            for ($i = 0; $i < count($values) - 1; $i += 2) {
+                $k = $values[$i];
+                $v = $values[$i + 1];
+                if ($k !== null && trim((string) $k) !== '' && $v !== null && trim((string) $v) !== '') {
+                    $pairs[] = [(string) $k, $v];
+                }
             }
 
-            // Detect period from key label
-            if (str_contains(strtolower($rawKey), 'periode') ||
-                str_contains(strtolower($rawKey), 'bulan')) {
-                $p = $this->mapper->parsePeriod((string) $val);
-                if ($p) $meta['period'] = $p;
+            if (empty($pairs)) continue;
+
+            foreach ($pairs as [$rawKey, $val]) {
+                $key = $this->mapper->resolveAlias($rawKey, 'project')
+                    ?? $this->mapper->normalizeHeader($rawKey);
+
+                switch ($key) {
+                    case 'project_code':       $meta['project_code']       = trim((string) $val); break;
+                    case 'project_name':       $meta['project_name']       = trim((string) $val); break;
+                    case 'client_name':
+                    case 'owner':              $meta['client_name']        = trim((string) $val); break;
+                    case 'project_manager':    $meta['project_manager']    = trim((string) $val); break;
+                    case 'contract_value':     $meta['contract_value']     = $this->mapper->parseNumeric($val); break;
+                    case 'addendum_value':     $meta['addendum_value']     = $this->mapper->parseNumeric($val); break;
+                    case 'progress_pct':
+                    case 'progress_total_pct': $meta['progress_total_pct'] = $this->mapper->parseNumeric($val); break;
+                    case 'planned_cost':       $meta['planned_cost']       = $this->mapper->parseNumeric($val); break;
+                    case 'actual_cost':        $meta['actual_cost']        = $this->mapper->parseNumeric($val); break;
+                    case 'planned_duration':   $meta['planned_duration']   = $this->parseDuration($val); break;
+                    case 'actual_duration':    $meta['actual_duration']    = $this->parseDuration($val); break;
+                    case 'project_year':       $meta['project_year']       = (int) $val; break;
+                    case 'sbu':                $meta['sbu']                = trim((string) $val); break;
+                    case 'division':           $meta['division']           = trim((string) $val); break;
+                }
+
+                // Detect period from key label
+                if (str_contains(strtolower($rawKey), 'periode') ||
+                    str_contains(strtolower($rawKey), 'bulan')) {
+                    $p = $this->mapper->parsePeriod((string) $val);
+                    if ($p) $meta['period'] = $p;
+                }
+            }
+        }
+
+        // Fallback: extract project_name from title row (e.g. "LAPORAN HPP - PEMBANGUNAN JALAN TOL ...")
+        if (empty($meta['project_name']) && !empty($raw[0])) {
+            $titleCell = trim((string) ($raw[0][0] ?? ''));
+            if (!empty($titleCell) && mb_strlen($titleCell) > 10) {
+                $name = preg_replace('/^(?:LAPORAN\s+(?:HPP|PROYEK|PROGRESS)|DETAIL\s+BIAYA\s+\w+|RINGKASAN\s+PROYEK)\s*[-–—:]\s*/i', '', $titleCell);
+                $meta['project_name'] = $name ?: $titleCell;
             }
         }
 
@@ -183,60 +222,129 @@ class PolaCImport
 
         $this->total++;
 
-        // Upsert project — financial/operational fields are nullable when not in file
+        // Upsert project
         $project = Project::firstOrCreate(
-            ['project_code' => $meta['project_code']],
+            ['project_code' => $meta['project_code'], 'user_id' => Auth::id()],
             [
                 'project_name'      => $meta['project_name'] ?? $meta['project_code'],
                 'division'          => $meta['division'] ?? null,
+                'sbu'               => $meta['sbu'] ?? null,
                 'owner'             => $meta['client_name'] ?? null,
                 'contract_value'    => $meta['contract_value'] ?? null,
                 'planned_cost'      => $meta['planned_cost'] ?? null,
                 'actual_cost'       => $meta['actual_cost'] ?? null,
                 'planned_duration'  => $meta['planned_duration'] ?? null,
                 'actual_duration'   => $meta['actual_duration'] ?? null,
-                'progress_pct'      => $meta['progress_total_pct'] ?? null,
+                'progress_pct'      => $meta['progress_total_pct'] ?? 0,
                 'project_year'      => $meta['project_year'] ?? now()->year,
                 'ingestion_file_id' => $ingestionFileId,
             ]
         );
 
-        $totalPagu = ($meta['contract_value'] ?? 0) + ($meta['addendum_value'] ?? 0);
-
-        $wbsName = $meta['name_of_work_phase'] ?? $meta['period'] ?? 'PEKERJAAN UMUM';
-
-        // If period is in YYYY-MM format, transform to "PEKERJAAN XXX"
-        if (preg_match('/^\d{4}-\d{2}$/', $wbsName)) {
-            $monthNum = substr($wbsName, 5, 2);
-            $wbsName = $this->transformMonthToWbsName((int) $monthNum);
-        }
-
-        $wbsPhase = ProjectWbs::updateOrCreate(
-            ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
-            [
-                'ingestion_file_id'  => $ingestionFileId,
-                'client_name'        => $meta['client_name'] ?? null,
-                'project_manager'    => $meta['project_manager'] ?? null,
-                'report_source'      => 'file_import',
-                'progress_total_pct' => $meta['progress_total_pct'] ?? null,
-                'contract_value'     => $meta['contract_value'] ?? null,
-                'addendum_value'     => $meta['addendum_value'] ?? null,
-                'total_pagu'         => $totalPagu ?: null,
-            ]
-        );
-
         $this->imported++;
 
-        return [$project, $wbsPhase];
+        // ── Parse summary table → create one WBS phase per Roman-numbered row ──
+        $phaseMap = $this->parseSummaryPhases($raw, $project->id, $ingestionFileId, $meta);
+
+        // Fallback: if no summary table found, create a single default phase
+        if (empty($phaseMap)) {
+            $totalPagu = ($meta['contract_value'] ?? 0) + ($meta['addendum_value'] ?? 0);
+            $wbsName = $meta['name_of_work_phase'] ?? $meta['period'] ?? 'PEKERJAAN UMUM';
+
+            if (preg_match('/^\d{4}-\d{2}$/', $wbsName)) {
+                $wbsName = $this->transformMonthToWbsName((int) substr($wbsName, 5, 2));
+            }
+
+            $phase = ProjectWbs::updateOrCreate(
+                ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
+                [
+                    'ingestion_file_id'  => $ingestionFileId,
+                    'client_name'        => $meta['client_name'] ?? null,
+                    'project_manager'    => $meta['project_manager'] ?? null,
+                    'report_source'      => 'file_import',
+                    'progress_total_pct' => $meta['progress_total_pct'] ?? null,
+                    'contract_value'     => $meta['contract_value'] ?? null,
+                    'addendum_value'     => $meta['addendum_value'] ?? null,
+                    'total_pagu'         => $totalPagu ?: null,
+                ]
+            );
+            $phaseMap['_default'] = $phase;
+            $this->imported++;
+        }
+
+        return [$project, $phaseMap];
+    }
+
+    /**
+     * Parse summary table rows from the COVER sheet to create multiple WBS phases.
+     *
+     * Expects rows like: ["I", "Pekerjaan Persiapan & Mobilisasi", "SBU-2", 8500, 8120, "3.2%", ...]
+     * Returns associative array: ['I' => ProjectWbs, 'II' => ProjectWbs, ...]
+     */
+    private function parseSummaryPhases(array $raw, int $projectId, ?int $ingestionFileId, array $meta): array
+    {
+        // Find the summary table header row
+        $headerIdx = $this->mapper->findHeaderRowByKeywords($raw, ['uraian', 'budget', 'aktual'])
+                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['uraian', 'bobot', 'plan']);
+
+        if ($headerIdx === null) return [];
+
+        $phaseMap = [];
+        $dataRows = array_slice($raw, $headerIdx + 1);
+
+        foreach ($dataRows as $row) {
+            if ($this->mapper->isEmptyRow($row)) continue;
+
+            $values = array_values($row);
+            $romanNo = trim((string) ($values[0] ?? ''));
+            $name    = trim((string) ($values[1] ?? ''));
+
+            // Only process rows with a Roman numeral in the first column
+            if (empty($romanNo) || !preg_match('/^[IVX]+$/', $romanNo)) continue;
+            if (empty($name)) continue;
+
+            $this->total++;
+
+            $budget  = $this->mapper->parseNumeric($values[3] ?? null);
+            $actual  = $this->mapper->parseNumeric($values[4] ?? null);
+            $bobot   = $this->mapper->parsePercentage($values[5] ?? null);
+            $plan    = $this->mapper->parsePercentage($values[6] ?? null);
+            $actualPct = $this->mapper->parsePercentage($values[7] ?? null);
+
+            $phase = ProjectWbs::updateOrCreate(
+                ['project_id' => $projectId, 'name_of_work_phase' => $name],
+                [
+                    'ingestion_file_id'  => $ingestionFileId,
+                    'client_name'        => $meta['client_name'] ?? null,
+                    'project_manager'    => $meta['project_manager'] ?? null,
+                    'report_source'      => 'file_import',
+                    'progress_total_pct' => $actualPct,
+                    'contract_value'     => $budget,
+                    'hpp_plan_total'     => $budget,
+                    'hpp_actual_total'   => $actual,
+                    'hpp_deviation'      => $budget !== null && $actual !== null ? $budget - $actual : null,
+                ]
+            );
+
+            $phaseMap[$romanNo] = $phase;
+            $this->imported++;
+        }
+
+        return $phaseMap;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // REKAP_HPP sheet → project_work_items
+    // REKAP_HPP / Detail Biaya sheet → project_work_items
+    //
+    // Routes each item to the correct WBS phase by matching the Roman numeral
+    // prefix of the WBS code (e.g. "I.1" → phase "I", "II.3" → phase "II").
     // ──────────────────────────────────────────────────────────────────────────
-    private function parseHppSheet(array $raw, int $periodId): void
+    private function parseHppSheet(array $raw, array $phaseMap, int $fallbackPeriodId): void
     {
         $headerIdx = $this->mapper->findHeaderRowByKeywords($raw, ['realisasi', 'budget'])
-                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['realisasi', 'anggaran']);
+                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['realisasi', 'anggaran'])
+                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['uraian', 'budget'])
+                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['uraian', 'aktual']);
 
         if ($headerIdx === null) {
             $this->errors[] = 'Sheet HPP: header tabel tidak ditemukan.';
@@ -267,6 +375,16 @@ class PolaCImport
                           str_contains(strtolower($itemName), 'jumlah');
 
             $itemNo   = trim((string) ($data['item_no'] ?? ''));
+
+            // Route to correct WBS phase by Roman prefix (e.g. "I.1" → "I", "XII.2" → "XII")
+            $periodId = $fallbackPeriodId;
+            if (!empty($itemNo) && preg_match('/^([IVX]+)/', $itemNo, $m)) {
+                $prefix = $m[1];
+                if (isset($phaseMap[$prefix])) {
+                    $periodId = $phaseMap[$prefix]->id;
+                }
+            }
+
             $level    = $this->mapper->detectLevel($itemNo, $itemName);
             $parentId = $level > 0 ? ($parentMap[$level - 1] ?? null) : null;
 
@@ -297,10 +415,12 @@ class PolaCImport
     private function parseMaterialSheet(array $raw, int $periodId): void
     {
         $headerIdx = $this->mapper->findHeaderRowByKeywords($raw, ['supplier', 'material', 'qty'])
-                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['vendor', 'material', 'satuan']);
+                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['vendor', 'material', 'satuan'])
+                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['vendor', 'kontrak', 'termin'])
+                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['vendor', 'lingkup', 'kontrak']);
 
         if ($headerIdx === null) {
-            $this->errors[] = 'Sheet Material: header tidak ditemukan.';
+            $this->errors[] = 'Sheet Material/Vendor: header tidak ditemukan.';
             return;
         }
 
@@ -404,14 +524,29 @@ class PolaCImport
     // ──────────────────────────────────────────────────────────────────────────
     private function parseSCurveSheet(array $raw, int $projectId): void
     {
+        // Standard S-curve format (weekly)
         $headerIdx = $this->mapper->findHeaderRowByKeywords($raw, ['minggu', 'rencana', 'realisasi'])
                   ?? $this->mapper->findHeaderRowByKeywords($raw, ['week', 'rencana', 'realisasi']);
 
-        if ($headerIdx === null) {
-            $this->errors[] = 'Sheet S-Curve: header tidak ditemukan.';
+        if ($headerIdx !== null) {
+            $this->parseWeeklySCurve($raw, $headerIdx, $projectId);
             return;
         }
 
+        // Earned Value format — parse as work items with EVM data, derive S-curve
+        $headerIdx = $this->mapper->findHeaderRowByKeywords($raw, ['uraian', 'bobot', 'plan'])
+                  ?? $this->mapper->findHeaderRowByKeywords($raw, ['wbs', 'earned', 'actual']);
+
+        if ($headerIdx !== null) {
+            $this->parseEarnedValueSheet($raw, $headerIdx, $projectId);
+            return;
+        }
+
+        $this->errors[] = 'Sheet S-Curve/Earned Value: header tidak ditemukan.';
+    }
+
+    private function parseWeeklySCurve(array $raw, int $headerIdx, int $projectId): void
+    {
         $headers = $this->mapper->resolveHeaders($raw[$headerIdx], 's_curve');
         $this->unrecognized = array_merge(
             $this->unrecognized,
@@ -447,6 +582,99 @@ class PolaCImport
 
             $this->imported++;
         }
+    }
+
+    /**
+     * Parse Earned Value & Progress sheet — group items by Roman numeral prefix,
+     * aggregate weighted progress, and store as progress curve points.
+     */
+    private function parseEarnedValueSheet(array $raw, int $headerIdx, int $projectId): void
+    {
+        $headers = $this->mapper->resolveHeaders($raw[$headerIdx], 'work_item');
+        $this->unrecognized = array_merge(
+            $this->unrecognized,
+            $this->mapper->findUnrecognized($raw[$headerIdx], $headers, 'work_item')
+        );
+
+        $dataRows = array_slice($raw, $headerIdx + 1);
+
+        // Group items by Roman numeral prefix (I, II, III, ...)
+        $groups = [];
+        foreach ($dataRows as $row) {
+            if ($this->mapper->isEmptyRow($row)) continue;
+
+            $data   = array_combine($headers, array_pad($row, count($headers), null));
+            $itemNo = trim((string) ($data['item_no'] ?? ''));
+
+            if (empty($itemNo)) continue;
+
+            // Extract Roman numeral prefix (e.g. "I" from "I.1", "II" from "II.3")
+            if (preg_match('/^([IVX]+)/', $itemNo, $m)) {
+                $prefix = $m[1];
+                if (!isset($groups[$prefix])) {
+                    $groups[$prefix] = ['plan_sum' => 0, 'actual_sum' => 0, 'bobot_sum' => 0, 'name' => ''];
+                }
+
+                $bobot = $this->mapper->parsePercentage($data['bobot_pct'] ?? null) ?? 0;
+                $plan  = $this->mapper->parsePercentage($data['progress_plan_pct'] ?? null) ?? 0;
+                $actual = $this->mapper->parsePercentage($data['progress_actual_pct'] ?? null) ?? 0;
+
+                $groups[$prefix]['plan_sum']   += $bobot * $plan / 100;
+                $groups[$prefix]['actual_sum'] += $bobot * $actual / 100;
+                $groups[$prefix]['bobot_sum']  += $bobot;
+
+                // Use name of first item in group as label
+                if (empty($groups[$prefix]['name'])) {
+                    $itemName = trim((string) ($data['item_name'] ?? ''));
+                    $groups[$prefix]['name'] = $itemName;
+                }
+            }
+        }
+
+        $weekNum = 0;
+        foreach ($groups as $prefix => $group) {
+            $weekNum++;
+            $this->total++;
+
+            $planPct   = $group['bobot_sum'] > 0 ? round($group['plan_sum'] / $group['bobot_sum'] * 100, 2) : 0;
+            $actualPct = $group['bobot_sum'] > 0 ? round($group['actual_sum'] / $group['bobot_sum'] * 100, 2) : 0;
+
+            ProjectProgressCurve::updateOrCreate(
+                ['project_id' => $projectId, 'week_number' => $weekNum],
+                [
+                    'rencana_pct'   => $planPct,
+                    'realisasi_pct' => $actualPct,
+                    'deviasi_pct'   => $actualPct - $planPct,
+                    'keterangan'    => "$prefix. {$group['name']}",
+                ]
+            );
+
+            $this->imported++;
+        }
+    }
+
+    /**
+     * Parse duration value that may include unit suffix like "730 hari" or "24 bulan".
+     */
+    private function parseDuration($val): ?int
+    {
+        $str = trim((string) $val);
+        if ($str === '') return null;
+
+        // Extract numeric part
+        if (preg_match('/^([\d.,]+)\s*(hari|days?|bulan|months?)?/i', $str, $m)) {
+            $num  = (int) str_replace(['.', ','], '', $m[1]);
+            $unit = strtolower($m[2] ?? '');
+
+            // Convert days to months (approximate)
+            if (in_array($unit, ['hari', 'day', 'days'])) {
+                return (int) round($num / 30);
+            }
+
+            return $num;
+        }
+
+        return (int) $val;
     }
 
     private function transformMonthToWbsName(int $month): string

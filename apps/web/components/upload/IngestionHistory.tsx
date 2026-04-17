@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { ingestionApi } from "@/lib/api";
 import { STATUS_CONFIG } from "@/lib/constants/status";
 import type { IngestionFile } from "@/types/project";
@@ -22,15 +23,32 @@ export default function IngestionHistory({ refreshTrigger = 0 }: Props) {
   const [files, setFiles] = useState<IngestionFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reprocessingId, setReprocessingId] = useState<number | null>(null);
 
-  useEffect(() => {
+  const fetchFiles = () => {
     setLoading(true);
     ingestionApi
       .list(50)
       .then((res) => setFiles(res.data))
       .catch(() => setError("Failed to load upload history."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchFiles();
   }, [refreshTrigger]);
+
+  const handleReprocess = async (id: number) => {
+    setReprocessingId(id);
+    try {
+      await ingestionApi.reprocess(id);
+      fetchFiles();
+    } catch {
+      setError("Reprocess failed. Please try again.");
+    } finally {
+      setReprocessingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -127,14 +145,29 @@ export default function IngestionHistory({ refreshTrigger = 0 }: Props) {
                         {formatDate(file.processed_at)}
                       </td>
                       <td className="px-4 py-4">
-                        <a
-                          href={ingestionApi.downloadUrl(file.id)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
-                        >
-                          Download
-                        </a>
+                        <div className="flex items-center gap-3">
+                          <a
+                            href={ingestionApi.downloadUrl(file.id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
+                          >
+                            Download
+                          </a>
+                          {(file.status === "failed" || file.status === "partial") && (
+                            <button
+                              onClick={() => handleReprocess(file.id)}
+                              disabled={reprocessingId === file.id}
+                              className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 font-medium transition-colors disabled:opacity-50"
+                            >
+                              <ArrowClockwiseIcon
+                                size={12}
+                                className={reprocessingId === file.id ? "animate-spin" : ""}
+                              />
+                              {reprocessingId === file.id ? "Processing..." : "Reprocess"}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

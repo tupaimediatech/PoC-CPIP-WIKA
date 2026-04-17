@@ -2,7 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import React from "react";
-import Link from "next/link"; // Import Link
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   HouseIcon,
   PresentationChartIcon,
@@ -15,8 +16,8 @@ import {
   BuildingOfficeIcon,
   ChartBarIcon,
 } from "@phosphor-icons/react";
+import { projectApi, periodApi } from "@/lib/api";
 
-// Menambahkan href opsional
 type BreadcrumbItem = {
   Icon: React.ElementType<IconProps>;
   label: string;
@@ -36,55 +37,126 @@ const STATIC_BREADCRUMBS: Record<string, BreadcrumbItem[]> = {
     { Icon: HouseIcon, label: "Home", href: "/" },
     { Icon: UploadIcon, label: "Data Management" },
   ],
-  // ... sesuaikan href lainnya
 };
 
-function getDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] {
-  const base: BreadcrumbItem[] = [
-    { Icon: ChartBarIcon, label: "Projects Analytics", href: "/" },
-    { Icon: FileTextIcon, label: "All Projects", href: "/projects" },
-  ];
+function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
+  const [items, setItems] = useState<BreadcrumbItem[] | null>(null);
 
-  const segments = pathname.replace("/projects/", "").split("/");
-  const projectId = segments[0];
-
-  if (segments.length >= 1 && projectId) {
-    base.push({
-      Icon: FileTextIcon,
-      label: "RS Tri Harsi",
-      href: `/projects/${projectId}`,
-    });
-  }
-
-  if (segments.length >= 2) {
-    base.push({
-      Icon: TreeStructureIcon,
-      label: "Pekerjaan Struktur",
-      href: `/projects/${projectId}/${segments[1]}`,
-    });
-  }
-
-  // Item terakhir biasanya tidak perlu href karena itu posisi user saat ini
-  if (segments.length >= 3) {
-    const lastSeg = segments[segments.length - 1];
-    if (lastSeg === "hpp" || lastSeg === "risk") {
-      base.push({ Icon: FileTextIcon, label: "HPP & Project Performance" });
-    } else {
-      base.push({ Icon: BuildingOfficeIcon, label: "Detail Sumber Daya" });
+  useEffect(() => {
+    if (!pathname.startsWith("/projects/")) {
+      setItems(null);
+      return;
     }
-  }
 
-  return base;
+    const segments = pathname.replace("/projects/", "").split("/");
+    const projectId = Number(segments[0]);
+    const tahapId = segments[1] ? Number(segments[1]) : null;
+    const itemId = segments[2] && segments[2] !== "hpp" && segments[2] !== "risk" ? Number(segments[2]) : null;
+    const lastSeg = segments[segments.length - 1];
+
+    if (!projectId || isNaN(projectId)) {
+      setItems(null);
+      return;
+    }
+
+    const base: BreadcrumbItem[] = [
+      { Icon: ChartBarIcon, label: "Projects Analytics", href: "/" },
+      { Icon: FileTextIcon, label: "All Projects", href: "/projects" },
+    ];
+
+    const fetches: Promise<void>[] = [];
+    let projectName = "...";
+    let phaseName = "...";
+    let itemName = "...";
+
+    // Always fetch project name
+    fetches.push(
+      projectApi.detail(projectId).then((res) => {
+        projectName = res.data.project_name || `Project #${projectId}`;
+      }).catch(() => {
+        projectName = `Project #${projectId}`;
+      })
+    );
+
+    // Fetch phase name if we have tahapId
+    if (tahapId && !isNaN(tahapId)) {
+      fetches.push(
+        projectApi.periods(projectId).then((res) => {
+          const phase = res.data.phases?.find((p: any) => p.id === tahapId);
+          phaseName = phase?.name || `Phase #${tahapId}`;
+        }).catch(() => {
+          phaseName = `Phase #${tahapId}`;
+        })
+      );
+    }
+
+    // Fetch item name if we have itemId
+    if (tahapId && !isNaN(tahapId) && itemId && !isNaN(itemId)) {
+      fetches.push(
+        periodApi.workItems(tahapId).then((res) => {
+          const item = res.data.items?.find((i: any) => i.id === itemId);
+          itemName = item?.name || `Item #${itemId}`;
+        }).catch(() => {
+          itemName = `Item #${itemId}`;
+        })
+      );
+    }
+
+    Promise.all(fetches).then(() => {
+      // Level 3: project detail
+      base.push({
+        Icon: FileTextIcon,
+        label: projectName,
+        href: `/projects/${projectId}`,
+      });
+
+      if (tahapId && !isNaN(tahapId)) {
+        // Level 4: phase detail
+        base.push({
+          Icon: TreeStructureIcon,
+          label: phaseName,
+          href: `/projects/${projectId}/${tahapId}`,
+        });
+      }
+
+      if (itemId && !isNaN(itemId)) {
+        // Level 5: work item detail
+        base.push({
+          Icon: BuildingOfficeIcon,
+          label: itemName,
+          href: `/projects/${projectId}/${tahapId}/${itemId}`,
+        });
+      }
+
+      if (lastSeg === "hpp") {
+        base.push({ Icon: FileTextIcon, label: "HPP & CPI Analysis" });
+      } else if (lastSeg === "risk") {
+        base.push({ Icon: FileTextIcon, label: "Risk & Timeline" });
+      }
+
+      setItems(base);
+    });
+  }, [pathname]);
+
+  return items;
 }
 
 export default function Breadcrumbs() {
   const pathname = usePathname();
+  const dynamicItems = useDynamicBreadcrumbs(pathname);
 
   let items: BreadcrumbItem[];
   if (STATIC_BREADCRUMBS[pathname]) {
     items = STATIC_BREADCRUMBS[pathname];
+  } else if (pathname.startsWith("/projects/") && dynamicItems) {
+    items = dynamicItems;
   } else if (pathname.startsWith("/projects/")) {
-    items = getDynamicBreadcrumbs(pathname);
+    // Still loading dynamic breadcrumbs
+    items = [
+      { Icon: ChartBarIcon, label: "Projects Analytics", href: "/" },
+      { Icon: FileTextIcon, label: "All Projects", href: "/projects" },
+      { Icon: FileTextIcon, label: "..." },
+    ];
   } else {
     items = STATIC_BREADCRUMBS["/"];
   }
@@ -97,7 +169,6 @@ export default function Breadcrumbs() {
             const isLast = index === items.length - 1;
             const { Icon } = item;
 
-            // Bungkus konten dengan Link jika bukan item terakhir dan punya href
             const content = (
               <div className={`flex items-center gap-1.5 ${!isLast && item.href ? "cursor-pointer hover:opacity-70 transition-opacity" : ""}`}>
                 <span className={isLast ? "text-gray-900" : "text-gray-500"}>

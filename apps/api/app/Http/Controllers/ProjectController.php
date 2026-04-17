@@ -12,6 +12,7 @@ use App\Models\Project;
 use App\Services\PolaBImport;
 use App\Services\PolaCImport;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -106,6 +107,7 @@ class ProjectController extends Controller
         }
 
         $stats = DB::table('projects')
+            ->where('user_id', Auth::id())
             ->selectRaw('AVG(cpi) AS avg_cpi')
             ->selectRaw('AVG(spi) AS avg_spi')
             ->selectRaw('SUM(CASE WHEN cpi < 1 THEN 1 ELSE 0 END) AS overbudget_count')
@@ -113,6 +115,7 @@ class ProjectController extends Controller
             ->first();
 
         $byDivision = DB::table('projects')
+            ->where('user_id', Auth::id())
             ->select('division')
             ->selectRaw('COUNT(*) AS total')
             ->selectRaw('AVG(cpi) AS avg_cpi')
@@ -131,6 +134,7 @@ class ProjectController extends Controller
             ]);
 
         $statusBreakdown = DB::table('projects')
+            ->where('user_id', Auth::id())
             ->select('status', DB::raw('COUNT(*) AS count'))
             ->groupBy('status')
             ->get()
@@ -142,6 +146,7 @@ class ProjectController extends Controller
 
         // Top-10 profitability — use stored gross_profit_pct if set, else calculate from contract/actual
         $profitability = DB::table('projects')
+            ->where('user_id', Auth::id())
             ->select('project_name', 'gross_profit_pct', 'contract_value', 'actual_cost')
             ->where('contract_value', '>', 0)
             ->orderByRaw('
@@ -164,6 +169,7 @@ class ProjectController extends Controller
 
         // Top-10 overrun (highest cost overrun %)
         $overrun = DB::table('projects')
+            ->where('user_id', Auth::id())
             ->select('project_name', 'planned_cost', 'actual_cost')
             ->where('actual_cost', '>', DB::raw('planned_cost'))
             ->where('planned_cost', '>', 0)
@@ -194,6 +200,7 @@ class ProjectController extends Controller
     public function sbuDistribution(): JsonResponse
     {
         $rows = DB::table('projects')
+            ->where('user_id', Auth::id())
             ->select('sbu', DB::raw('COUNT(*) as value'))
             ->whereNotNull('sbu')
             ->where('sbu', '!=', '')
@@ -219,19 +226,23 @@ class ProjectController extends Controller
             ->values();
 
         return response()->json([
-            'division'       => $pluck('division'),
-            'sbu'            => $pluck('sbu'),
-            'owner'          => $pluck('owner'),
-            'contract_type'  => $pluck('contract_type'),
-            'payment_method' => $pluck('payment_method'),
-            'partnership'    => $pluck('partnership'),
-            'funding_source' => $pluck('funding_source'),
-            'location'       => $pluck('location'),
-            'year'           => Project::distinct()
+            'division'         => $pluck('division'),
+            'sbu'              => $pluck('sbu'),
+            'owner'            => $pluck('owner'),
+            'contract_type'    => $pluck('contract_type'),
+            'payment_method'   => $pluck('payment_method'),
+            'partnership'      => $pluck('partnership'),
+            'funding_source'   => $pluck('funding_source'),
+            'location'         => $pluck('location'),
+            'year'             => Project::distinct()
                 ->whereNotNull('project_year')
                 ->orderByDesc('project_year')
                 ->pluck('project_year')
                 ->values(),
+            'consultant'       => $pluck('consultant_name'),
+            'profit_center'    => $pluck('profit_center'),
+            'type_of_contract' => $pluck('type_of_contract'),
+            'partner_name'     => $pluck('partner_name'),
         ]);
     }
 
@@ -286,6 +297,7 @@ class ProjectController extends Controller
                 'stored_path'   => $storedPath,
                 'disk'          => 'local',
                 'status'        => 'pending',
+                'user_id'       => Auth::id(),
             ]);
 
             try {
@@ -330,6 +342,18 @@ class ProjectController extends Controller
 
             $unrecognized = $result['unrecognized_columns'] ?? [];
 
+            // Find projects affected by this import
+            $affectedProjects = Project::where('ingestion_file_id', $ingestionFile->id)
+                ->select('id', 'project_code', 'project_name', 'status')
+                ->get()
+                ->map(fn($p) => [
+                    'id'           => $p->id,
+                    'project_code' => $p->project_code,
+                    'project_name' => $p->project_name,
+                    'status'       => $p->status,
+                ])
+                ->values();
+
             $results[] = [
                 'file_id'              => $ingestionFile->id,
                 'file_name'            => $ingestionFile->original_name,
@@ -347,6 +371,7 @@ class ProjectController extends Controller
                 'field_conflicts'      => $result['field_conflicts'] ?? [],
                 'project_row_trace'    => $result['project_row_trace'] ?? [],
                 'project_row_conflicts'=> $result['project_row_conflicts'] ?? [],
+                'projects_affected'    => $affectedProjects,
             ];
         }
 
@@ -395,7 +420,8 @@ class ProjectController extends Controller
     public function ingestionFiles(Request $request): JsonResponse
     {
         $perPage = (int) $request->query('per_page', 15);
-        $files   = IngestionFile::latest()
+        $files   = IngestionFile::where('user_id', Auth::id())
+            ->latest()
             ->withCount('projects')
             ->paginate($perPage);
 
@@ -404,6 +430,7 @@ class ProjectController extends Controller
 
     public function download(IngestionFile $ingestionFile): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
+        abort_unless($ingestionFile->user_id === Auth::id(), 403, 'Unauthorized.');
         abort_unless($ingestionFile->fileExists(), 404, 'File tidak ditemukan di storage.');
 
         $absolutePath = $ingestionFile->getAbsolutePath();
@@ -415,6 +442,7 @@ class ProjectController extends Controller
 
     public function reprocess(IngestionFile $ingestionFile): JsonResponse
     {
+        abort_unless($ingestionFile->user_id === Auth::id(), 403, 'Unauthorized.');
         abort_unless($ingestionFile->fileExists(), 404, 'File tidak ditemukan di storage.');
 
         // Reset status
@@ -588,18 +616,19 @@ class ProjectController extends Controller
      */
     private function resolveImporter(string $filePath): object
     {
+        $spreadsheet = IOFactory::load($filePath);
+        $sheetCount  = $spreadsheet->getSheetCount();
+
+        // Pola C: multi-sheet files → PolaCImport (structured multi-sheet parser)
+        if ($sheetCount > 1) {
+            return new PolaCImport();
+        }
+
+        // Single-sheet files: try Adaptive first, then Pola B, then Pola A
         $adaptiveImporter = new AdaptiveWorkbookImport();
 
         if ($adaptiveImporter->supports($filePath)) {
             return $adaptiveImporter;
-        }
-
-        $spreadsheet = IOFactory::load($filePath);
-        $sheetCount  = $spreadsheet->getSheetCount();
-
-        // Pola C: more than 1 sheet
-        if ($sheetCount > 1) {
-            return new PolaCImport();
         }
 
         // Pola B: single sheet with mixed zones (detect HPP + vendor sections)

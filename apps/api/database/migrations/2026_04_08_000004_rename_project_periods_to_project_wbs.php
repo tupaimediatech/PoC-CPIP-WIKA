@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -32,48 +33,44 @@ return new class extends Migration
         });
 
         // Step 3: Transform data values from "YYYY-MM" to "PEKERJAAN XXX" format
-        DB::statement('
+        // Uses SQLite-compatible syntax (|| for concat, SUBSTR instead of SUBSTRING)
+        DB::statement("
             UPDATE project_wbs
-            SET name_of_work_phase = CONCAT(
-                \'PEKERJAAN \',
-                CASE SUBSTRING(name_of_work_phase FROM 6 FOR 2)
-                    WHEN \'01\' THEN \'PERSIAPAN\'
-                    WHEN \'02\' THEN \'PONDASI\'
-                    WHEN \'03\' THEN \'STRUKTUR\'
-                    WHEN \'04\' THEN \'ARSITEKTUR\'
-                    WHEN \'05\' THEN \'ME\'
-                    WHEN \'06\' THEN \'UTILITIES\'
-                    WHEN \'07\' THEN \'EXTERIOR\'
-                    WHEN \'08\' THEN \'PELENGKAPAN\'
-                    ELSE \'LANLAIN\'
+            SET name_of_work_phase = 'PEKERJAAN ' ||
+                CASE SUBSTR(name_of_work_phase, 6, 2)
+                    WHEN '01' THEN 'PERSIAPAN'
+                    WHEN '02' THEN 'PONDASI'
+                    WHEN '03' THEN 'STRUKTUR'
+                    WHEN '04' THEN 'ARSITEKTUR'
+                    WHEN '05' THEN 'ME'
+                    WHEN '06' THEN 'UTILITIES'
+                    WHEN '07' THEN 'EXTERIOR'
+                    WHEN '08' THEN 'PELENGKAPAN'
+                    ELSE 'LANLAIN'
                 END
-            )
-            WHERE name_of_work_phase LIKE \'____-__\'
-        ');
+            WHERE name_of_work_phase LIKE '____-__'
+        ");
     }
 
     public function down(): void
     {
         // Reverse: Transform back from "PEKERJAAN XXX" to "YYYY-MM" format
-        DB::statement('
+        DB::statement("
             UPDATE project_wbs
-            SET name_of_work_phase = CONCAT(
-                SUBSTRING(name_of_work_phase FROM 1 FOR 4),
-                \'-\',
-                CASE SUBSTRING(name_of_work_phase FROM 10 FOR LENGTH(name_of_work_phase) - 9)
-                    WHEN \'PERSIAPAN\' THEN \'01\'
-                    WHEN \'PONDASI\' THEN \'02\'
-                    WHEN \'STRUKTUR\' THEN \'03\'
-                    WHEN \'ARSITEKTUR\' THEN \'04\'
-                    WHEN \'ME\' THEN \'05\'
-                    WHEN \'UTILITIES\' THEN \'06\'
-                    WHEN \'EXTERIOR\' THEN \'07\'
-                    WHEN \'PELENGKAPAN\' THEN \'08\'
-                    ELSE \'09\'
+            SET name_of_work_phase = SUBSTR(name_of_work_phase, 1, 4) || '-' ||
+                CASE SUBSTR(name_of_work_phase, 10)
+                    WHEN 'PERSIAPAN' THEN '01'
+                    WHEN 'PONDASI' THEN '02'
+                    WHEN 'STRUKTUR' THEN '03'
+                    WHEN 'ARSITEKTUR' THEN '04'
+                    WHEN 'ME' THEN '05'
+                    WHEN 'UTILITIES' THEN '06'
+                    WHEN 'EXTERIOR' THEN '07'
+                    WHEN 'PELENGKAPAN' THEN '08'
+                    ELSE '09'
                 END
-            )
-            WHERE name_of_work_phase LIKE \'PEKERJAAN %\'
-        ');
+            WHERE name_of_work_phase LIKE 'PEKERJAAN %'
+        ");
 
         // Reverse: Rename column back and reduce size
         Schema::table('project_wbs', function (Blueprint $table) {

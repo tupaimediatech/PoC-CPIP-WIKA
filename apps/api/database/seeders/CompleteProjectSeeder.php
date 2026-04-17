@@ -3,417 +3,372 @@
 namespace Database\Seeders;
 
 use App\Models\Project;
-use App\Models\ProjectWbs;
+use App\Models\ProjectPeriod;
 use App\Models\ProjectWorkItem;
 use App\Models\ProjectMaterialLog;
 use App\Models\ProjectEquipmentLog;
 use App\Models\ProjectProgressCurve;
 use App\Models\ProjectRisk;
+use App\Models\HarsatHistory;
 use Illuminate\Database\Seeder;
 
 class CompleteProjectSeeder extends Seeder
 {
     /**
-     * Complete project seeder with all fields filled.
-     *
-     * Structure:
-     * - 1 Project (all fields filled)
-     * - 2 ProjectWbs
-     * - 4 ProjectWorkItems (2 per WBS phase)
-     * - 4 ProjectMaterialLogs (2 per WBS phase)
-     * - 4 ProjectEquipmentLogs (2 per WBS phase)
-     * - 2 ProjectProgressCurves
-     * - 2 ProjectRisks
+     * Seeds 12 projects across multiple SBUs/divisions/statuses,
+     * plus harsat history data for the trend chart.
      */
     public function run(): void
     {
-        // ============================================================
-        // LEVEL 1: PROJECT (1 record - all fields filled)
-        // ============================================================
-        $project = Project::updateOrCreate(
-            ['project_code' => 'DEMO-001'],
+        $projects = [
             [
-                'project_name'         => 'Proyek Pembangunan Jembatan Suramadu',
-                'division'             => 'Infrastructure',
-                'sbu'                  => 'Jembatan',
-                'owner'                => 'Pemerintah',
-                'profit_center'        => 'Building Construction Division',
-                'type_of_contract'     => 'Design & Build',  // Jenis Kontrak
-                'contract_type'        => 'Lumpsum',         // Tipe Kontrak
-                'payment_method'       => 'Monthly Progress', // Cara Pembayaran
-                'partnership'          => 'JO',
-                'partner_name'         => 'PT Hutama Karya & PT Waskita Karya (JO)',
-                'consultant_name'      => 'PT Bina Karya (Persero) - Konsultan Pengawas',
-                'funding_source'       => 'APBN',
-                'location'             => 'Surabaya, Jawa Timur',
-                'contract_value'       => 850000.00,  // dalam Juta (M)
-                'planned_cost'         => 780000.00,
-                'actual_cost'          => 820000.00,
-                'planned_duration'     => 36,         // dalam bulan
-                'actual_duration'      => 38,
-                'progress_pct'         => 95.50,
-                'gross_profit_pct'     => 3.53,
-                'project_year'         => 2024,
-                'start_date'           => '2024-01-15',
-                // cpi, spi, status dihitung otomatis oleh Model::saving()
-            ]
-        );
-
-        $this->command->info("✅ Project created: {$project->project_code}");
-        $this->command->info("   CPI: {$project->cpi}, SPI: {$project->spi}, Status: {$project->status}");
-
-        // ============================================================
-        // LEVEL 2: PROJECT WBS PHASES (2 records)
-        // ============================================================
-        $wbsPhases = [];
-
-        // WBS Phase 1: PEKERJAAN PONDASI
-        $wbsPhases[] = ProjectWbs::updateOrCreate(
-            [
-                'project_id' => $project->id,
-                'name_of_work_phase' => 'PEKERJAAN PONDASI',
+                'project_code' => 'PRJ-001',
+                'project_name' => 'Pembangunan Jembatan Suramadu II',
+                'division' => 'Infrastructure', 'sbu' => 'Jembatan',
+                'owner' => 'Pemerintah', 'funding_source' => 'APBN',
+                'contract_type' => 'Lumpsum', 'type_of_contract' => 'Design & Build',
+                'payment_method' => 'Monthly Progress', 'partnership' => 'JO',
+                'partner_name' => 'PT Hutama Karya (JO)',
+                'consultant_name' => 'PT Bina Karya',
+                'profit_center' => 'PC-1000', 'location' => 'Surabaya, Jawa Timur',
+                'contract_value' => 850000, 'planned_cost' => 780000, 'actual_cost' => 820000,
+                'planned_duration' => 36, 'actual_duration' => 38, 'progress_pct' => 95.5,
+                'gross_profit_pct' => 3.53, 'project_year' => 2024, 'start_date' => '2024-01-15',
             ],
             [
-                'client_name'        => 'PT Waskita Karya (Persero) Tbk',
-                'project_manager'    => 'Ir. Budi Santoso, M.T.',
-                'report_source'      => 'file_import',
-                'progress_prev_pct'  => 0.00,
-                'progress_this_pct'  => 8.50,
-                'progress_total_pct' => 8.50,
-                'contract_value'     => 850000000000,  // dalam Rupiah penuh
-                'addendum_value'     => 0,
-                'total_pagu'         => 850000000000,
-                'hpp_plan_total'     => 780000000000,
-                'hpp_actual_total'   => 65000000000,
-                'hpp_deviation'      => 715000000000,
-            ]
-        );
-
-        // WBS Phase 2: PEKERJAAN STRUKTUR
-        $wbsPhases[] = ProjectWbs::updateOrCreate(
-            [
-                'project_id' => $project->id,
-                'name_of_work_phase' => 'PEKERJAAN STRUKTUR',
+                'project_code' => 'PRJ-002',
+                'project_name' => 'RS Tri Harsi Extension',
+                'division' => 'Building', 'sbu' => 'Gedung RS',
+                'owner' => 'Swasta', 'funding_source' => 'Swasta',
+                'contract_type' => 'Lumpsum', 'type_of_contract' => 'Konvensional',
+                'payment_method' => 'Milestone', 'partnership' => 'Non JO',
+                'partner_name' => null, 'consultant_name' => 'PT Virama Karya',
+                'profit_center' => 'PC-2000', 'location' => 'Jakarta',
+                'contract_value' => 320000, 'planned_cost' => 290000, 'actual_cost' => 275000,
+                'planned_duration' => 24, 'actual_duration' => 22, 'progress_pct' => 100,
+                'gross_profit_pct' => 9.38, 'project_year' => 2024, 'start_date' => '2024-03-01',
             ],
             [
-                'client_name'        => 'PT Waskita Karya (Persero) Tbk',
-                'project_manager'    => 'Ir. Budi Santoso, M.T.',
-                'report_source'      => 'file_import',
-                'progress_prev_pct'  => 8.50,
-                'progress_this_pct'  => 12.30,
-                'progress_total_pct' => 20.80,
-                'contract_value'     => 850000000000,
-                'addendum_value'     => 50000000000,
-                'total_pagu'         => 900000000000,
-                'hpp_plan_total'     => 780000000000,
-                'hpp_actual_total'   => 156000000000,
-                'hpp_deviation'      => 624000000000,
-            ]
-        );
+                'project_code' => 'PRJ-003',
+                'project_name' => 'Bandara Dhoho Kediri',
+                'division' => 'Infrastructure', 'sbu' => 'Bandara',
+                'owner' => 'BUMN', 'funding_source' => 'APBN',
+                'contract_type' => 'Unit Price', 'type_of_contract' => 'EPCC',
+                'payment_method' => 'Monthly Progress', 'partnership' => 'JO',
+                'partner_name' => 'PT PP (Persero)',
+                'consultant_name' => 'PT Indah Karya',
+                'profit_center' => 'PC-3000', 'location' => 'Kediri, Jawa Timur',
+                'contract_value' => 1200000, 'planned_cost' => 1100000, 'actual_cost' => 1250000,
+                'planned_duration' => 48, 'actual_duration' => 52, 'progress_pct' => 78,
+                'gross_profit_pct' => -4.17, 'project_year' => 2023, 'start_date' => '2023-06-01',
+            ],
+            [
+                'project_code' => 'PRJ-004',
+                'project_name' => 'IPAL Industri Cikarang',
+                'division' => 'Infrastructure', 'sbu' => 'Sanitasi',
+                'owner' => 'Swasta', 'funding_source' => 'Swasta',
+                'contract_type' => 'Gabungan', 'type_of_contract' => 'Design & Build',
+                'payment_method' => 'CPF (Turnkey)', 'partnership' => 'Non JO',
+                'partner_name' => null, 'consultant_name' => 'PT Yodya Karya',
+                'profit_center' => 'PC-1000', 'location' => 'Cikarang, Jawa Barat',
+                'contract_value' => 180000, 'planned_cost' => 160000, 'actual_cost' => 155000,
+                'planned_duration' => 18, 'actual_duration' => 17, 'progress_pct' => 100,
+                'gross_profit_pct' => 13.89, 'project_year' => 2025, 'start_date' => '2025-01-10',
+            ],
+            [
+                'project_code' => 'PRJ-005',
+                'project_name' => 'Tol Semarang–Demak Seksi 3',
+                'division' => 'Infrastructure', 'sbu' => 'Jembatan',
+                'owner' => 'Pemerintah', 'funding_source' => 'APBN',
+                'contract_type' => 'Unit Price', 'type_of_contract' => 'Konvensional',
+                'payment_method' => 'Monthly Progress', 'partnership' => 'JO',
+                'partner_name' => 'PT Waskita Karya',
+                'consultant_name' => 'PT Bina Karya',
+                'profit_center' => 'PC-3000', 'location' => 'Semarang, Jawa Tengah',
+                'contract_value' => 950000, 'planned_cost' => 880000, 'actual_cost' => 960000,
+                'planned_duration' => 30, 'actual_duration' => 35, 'progress_pct' => 88,
+                'gross_profit_pct' => -1.05, 'project_year' => 2024, 'start_date' => '2024-02-01',
+            ],
+            [
+                'project_code' => 'PRJ-006',
+                'project_name' => 'Gedung Perkantoran BUMN Tower',
+                'division' => 'Building', 'sbu' => 'Gedung RS',
+                'owner' => 'BUMN', 'funding_source' => 'APBD',
+                'contract_type' => 'Lumpsum', 'type_of_contract' => 'Design & Build',
+                'payment_method' => 'Milestone', 'partnership' => 'Non JO',
+                'partner_name' => null, 'consultant_name' => 'PT Virama Karya',
+                'profit_center' => 'PC-2000', 'location' => 'Jakarta',
+                'contract_value' => 450000, 'planned_cost' => 410000, 'actual_cost' => 400000,
+                'planned_duration' => 30, 'actual_duration' => 28, 'progress_pct' => 100,
+                'gross_profit_pct' => 11.11, 'project_year' => 2025, 'start_date' => '2025-02-15',
+            ],
+            [
+                'project_code' => 'PRJ-007',
+                'project_name' => 'Bendungan Citarum Hilir',
+                'division' => 'Infrastructure', 'sbu' => 'Sanitasi',
+                'owner' => 'Pemerintah', 'funding_source' => 'Loan',
+                'contract_type' => 'Unit Price', 'type_of_contract' => 'EPCC',
+                'payment_method' => 'Monthly Progress', 'partnership' => 'JO',
+                'partner_name' => 'PT Brantas Abipraya',
+                'consultant_name' => 'PT Indah Karya',
+                'profit_center' => 'PC-4000', 'location' => 'Bandung, Jawa Barat',
+                'contract_value' => 2100000, 'planned_cost' => 1900000, 'actual_cost' => 2200000,
+                'planned_duration' => 60, 'actual_duration' => 68, 'progress_pct' => 72,
+                'gross_profit_pct' => -4.76, 'project_year' => 2023, 'start_date' => '2023-01-10',
+            ],
+            [
+                'project_code' => 'PRJ-008',
+                'project_name' => 'RS Kasih Ibu Pavilion',
+                'division' => 'Building', 'sbu' => 'Gedung RS',
+                'owner' => 'Swasta', 'funding_source' => 'Swasta',
+                'contract_type' => 'Lumpsum', 'type_of_contract' => 'Konvensional',
+                'payment_method' => 'Milestone', 'partnership' => 'Non JO',
+                'partner_name' => null, 'consultant_name' => 'PT Yodya Karya',
+                'profit_center' => 'PC-2000', 'location' => 'Denpasar, Bali',
+                'contract_value' => 210000, 'planned_cost' => 195000, 'actual_cost' => 190000,
+                'planned_duration' => 18, 'actual_duration' => 18, 'progress_pct' => 100,
+                'gross_profit_pct' => 9.52, 'project_year' => 2025, 'start_date' => '2025-03-01',
+            ],
+            [
+                'project_code' => 'PRJ-009',
+                'project_name' => 'Flyover Makassar Perintis',
+                'division' => 'Infrastructure', 'sbu' => 'Jembatan',
+                'owner' => 'Pemerintah', 'funding_source' => 'APBD',
+                'contract_type' => 'Unit Price', 'type_of_contract' => 'Konvensional',
+                'payment_method' => 'Monthly Progress', 'partnership' => 'Non JO',
+                'partner_name' => null, 'consultant_name' => 'PT Bina Karya',
+                'profit_center' => 'PC-3000', 'location' => 'Makassar, Sulawesi Selatan',
+                'contract_value' => 380000, 'planned_cost' => 350000, 'actual_cost' => 345000,
+                'planned_duration' => 24, 'actual_duration' => 24, 'progress_pct' => 100,
+                'gross_profit_pct' => 9.21, 'project_year' => 2024, 'start_date' => '2024-04-01',
+            ],
+            [
+                'project_code' => 'PRJ-010',
+                'project_name' => 'Terminal 4 Soekarno Hatta',
+                'division' => 'Infrastructure', 'sbu' => 'Bandara',
+                'owner' => 'BUMN', 'funding_source' => 'APBN',
+                'contract_type' => 'Gabungan', 'type_of_contract' => 'Design & Build',
+                'payment_method' => 'Monthly Progress', 'partnership' => 'JO',
+                'partner_name' => 'PT Adhi Karya',
+                'consultant_name' => 'PT Virama Karya',
+                'profit_center' => 'PC-4000', 'location' => 'Tangerang, Banten',
+                'contract_value' => 3500000, 'planned_cost' => 3200000, 'actual_cost' => 3600000,
+                'planned_duration' => 48, 'actual_duration' => 55, 'progress_pct' => 65,
+                'gross_profit_pct' => -2.86, 'project_year' => 2023, 'start_date' => '2023-03-15',
+            ],
+            [
+                'project_code' => 'PRJ-011',
+                'project_name' => 'SPAM Regional Umbulan',
+                'division' => 'Infrastructure', 'sbu' => 'Sanitasi',
+                'owner' => 'Pemerintah', 'funding_source' => 'Loan',
+                'contract_type' => 'Unit Price', 'type_of_contract' => 'Konvensional',
+                'payment_method' => 'Monthly Progress', 'partnership' => 'Non JO',
+                'partner_name' => null, 'consultant_name' => 'PT Indah Karya',
+                'profit_center' => 'PC-1000', 'location' => 'Pasuruan, Jawa Timur',
+                'contract_value' => 550000, 'planned_cost' => 500000, 'actual_cost' => 480000,
+                'planned_duration' => 24, 'actual_duration' => 23, 'progress_pct' => 100,
+                'gross_profit_pct' => 12.73, 'project_year' => 2025, 'start_date' => '2025-01-20',
+            ],
+            [
+                'project_code' => 'PRJ-012',
+                'project_name' => 'WTP Karian–Serpong',
+                'division' => 'Infrastructure', 'sbu' => 'Sanitasi',
+                'owner' => 'Pemerintah', 'funding_source' => 'APBN',
+                'contract_type' => 'Unit Price', 'type_of_contract' => 'EPCC',
+                'payment_method' => 'CPF (Turnkey)', 'partnership' => 'JO',
+                'partner_name' => 'PT Pembangunan Perumahan',
+                'consultant_name' => 'PT Yodya Karya',
+                'profit_center' => 'PC-4000', 'location' => 'Serang, Banten',
+                'contract_value' => 780000, 'planned_cost' => 720000, 'actual_cost' => 750000,
+                'planned_duration' => 36, 'actual_duration' => 40, 'progress_pct' => 82,
+                'gross_profit_pct' => 3.85, 'project_year' => 2024, 'start_date' => '2024-05-01',
+            ],
+        ];
 
-        $this->command->info("✅ Created 2 ProjectWbs");
+        $createdCount = 0;
+        foreach ($projects as $data) {
+            $code = $data['project_code'];
+            $project = Project::create($data);
 
-        // ============================================================
-        // LEVEL 3: PROJECT WORK ITEMS (2 per WBS phase = 4 total)
-        // ============================================================
-        foreach ($wbsPhases as $wbsPhaseIndex => $wbsPhase) {
-            // Work Item 1: Level 0 (Category)
-            $category1 = ProjectWorkItem::updateOrCreate(
-                [
-                    'period_id' => $wbsPhase->id,
-                    'item_no'   => 'I.',
-                ],
-                [
-                    'parent_id'    => null,
-                    'level'        => 0,
-                    'item_name'    => 'PEKERJAAN PERSIAPAN',
-                    'sort_order'   => 1,
-                    'budget_awal'  => 50000000000,
-                    'addendum'     => 0,
-                    'total_budget' => 50000000000,
-                    'realisasi'    => $wbsPhaseIndex === 0 ? 25000000000 : 48000000000,
-                    'deviasi'      => $wbsPhaseIndex === 0 ? 25000000000 : 2000000000,
-                    'deviasi_pct'  => $wbsPhaseIndex === 0 ? 50.0000 : 4.0000,
-                    'is_total_row' => false,
-                ]
-            );
+            // Force KPI recalculation (create triggers saving hook)
+            $this->command->info("✅ {$code}: CPI={$project->cpi}, SPI={$project->spi}, Status={$project->status}");
+            $createdCount++;
 
-            // Work Item 2: Level 1 (Sub-item under Category 1)
-            ProjectWorkItem::updateOrCreate(
-                [
-                    'period_id' => $wbsPhase->id,
-                    'item_no'   => '1.1',
-                ],
-                [
-                    'parent_id'    => $category1->id,
-                    'level'        => 1,
-                    'item_name'    => 'Mobilisasi Alat dan Tenaga Kerja',
-                    'sort_order'   => 1,
-                    'budget_awal'  => 15000000000,
-                    'addendum'     => 0,
-                    'total_budget' => 15000000000,
-                    'realisasi'    => $wbsPhaseIndex === 0 ? 8000000000 : 14500000000,
-                    'deviasi'      => $wbsPhaseIndex === 0 ? 7000000000 : 500000000,
-                    'deviasi_pct'  => $wbsPhaseIndex === 0 ? 46.6667 : 3.3333,
-                    'is_total_row' => false,
-                ]
-            );
-
-            // Work Item 3: Level 0 (Category 2)
-            $category2 = ProjectWorkItem::updateOrCreate(
-                [
-                    'period_id' => $wbsPhase->id,
-                    'item_no'   => 'II.',
-                ],
-                [
-                    'parent_id'    => null,
-                    'level'        => 0,
-                    'item_name'    => 'PEKERJAAN STRUKTUR',
-                    'sort_order'   => 2,
-                    'budget_awal'  => 350000000000,
-                    'addendum'     => 20000000000,
-                    'total_budget' => 370000000000,
-                    'realisasi'    => $wbsPhaseIndex === 0 ? 40000000000 : 108000000000,
-                    'deviasi'      => $wbsPhaseIndex === 0 ? 330000000000 : 262000000000,
-                    'deviasi_pct'  => $wbsPhaseIndex === 0 ? 89.1892 : 70.8108,
-                    'is_total_row' => false,
-                ]
-            );
-
-            // Work Item 4: Level 1 (Sub-item under Category 2)
-            ProjectWorkItem::updateOrCreate(
-                [
-                    'period_id' => $wbsPhase->id,
-                    'item_no'   => '2.1',
-                ],
-                [
-                    'parent_id'    => $category2->id,
-                    'level'        => 1,
-                    'item_name'    => 'Pekerjaan Pondasi Bored Pile',
-                    'sort_order'   => 1,
-                    'budget_awal'  => 180000000000,
-                    'addendum'     => 10000000000,
-                    'total_budget' => 190000000000,
-                    'realisasi'    => $wbsPhaseIndex === 0 ? 20000000000 : 55000000000,
-                    'deviasi'      => $wbsPhaseIndex === 0 ? 170000000000 : 135000000000,
-                    'deviasi_pct'  => $wbsPhaseIndex === 0 ? 89.4737 : 71.0526,
-                    'is_total_row' => false,
-                ]
-            );
+            // Add 1 period + work items + materials for first 4 projects (for Level 3-7 drill-down)
+            if (in_array($code, ['PRJ-001', 'PRJ-002', 'PRJ-003', 'PRJ-004'])) {
+                $this->seedProjectDetails($project);
+            }
         }
 
-        $this->command->info("✅ Created 4 ProjectWorkItems (2 per phase)");
+        $this->command->info("✅ Created {$createdCount} projects");
 
-        // ============================================================
-        // LEVEL 4A: PROJECT MATERIAL LOGS (2 per phase = 4 total)
-        // ============================================================
-        foreach ($wbsPhases as $wbsPhaseIndex => $wbsPhase) {
-            // Material Log 1
-            ProjectMaterialLog::updateOrCreate(
-                [
-                    'period_id'  => $wbsPhase->id,
-                    'supplier_name' => 'PT Beton Jaya Makmur',
-                    'material_type' => 'Beton K-350',
-                ],
-                [
-                    'work_item_id'            => null,
-                    'tahun_perolehan'         => '2024',
-                    'lokasi_vendor'           => 'Surabaya, Jawa Timur',
-                    'rating_performa'         => '5/5',
-                    'qty'                     => $wbsPhaseIndex === 0 ? 150.5000 : 280.0000,
-                    'satuan'                  => 'm3',
-                    'harga_satuan'            => 1250000.00,
-                    'total_tagihan'           => $wbsPhaseIndex === 0 ? 188125000.00 : 350000000.00,
-                    'realisasi_pengiriman'    => '100% (Selesai)',
-                    'deviasi_harga_market'    => '+0%',
-                    'catatan_monitoring'      => 'Pengiriman tepat waktu, kualitas baik',
-                    'is_discount'             => false,
-                    'source_row'              => $wbsPhaseIndex + 1,
-                ]
-            );
-
-            // Material Log 2
-            ProjectMaterialLog::updateOrCreate(
-                [
-                    'period_id'  => $wbsPhase->id,
-                    'supplier_name' => 'PT Krakatau Steel',
-                    'material_type' => 'Besi Ulir D16',
-                ],
-                [
-                    'work_item_id'            => null,
-                    'tahun_perolehan'         => '2024',
-                    'lokasi_vendor'           => 'Cilegon, Banten',
-                    'rating_performa'         => '4/5',
-                    'qty'                     => $wbsPhaseIndex === 0 ? 25.7500 : 48.5000,
-                    'satuan'                  => 'ton',
-                    'harga_satuan'            => 14500000.00,
-                    'total_tagihan'           => $wbsPhaseIndex === 0 ? 373375000.00 : 703250000.00,
-                    'realisasi_pengiriman'    => '100% (Selesai)',
-                    'deviasi_harga_market'    => '-2%',
-                    'catatan_monitoring'      => 'Harga di bawah pasar, kualitas standar',
-                    'is_discount'             => false,
-                    'source_row'              => $wbsPhaseIndex + 2,
-                ]
-            );
-        }
-
-        $this->command->info("✅ Created 4 ProjectMaterialLogs (2 per phase)");
-
-        // ============================================================
-        // LEVEL 4B: PROJECT EQUIPMENT LOGS (2 per phase = 4 total)
-        // ============================================================
-        foreach ($wbsPhases as $wbsPhaseIndex => $wbsPhase) {
-            // Equipment Log 1
-            ProjectEquipmentLog::updateOrCreate(
-                [
-                    'period_id'       => $wbsPhase->id,
-                    'vendor_name'     => 'PT United Tractors',
-                    'equipment_name'  => 'Excavator PC200-8',
-                ],
-                [
-                    'work_item_id'   => null,
-                    'jam_kerja'      => $wbsPhaseIndex === 0 ? 180.50 : 320.00,
-                    'rate_per_jam'   => 450000.00,
-                    'total_biaya'    => $wbsPhaseIndex === 0 ? 81225000.00 : 144000000.00,
-                    'payment_status' => 'Paid',
-                    'source_row'     => $wbsPhaseIndex + 1,
-                ]
-            );
-
-            // Equipment Log 2
-            ProjectEquipmentLog::updateOrCreate(
-                [
-                    'period_id'       => $wbsPhase->id,
-                    'vendor_name'     => 'PT Komatsu Indonesia',
-                    'equipment_name'  => 'Mobile Crane 50 Ton',
-                ],
-                [
-                    'work_item_id'   => null,
-                    'jam_kerja'      => $wbsPhaseIndex === 0 ? 95.00 : 175.50,
-                    'rate_per_jam'   => 750000.00,
-                    'total_biaya'    => $wbsPhaseIndex === 0 ? 71250000.00 : 131625000.00,
-                    'payment_status' => $wbsPhaseIndex === 0 ? 'Paid' : 'Pending',
-                    'source_row'     => $wbsPhaseIndex + 2,
-                ]
-            );
-        }
-
-        $this->command->info("✅ Created 4 ProjectEquipmentLogs (2 per phase)");
-
-        // ============================================================
-        // LEVEL 5: PROJECT PROGRESS CURVES (2 records)
-        // ============================================================
-        // Week 12
-        ProjectProgressCurve::updateOrCreate(
-            [
-                'project_id'   => $project->id,
-                'week_number'  => 12,
-            ],
-            [
-                'week_date'      => '2024-04-01',
-                'rencana_pct'   => 28.50,
-                'realisasi_pct' => 25.80,
-                'deviasi_pct'   => -2.70,
-                'keterangan'    => 'Material Delay',
-            ]
-        );
-
-        // Week 24
-        ProjectProgressCurve::updateOrCreate(
-            [
-                'project_id'   => $project->id,
-                'week_number'  => 24,
-            ],
-            [
-                'week_date'      => '2024-07-01',
-                'rencana_pct'   => 58.30,
-                'realisasi_pct' => 52.10,
-                'deviasi_pct'   => -6.20,
-                'keterangan'    => 'Critical - Cuaca buruk',
-            ]
-        );
-
-        $this->command->info("✅ Created 2 ProjectProgressCurves");
-
-        // ============================================================
-        // LEVEL 6: PROJECT RISKS (2 records)
-        // ============================================================
-        // Risk 1: Cost related
-        ProjectRisk::updateOrCreate(
-            [
-                'project_id' => $project->id,
-                'risk_code'  => 'RSK-001',
-            ],
-            [
-                'risk_title'       => 'Kenaikan Harga Material Besi Beton',
-                'risk_description' => 'Harga besi beton di pasar mengalami kenaikan signifikan sebesar 15% akibat fluktuasi harga bijih besi global dan nilai tukar dolar yang melemah.',
-                'category'         => 'cost',
-                'financial_impact_idr' => 2500000000.00,
-                'probability'      => 4,
-                'impact'           => 4,
-                // severity dihitung otomatis: 4x4=16 -> high
-                'mitigation'       => '1. Negosiasi ulang dengan supplier untuk kontrak jangka panjang
-2. Eksplorasi alternative material lokal
-3. Hedging harga melalui kontrak forward dengan pemasok',
-                'status'           => 'open',
-                'owner'            => 'Ir. Ahmad Hidayat',
-                'identified_at'    => '2024-02-15',
-                'target_resolved_at' => '2024-06-30',
-            ]
-        );
-
-        // Risk 2: Schedule related
-        ProjectRisk::updateOrCreate(
-            [
-                'project_id' => $project->id,
-                'risk_code'  => 'RSK-002',
-            ],
-            [
-                'risk_title'       => 'Keterlambatan Pengiriman Material Struktur',
-                'risk_description' => 'Potensi keterlambatan pengiriman material struktur utama (bored pile) dari pabrik dapat mempengaruhi critical path proyek.',
-                'category'         => 'schedule',
-                'financial_impact_idr' => 1800000000.00,
-                'probability'      => 3,
-                'impact'           => 5,
-                // severity dihitung otomatis: 3x5=15 -> high
-                'mitigation'       => '1. Koordinasi intensif dengan vendor untuk jadwal produksi
-2. Buffer stok material di site
-3. Pre-order material untuk phase berikutnya',
-                'status'           => 'mitigated',
-                'owner'            => 'Bapak Dedy Kurniawan',
-                'identified_at'    => '2024-01-20',
-                'target_resolved_at' => '2024-05-15',
-            ]
-        );
-
-        $this->command->info("✅ Created 2 ProjectRisks");
-
-        // ============================================================
-        // SUMMARY
-        // ============================================================
-        $this->command->newLine();
-        $this->command->info('╔════════════════════════════════════════════════════════╗');
-        $this->command->info('║           COMPLETE PROJECT SEEDER SUMMARY              ║');
-        $this->command->info('╠════════════════════════════════════════════════════════╣');
-        $this->command->info('║  Project Code: DEMO-001                                 ║');
-        $this->command->info('║  Project Name: Proyek Pembangunan Jembatan Suramadu   ║');
-        $this->command->info('║                                                          ║');
-        $this->command->info('║  Records Created:                                       ║');
-        $this->command->info('║  • Projects:         1                                  ║');
-        $this->command->info('║  • WBS Phases:       2                                  ║');
-        $this->command->info('║  • Work Items:       4 (2 per phase)                    ║');
-        $this->command->info('║  • Material Logs:    4 (2 per phase)                    ║');
-        $this->command->info('║  • Equipment Logs:   4 (2 per phase)                    ║');
-        $this->command->info('║  • Progress Curves:  2                                  ║');
-        $this->command->info('║  • Risks:            2                                  ║');
-        $this->command->info('║  ────────────────────────────────────────────────────   ║');
-        $this->command->info('║  Total Records:    19                                   ║');
-        $this->command->info('╚════════════════════════════════════════════════════════╝');
+        // Seed harsat history for trend chart
+        $this->seedHarsatHistory();
 
         $this->command->newLine();
-        $this->command->info('📊 KPI Status:');
-        $this->command->info("   CPI:    {$project->cpi} (Cost Performance Index)");
-        $this->command->info("   SPI:    {$project->spi} (Schedule Performance Index)");
-        $this->command->info("   Status: {$project->status}");
+        $this->command->info("🎉 Seeding complete!");
+    }
+
+    private function seedProjectDetails(Project $project): void
+    {
+        $period = ProjectPeriod::create([
+            'project_id'       => $project->id,
+            'period'           => $project->start_date ? date('Y-m', strtotime($project->start_date)) : '2024-01',
+            'client_name'      => $project->owner,
+            'project_manager'  => 'PM ' . $project->project_name,
+            'report_source'    => 'file_import',
+            'progress_prev_pct'  => 0,
+            'progress_this_pct'  => round($project->progress_pct * 0.3, 2),
+            'progress_total_pct' => round($project->progress_pct * 0.3, 2),
+            'contract_value'   => $project->contract_value * 1_000_000,
+            'addendum_value'   => 0,
+            'total_pagu'       => $project->contract_value * 1_000_000,
+            'hpp_plan_total'   => $project->planned_cost * 1_000_000,
+            'hpp_actual_total' => $project->actual_cost * 0.3 * 1_000_000,
+            'hpp_deviation'    => ($project->planned_cost - $project->actual_cost * 0.3) * 1_000_000,
+        ]);
+
+        // Work items
+        $cat = ProjectWorkItem::create([
+            'period_id' => $period->id, 'parent_id' => null, 'level' => 0,
+            'item_no' => 'I.', 'item_name' => 'PEKERJAAN PERSIAPAN', 'sort_order' => 1,
+            'budget_awal' => $project->planned_cost * 0.1 * 1_000_000, 'addendum' => 0,
+            'total_budget' => $project->planned_cost * 0.1 * 1_000_000,
+            'realisasi' => $project->actual_cost * 0.08 * 1_000_000,
+            'deviasi' => ($project->planned_cost * 0.1 - $project->actual_cost * 0.08) * 1_000_000,
+            'deviasi_pct' => 20.0, 'is_total_row' => false,
+        ]);
+
+        ProjectWorkItem::create([
+            'period_id' => $period->id, 'parent_id' => $cat->id, 'level' => 1,
+            'item_no' => '1.1', 'item_name' => 'Mobilisasi', 'sort_order' => 1,
+            'budget_awal' => $project->planned_cost * 0.05 * 1_000_000, 'addendum' => 0,
+            'total_budget' => $project->planned_cost * 0.05 * 1_000_000,
+            'realisasi' => $project->actual_cost * 0.04 * 1_000_000,
+            'deviasi' => ($project->planned_cost * 0.05 - $project->actual_cost * 0.04) * 1_000_000,
+            'deviasi_pct' => 20.0, 'is_total_row' => false,
+        ]);
+
+        $cat2 = ProjectWorkItem::create([
+            'period_id' => $period->id, 'parent_id' => null, 'level' => 0,
+            'item_no' => 'II.', 'item_name' => 'PEKERJAAN STRUKTUR', 'sort_order' => 2,
+            'budget_awal' => $project->planned_cost * 0.6 * 1_000_000, 'addendum' => 0,
+            'total_budget' => $project->planned_cost * 0.6 * 1_000_000,
+            'realisasi' => $project->actual_cost * 0.55 * 1_000_000,
+            'deviasi' => ($project->planned_cost * 0.6 - $project->actual_cost * 0.55) * 1_000_000,
+            'deviasi_pct' => 8.3, 'is_total_row' => false,
+        ]);
+
+        ProjectWorkItem::create([
+            'period_id' => $period->id, 'parent_id' => $cat2->id, 'level' => 1,
+            'item_no' => '2.1', 'item_name' => 'Pekerjaan Pondasi', 'sort_order' => 1,
+            'budget_awal' => $project->planned_cost * 0.3 * 1_000_000, 'addendum' => 0,
+            'total_budget' => $project->planned_cost * 0.3 * 1_000_000,
+            'realisasi' => $project->actual_cost * 0.28 * 1_000_000,
+            'deviasi' => ($project->planned_cost * 0.3 - $project->actual_cost * 0.28) * 1_000_000,
+            'deviasi_pct' => 6.7, 'is_total_row' => false,
+        ]);
+
+        // Materials
+        ProjectMaterialLog::create([
+            'period_id' => $period->id, 'supplier_name' => 'PT Beton Jaya',
+            'material_type' => 'Beton K-350', 'qty' => 200, 'satuan' => 'm3',
+            'harga_satuan' => 1250000, 'total_tagihan' => 250000000,
+            'tahun_perolehan' => (string) $project->project_year,
+            'lokasi_vendor' => $project->location, 'rating_performa' => '4/5',
+            'realisasi_pengiriman' => '100% (Selesai)', 'deviasi_harga_market' => '+2%',
+            'catatan_monitoring' => 'Pengiriman tepat waktu', 'is_discount' => false, 'source_row' => 1,
+        ]);
+
+        ProjectMaterialLog::create([
+            'period_id' => $period->id, 'supplier_name' => 'PT Krakatau Steel',
+            'material_type' => 'Besi Ulir D16', 'qty' => 50, 'satuan' => 'ton',
+            'harga_satuan' => 14500000, 'total_tagihan' => 725000000,
+            'tahun_perolehan' => (string) $project->project_year,
+            'lokasi_vendor' => 'Cilegon, Banten', 'rating_performa' => '5/5',
+            'realisasi_pengiriman' => '85%', 'deviasi_harga_market' => '-1%',
+            'catatan_monitoring' => 'Harga stabil', 'is_discount' => false, 'source_row' => 2,
+        ]);
+
+        // Equipment
+        ProjectEquipmentLog::create([
+            'period_id' => $period->id, 'vendor_name' => 'PT United Tractors',
+            'equipment_name' => 'Excavator PC200', 'jam_kerja' => 200,
+            'rate_per_jam' => 450000, 'total_biaya' => 90000000,
+            'payment_status' => 'Paid', 'source_row' => 1,
+        ]);
+
+        // Progress curves
+        ProjectProgressCurve::create([
+            'project_id' => $project->id, 'week_number' => 4,
+            'week_date' => date('Y-m-d', strtotime($project->start_date . ' +4 weeks')),
+            'rencana_pct' => 10, 'realisasi_pct' => 8.5, 'deviasi_pct' => -1.5,
+            'keterangan' => 'Slight delay in mobilization',
+        ]);
+        ProjectProgressCurve::create([
+            'project_id' => $project->id, 'week_number' => 12,
+            'week_date' => date('Y-m-d', strtotime($project->start_date . ' +12 weeks')),
+            'rencana_pct' => 30, 'realisasi_pct' => 27, 'deviasi_pct' => -3,
+            'keterangan' => 'Material delay',
+        ]);
+        ProjectProgressCurve::create([
+            'project_id' => $project->id, 'week_number' => 24,
+            'week_date' => date('Y-m-d', strtotime($project->start_date . ' +24 weeks')),
+            'rencana_pct' => 55, 'realisasi_pct' => 50, 'deviasi_pct' => -5,
+            'keterangan' => 'Recovery in progress',
+        ]);
+
+        // Risks
+        ProjectRisk::create([
+            'project_id' => $project->id, 'risk_code' => 'RSK-' . $project->project_code . '-01',
+            'risk_title' => 'Kenaikan Harga Material', 'category' => 'cost',
+            'risk_description' => 'Harga material mengalami kenaikan akibat fluktuasi pasar.',
+            'financial_impact_idr' => $project->contract_value * 30000,
+            'probability' => 3, 'impact' => 4, 'status' => 'open',
+            'mitigation' => 'Negosiasi kontrak jangka panjang dengan supplier',
+            'owner' => 'Project Manager', 'identified_at' => $project->start_date,
+            'target_resolved_at' => date('Y-m-d', strtotime($project->start_date . ' +6 months')),
+        ]);
+        ProjectRisk::create([
+            'project_id' => $project->id, 'risk_code' => 'RSK-' . $project->project_code . '-02',
+            'risk_title' => 'Keterlambatan Pengiriman', 'category' => 'schedule',
+            'risk_description' => 'Potensi keterlambatan pengiriman material struktur utama.',
+            'financial_impact_idr' => $project->contract_value * 20000,
+            'probability' => 2, 'impact' => 5, 'status' => 'mitigated',
+            'mitigation' => 'Buffer stok material di site',
+            'owner' => 'Procurement', 'identified_at' => $project->start_date,
+            'target_resolved_at' => date('Y-m-d', strtotime($project->start_date . ' +3 months')),
+        ]);
+
+        $this->command->info("   → Seeded details for {$project->project_code}");
+    }
+
+    private function seedHarsatHistory(): void
+    {
+        $categories = [
+            ['category' => 'Besi Beton', 'category_key' => 'besi_beton', 'unit' => 'kg',
+             'values' => [2021 => 12500, 2022 => 13200, 2023 => 14500, 2024 => 15100, 2025 => 15800]],
+            ['category' => 'Beton Ready Mix', 'category_key' => 'beton_ready_mix', 'unit' => 'm3',
+             'values' => [2021 => 850000, 2022 => 920000, 2023 => 980000, 2024 => 1050000, 2025 => 1150000]],
+            ['category' => 'Semen Portland', 'category_key' => 'semen_portland', 'unit' => 'kg',
+             'values' => [2021 => 1150, 2022 => 1200, 2023 => 1280, 2024 => 1350, 2025 => 1420]],
+            ['category' => 'Kayu Bekisting', 'category_key' => 'kayu_bekisting', 'unit' => 'm3',
+             'values' => [2021 => 3500000, 2022 => 3800000, 2023 => 4100000, 2024 => 4300000, 2025 => 4600000]],
+            ['category' => 'Aspal Hotmix', 'category_key' => 'aspal_hotmix', 'unit' => 'ton',
+             'values' => [2021 => 1200000, 2022 => 1350000, 2023 => 1500000, 2024 => 1420000, 2025 => 1550000]],
+        ];
+
+        $count = 0;
+        foreach ($categories as $cat) {
+            foreach ($cat['values'] as $year => $value) {
+                HarsatHistory::updateOrCreate(
+                    ['category_key' => $cat['category_key'], 'year' => $year],
+                    ['category' => $cat['category'], 'value' => $value, 'unit' => $cat['unit']],
+                );
+                $count++;
+            }
+        }
+
+        $this->command->info("✅ Created {$count} harsat history records (5 categories × 5 years)");
     }
 }

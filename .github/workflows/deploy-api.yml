@@ -1,0 +1,70 @@
+name: Deploy API
+
+on:
+  push:
+    branches: [main]
+    paths: [apps/api/**]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/cpip-api
+  CONTAINER_NAME: cpip-api
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api
+          file: apps/api/DockerFile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            docker pull ${{ env.IMAGE_NAME }}:latest
+
+            docker stop ${{ env.CONTAINER_NAME }} 2>/dev/null || true
+            docker rm ${{ env.CONTAINER_NAME }} 2>/dev/null || true
+
+            docker run -d \
+              --name ${{ env.CONTAINER_NAME }} \
+              --restart unless-stopped \
+              -p 2083:8080 \
+              -v cpip-data:/var/www/html/database \
+              -v cpip-storage:/var/www/html/storage/app \
+              -e APP_ENV=production \
+              -e APP_DEBUG=false \
+              -e APP_URL=https://api-cpip.haydaramru.com \
+              -e DB_CONNECTION=sqlite \
+              -e DB_DATABASE=/var/www/html/database/database.sqlite \
+              ${{ env.IMAGE_NAME }}:latest
+
+            docker image prune -f

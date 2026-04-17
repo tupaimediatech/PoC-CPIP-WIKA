@@ -6,6 +6,7 @@ import { authApi } from "@/lib/api";
 import { setToken, setUser } from "@/lib/auth";
 import ilustration from "@/public/Ilustration.svg";
 import wika from "@/public/WIKA.svg";
+import wikaNew from "@/public/WIka-new.svg";
 import Image from "next/image";
 type Mode = "login" | "register";
 
@@ -81,7 +82,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[420px]">
           {/* Logo WIKA di atas Form */}
           <div className="mb-10">
-            <Image src={wika} alt="Logo WIKA" className="object-contain mb-8" />
+            <Image src={wikaNew} alt="Logo WIKA" className="object-contain mb-8" />
             <h2 className="text-3xl font-bold mb-2">{mode === "login" ? "Welcome Back!" : "Create an Account"}</h2>
             <p className="text-gray-500 text-[15px]">
               {mode === "login"
