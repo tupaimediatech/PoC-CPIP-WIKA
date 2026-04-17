@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation"; // Tambah useSearchParams
 import React from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -10,7 +10,7 @@ import {
   CaretRightIcon,
   UploadIcon,
   FileTextIcon,
-  FunnelIcon,
+  FunnelIcon, // Tambahkan FunnelIcon
   IconProps,
   TreeStructureIcon,
   BuildingOfficeIcon,
@@ -69,41 +69,46 @@ function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
     let phaseName = "...";
     let itemName = "...";
 
-    // Always fetch project name
     fetches.push(
-      projectApi.detail(projectId).then((res) => {
-        projectName = res.data.project_name || `Project #${projectId}`;
-      }).catch(() => {
-        projectName = `Project #${projectId}`;
-      })
+      projectApi
+        .detail(projectId)
+        .then((res) => {
+          projectName = res.data.project_name || `Project #${projectId}`;
+        })
+        .catch(() => {
+          projectName = `Project #${projectId}`;
+        }),
     );
 
-    // Fetch phase name if we have tahapId
     if (tahapId && !isNaN(tahapId)) {
       fetches.push(
-        projectApi.periods(projectId).then((res) => {
-          const phase = res.data.phases?.find((p: any) => p.id === tahapId);
-          phaseName = phase?.name || `Phase #${tahapId}`;
-        }).catch(() => {
-          phaseName = `Phase #${tahapId}`;
-        })
+        projectApi
+          .periods(projectId)
+          .then((res) => {
+            const phase = res.data.phases?.find((p: any) => p.id === tahapId);
+            phaseName = phase?.name || `Phase #${tahapId}`;
+          })
+          .catch(() => {
+            phaseName = `Phase #${tahapId}`;
+          }),
       );
     }
 
-    // Fetch item name if we have itemId
     if (tahapId && !isNaN(tahapId) && itemId && !isNaN(itemId)) {
       fetches.push(
-        periodApi.workItems(tahapId).then((res) => {
-          const item = res.data.items?.find((i: any) => i.id === itemId);
-          itemName = item?.name || `Item #${itemId}`;
-        }).catch(() => {
-          itemName = `Item #${itemId}`;
-        })
+        periodApi
+          .workItems(tahapId)
+          .then((res) => {
+            const item = res.data.items?.find((i: any) => i.id === itemId);
+            itemName = item?.name || `Item #${itemId}`;
+          })
+          .catch(() => {
+            itemName = `Item #${itemId}`;
+          }),
       );
     }
 
     Promise.all(fetches).then(() => {
-      // Level 3: project detail
       base.push({
         Icon: FileTextIcon,
         label: projectName,
@@ -111,7 +116,6 @@ function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
       });
 
       if (tahapId && !isNaN(tahapId)) {
-        // Level 4: phase detail
         base.push({
           Icon: TreeStructureIcon,
           label: phaseName,
@@ -120,7 +124,6 @@ function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
       }
 
       if (itemId && !isNaN(itemId)) {
-        // Level 5: work item detail
         base.push({
           Icon: BuildingOfficeIcon,
           label: itemName,
@@ -143,22 +146,35 @@ function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
 
 export default function Breadcrumbs() {
   const pathname = usePathname();
+  const searchParams = useSearchParams(); // Hook untuk mengambil query dari URL
   const dynamicItems = useDynamicBreadcrumbs(pathname);
 
   let items: BreadcrumbItem[];
   if (STATIC_BREADCRUMBS[pathname]) {
-    items = STATIC_BREADCRUMBS[pathname];
+    items = [...STATIC_BREADCRUMBS[pathname]];
   } else if (pathname.startsWith("/projects/") && dynamicItems) {
-    items = dynamicItems;
+    items = [...dynamicItems];
   } else if (pathname.startsWith("/projects/")) {
-    // Still loading dynamic breadcrumbs
     items = [
       { Icon: ChartBarIcon, label: "Projects Analytics", href: "/" },
       { Icon: FileTextIcon, label: "All Projects", href: "/projects" },
       { Icon: FileTextIcon, label: "..." },
     ];
   } else {
-    items = STATIC_BREADCRUMBS["/"];
+    items = [...(STATIC_BREADCRUMBS["/"] || [])];
+  }
+
+  const owner = searchParams.get("owner");
+  const sbu = searchParams.get("sbu");
+
+  if (owner || sbu) {
+    const labelParts = [];
+    if (owner) labelParts.push(owner);
+    if (sbu) labelParts.push(sbu);
+    items.push({
+      Icon: FunnelIcon,
+      label: `Filtered Results (${labelParts.join(", ")})`,
+    });
   }
 
   return (

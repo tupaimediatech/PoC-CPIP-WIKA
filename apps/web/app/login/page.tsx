@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react"; // Tambahkan useEffect
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
 import { setToken, setTokenExpiry, setUser } from "@/lib/auth";
@@ -21,9 +21,17 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Tambahan state khusus untuk UI (icon mata pada password)
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+
+  // Fungsi untuk memuat email yang tersimpan saat pertama kali buka halaman
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRemember(true);
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -34,6 +42,12 @@ export default function LoginPage() {
       let data: any;
       if (mode === "login") {
         data = await authApi.login(email, password, remember);
+
+        if (remember) {
+          localStorage.setItem("rememberedEmail", email);
+        } else {
+          localStorage.removeItem("rememberedEmail");
+        }
       } else {
         if (password !== passwordConfirm) {
           setError("Password konfirmasi tidak cocok.");
@@ -58,19 +72,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex bg-white font-sans text-gray-900">
-      {/* KIRI: Bagian Ilustrasi & Banner WIKA (Sembunyi di layar kecil) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#2543b5] flex-col justify-between p-12 text-white relative overflow-hidden">
-        {/* Logo WIKA Kiri Atas */}
+      <div className="hidden lg:flex lg:w-1/2 bg-primary-blue flex-col justify-between p-12 text-white relative overflow-hidden">
         <div className="z-10">
           <Image src={wika} alt="Logo WIKA" className="object-contain brightness-0 invert" />
         </div>
-
-        {/* Ilustrasi 3D Tengah */}
         <div className="flex-1 flex items-center justify-center relative z-10 my-8">
           <Image src={ilustration} alt="3D Illustration" className="w-full max-w-md object-contain" />
         </div>
-
-        {/* Teks Bawah */}
         <div className="z-10">
           <h1 className="text-[40px] font-bold mb-3 tracking-tight">Welcome!</h1>
           <p className="text-blue-100 text-[17px] leading-relaxed max-w-md">
@@ -79,10 +87,8 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* KANAN: Bagian Form Login / Register */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-[420px]">
-          {/* Logo WIKA di atas Form */}
           <div className="mb-10">
             <Image src={wikaNew} alt="Logo WIKA" className="object-contain mb-8" />
             <h2 className="text-3xl font-bold mb-2">{mode === "login" ? "Welcome Back!" : "Create an Account"}</h2>
@@ -93,11 +99,9 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Alert Error (Jika ada) */}
           {error && <div className="mb-6 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">{error}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Field Nama Lengkap (Khusus Register) */}
             {mode === "register" && (
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1.5">Full Name</label>
@@ -112,7 +116,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Field Email */}
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-1.5">Email</label>
               <input
@@ -125,7 +128,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Field Password */}
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-1.5">Password</label>
               <div className="relative">
@@ -142,7 +144,6 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                 >
-                  {/* Icon Mata (Eye) SVG */}
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                     {showPassword ? (
                       <path
@@ -161,17 +162,17 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* Remember Me + Lupa Password (Khusus Login) */}
+              {/* SECTION: Remember Me & Forgot Password */}
               {mode === "login" && (
-                <div className="mt-2 flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-sm text-gray-700 select-none cursor-pointer">
+                <div className="mt-4 flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={remember}
                       onChange={(e) => setRemember(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-[#2543b5] focus:ring-[#2543b5]"
+                      className="w-4 h-4 rounded border-gray-300 text-primary-blue focus:ring-primary-blue cursor-pointer"
                     />
-                    Remember me
+                    <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">Remember me</span>
                   </label>
                   <a href="#" className="text-sm font-semibold text-[#2543b5] hover:underline">
                     Forgot Password?
@@ -180,7 +181,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Field Konfirmasi Password (Khusus Register) */}
             {mode === "register" && (
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1.5">Confirm Password</label>
@@ -225,29 +225,25 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Tombol Submit Utama */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#2543b5] hover:bg-blue-800 text-white font-medium py-3 rounded-lg transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+              className="w-full bg-primary-blue hover:brightness-110 text-white font-medium py-3 rounded-lg transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-2"
             >
               {loading ? "Memproses..." : mode === "login" ? "Log in" : "Sign up"}
             </button>
           </form>
 
-          {/* Garis Pembatas "Or" */}
           <div className="flex items-center my-6">
             <div className="flex-1 border-t border-gray-200"></div>
             <span className="px-4 text-sm text-gray-500">Or</span>
             <div className="flex-1 border-t border-gray-200"></div>
           </div>
 
-          {/* Tombol Sign in With Google */}
           <button
             type="button"
             className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-medium py-3 rounded-lg hover:bg-gray-50 transition-all active:scale-[0.98]"
           >
-            {/* Logo Google SVG */}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M22.56 12.25C22.56 11.47 22.49 10.72 22.36 10H12V14.26H17.92C17.66 15.63 16.88 16.79 15.71 17.57V20.34H19.28C21.36 18.42 22.56 15.6 22.56 12.25Z"
@@ -269,7 +265,6 @@ export default function LoginPage() {
             Sign in with Google
           </button>
 
-          {/* Pengganti Tab Switcher: Link Pindah Mode di Bawah */}
           <p className="mt-8 text-center text-[15px] text-gray-600">
             {mode === "login" ? "Don't you have an account? " : "Already have an account? "}
             <button

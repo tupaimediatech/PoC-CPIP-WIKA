@@ -3,7 +3,7 @@
 @theme {
   /* Defining your custom hex codes as theme variables */
   --color-sidebar: #F8F7F7;
-  --color-primary-blue: #1E40AF;
+  --color-primary-blue: #2AABE2;
   --color-dark-gray: #272728;
 }
 
@@ -14,26 +14,35 @@
 }
 
 @layer components {
+
   /* Badge status project */
-  .badge-good { 
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800; 
+  .badge-good {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800;
   }
-  .badge-warning { 
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800; 
+
+  .badge-warning {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800;
   }
-  .badge-critical { 
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800; 
+
+  .badge-critical {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800;
   }
 
   /* Layout & Cards */
-  .sidebar { @apply bg-sidebar border-r border-gray-200; }
-  .card { @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6; }
+  .sidebar {
+    @apply bg-sidebar border-r border-gray-200;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+  }
 
   /* Buttons */
-  .btn-primary { 
-    @apply bg-primary-blue text-white px-4 py-2 rounded-lg text-sm font-medium hover:brightness-110 transition-all active:scale-95; 
+  .btn-primary {
+    @apply bg-primary-blue text-white px-4 py-2 rounded-lg text-sm font-medium hover:brightness-110 transition-all active:scale-95;
   }
-  .btn-outline { 
-    @apply border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors; 
+
+  .btn-outline {
+    @apply border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors;
   }
 }

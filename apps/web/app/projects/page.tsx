@@ -1,34 +1,155 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarBlankIcon, CaretDownIcon, ArrowSquareOutIcon } from "@phosphor-icons/react";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { projectApi } from "@/lib/api";
 import type { Project, FilterOptionsResponse } from "@/types/project";
 import { formatCurrency, formatKpi, kpiColor } from "@/lib/utils";
 
+const AutocompleteInput = ({
+  value,
+  onChange,
+  placeholder,
+  options,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  options: string[];
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  const filteredOptions = isTyping && value ? options.filter((opt) => opt.toLowerCase().includes(value.toLowerCase())) : options;
+
+  const handleFocus = () => {
+    setIsTyping(false);
+    setActiveIndex(-1);
+    setIsOpen(true);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+    setIsTyping(true);
+    setActiveIndex(-1);
+    setIsOpen(true);
+  };
+
+  const handleSelect = (opt: string) => {
+    onChange(opt);
+    setIsTyping(false);
+    setActiveIndex(-1);
+    setIsOpen(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) => {
+        const next = prev < filteredOptions.length - 1 ? prev + 1 : 0;
+        scrollIntoView(next);
+        return next;
+      });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => {
+        const next = prev > 0 ? prev - 1 : filteredOptions.length - 1;
+        scrollIntoView(next);
+        return next;
+      });
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeIndex >= 0 && filteredOptions[activeIndex]) {
+        handleSelect(filteredOptions[activeIndex]);
+      }
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+      setActiveIndex(-1);
+    }
+  };
+
+  const scrollIntoView = (index: number) => {
+    if (listRef.current) {
+      const item = listRef.current.children[index] as HTMLElement;
+      item?.scrollIntoView({ block: "nearest" });
+    }
+  };
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={() =>
+          setTimeout(() => {
+            setIsOpen(false);
+            setActiveIndex(-1);
+          }, 200)
+        }
+        onKeyDown={handleKeyDown}
+        className="w-full bg-white border border-[#E0E2E7] rounded-lg text-[14px] text-[#1B1C1F] px-4 h-[37px] focus:outline-none focus:border-blue-500 placeholder:text-[#98A2B3] transition-all"
+      />
+
+      {isOpen && (
+        <ul
+          ref={listRef}
+          className="absolute z-[999] w-full mt-1 bg-white border border-[#E0E2E7] rounded-lg shadow-xl max-h-48 overflow-y-auto py-1 animate-in fade-in zoom-in duration-75"
+        >
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((opt, idx) => (
+              <li
+                key={idx}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelect(opt);
+                }}
+                onMouseEnter={() => setActiveIndex(idx)}
+                className={`px-4 py-2 text-[14px] text-[#1B1C1F] cursor-pointer transition-colors font-medium ${
+                  idx === activeIndex ? "bg-[#EBF0FF] text-[#21409A]" : "hover:bg-[#F2F4F7]"
+                }`}
+              >
+                {opt}
+              </li>
+            ))
+          ) : (
+            <li className="px-4 py-2 text-[12px] text-gray-400 italic">No matches found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
+
 const FILTER_GRID: {
   key: keyof Project;
   label: string;
   optionKey?: keyof FilterOptionsResponse;
-  type: "select" | "text";
   placeholder?: string;
 }[] = [
-  { key: "project_name", label: "Project Name", type: "text", placeholder: "Gedung RS" },
-  { key: "contract_type", label: "Contract Pricing Type", type: "select", optionKey: "contract_type" },
-  { key: "consultant_name", label: "Project Consultant", type: "text", placeholder: "PT Virama Karya..." },
-  { key: "division", label: "Profit Center / Division", type: "select", optionKey: "division" },
-  { key: "sbu", label: "SBU Project", type: "select", optionKey: "sbu" },
-  { key: "location", label: "Location", type: "text", placeholder: "Surabaya, Jawa Timur" },
-  { key: "owner", label: "Project Owner", type: "select", optionKey: "owner" },
-  { key: "payment_method", label: "Payment Method", type: "select", optionKey: "payment_method" },
-  { key: "partnership", label: "Partnership Type", type: "select", optionKey: "partnership" },
-  { key: "funding_source", label: "Funding Source", type: "select", optionKey: "funding_source" },
-  { key: "planned_duration", label: "Project Duration (Months)", type: "text", placeholder: "24" },
-  { key: "partner_name", label: "Partnership Name", type: "text", placeholder: "Enter Partnership Name" },
-  { key: "type_of_contract", label: "Contract Method", type: "select", optionKey: "type_of_contract" as any },
+  { key: "project_name", label: "Project Name", placeholder: "e.g. Gedung RS" },
+  { key: "contract_type", label: "Contract Pricing Type", optionKey: "contract_type", placeholder: "Type Contract Pricing" },
+  { key: "consultant_name", label: "Project Consultant", placeholder: "e.g. PT Virama Karya..." },
+  { key: "division", label: "Profit Center / Division", optionKey: "division", placeholder: "Type Division" },
+  { key: "sbu", label: "SBU Project", optionKey: "sbu", placeholder: "Type SBU Project" },
+  { key: "location", label: "Location", placeholder: "e.g. Surabaya, Jawa Timur" },
+  { key: "owner", label: "Project Owner", optionKey: "owner", placeholder: "Type Project Owner" },
+  { key: "payment_method", label: "Payment Method", optionKey: "payment_method", placeholder: "Type Payment Method" },
+  { key: "partnership", label: "Partnership Type", optionKey: "partnership", placeholder: "Type Partnership" },
+  { key: "funding_source", label: "Funding Source", optionKey: "funding_source", placeholder: "Type Funding Source" },
+  { key: "planned_duration", label: "Project Duration (Months)", placeholder: "e.g. 24" },
+  { key: "partner_name", label: "Partnership Name", placeholder: "Enter Partnership Name" },
+  { key: "type_of_contract", label: "Contract Method", optionKey: "type_of_contract" as any, placeholder: "Type Contract Method" },
 ];
 
 export default function ProjectsPage() {
@@ -36,21 +157,16 @@ export default function ProjectsPage() {
   const [filterOptions, setFilterOptions] = useState<FilterOptionsResponse | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
-  // States untuk data
-  const [allProjects, setAllProjects] = useState<Project[]>([]); // Data asli dari API
-  const [projects, setProjects] = useState<Project[]>([]); // Data hasil filter
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const [searchApplied, setSearchApplied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState(false);
 
-  // Load Initial Data (API)
   useEffect(() => {
     setLoading(true);
-    Promise.all([
-      projectApi.list(),
-      projectApi.filterOptions(),
-    ])
+    Promise.all([projectApi.list(), projectApi.filterOptions()])
       .then(([res, options]) => {
         setAllProjects(res.data);
         setFilterOptions(options);
@@ -62,16 +178,13 @@ export default function ProjectsPage() {
   const handleSearch = () => {
     setLoading(true);
 
-    // Logika Filter Frontend
     const filtered = allProjects.filter((project) => {
       return Object.entries(filters).every(([key, value]) => {
-        if (!value) return true; // Skip jika filter kosong
+        if (!value) return true;
 
         const projectValue = project[key as keyof Project];
-
         if (projectValue === null || projectValue === undefined) return false;
 
-        // Case-insensitive search untuk text, exact match untuk select
         return String(projectValue).toLowerCase().includes(String(value).toLowerCase());
       });
     });
@@ -90,49 +203,42 @@ export default function ProjectsPage() {
 
   const handleSnackbarClose = useCallback(() => setSnackbar(false), []);
 
-  const getOptions = (optionKey?: keyof FilterOptionsResponse): string[] => {
-    if (!optionKey || !filterOptions) return [];
-    const options = filterOptions[optionKey];
-    if (!Array.isArray(options)) return [];
-    return options.filter((opt) => opt !== null).map(String);
+  // --- FUNGSI CERDAS: Menarik data dari API Filter atau dari Tabel ---
+  const getSuggestionsForField = (key: keyof Project, optionKey?: keyof FilterOptionsResponse): string[] => {
+    // 1. Coba cari di API Filter Options (untuk dropdown standar seperti division, sbu, owner)
+    if (optionKey && filterOptions && filterOptions[optionKey]) {
+      const options = filterOptions[optionKey];
+      if (Array.isArray(options)) {
+        return options.filter((opt) => opt !== null && String(opt).trim() !== "").map(String);
+      }
+    }
+
+    // 2. Jika bukan dari API (misal nama proyek, lokasi, konsultan), ambil data unik dari data tabel
+    if (allProjects.length > 0) {
+      const uniqueValues = new Set(allProjects.map((p) => String(p[key] || "")).filter((val) => val.trim() !== ""));
+      return Array.from(uniqueValues);
+    }
+
+    return [];
   };
+  // -------------------------------------------------------------------
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
       <PageHeader title="Projects Filter" onExport={() => {}} />
 
       <div className="grid grid-cols-3 gap-x-6 gap-y-4 mb-6">
-        {FILTER_GRID.map(({ key, label, optionKey, type, placeholder }) => (
+        {FILTER_GRID.map(({ key, label, optionKey, placeholder }) => (
           <div key={key}>
             <label className="text-[14px] font-semibold text-[#1B1C1F] mb-2 block">{label}</label>
 
-            <div className="relative">
-              {type === "select" ? (
-                <>
-                  <select
-                    value={filters[key as string] ?? ""}
-                    onChange={(e) => setFilters((prev) => ({ ...prev, [key as string]: e.target.value }))}
-                    className="w-full appearance-none bg-white border border-[#E0E2E7] rounded-lg text-[14px] text-[#1B1C1F] px-4 h-[37px] focus:outline-none focus:border-blue-500 transition-colors pr-10"
-                  >
-                    <option value="">Select {label}</option>
-                    {getOptions(optionKey).map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                  <CaretDownIcon size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#667085] pointer-events-none" />
-                </>
-              ) : (
-                <input
-                  type="text"
-                  placeholder={placeholder}
-                  value={filters[key as string] ?? ""}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, [key as string]: e.target.value }))}
-                  className="w-full bg-white border border-[#E0E2E7] rounded-lg text-[14px] text-[#1B1C1F] px-4 h-[37px] focus:outline-none focus:border-blue-500 placeholder:text-[#98A2B3]"
-                />
-              )}
-            </div>
+            {/* SELURUH FILTER SEKARANG MENGGUNAKAN AUTOCOMPLETE */}
+            <AutocompleteInput
+              value={filters[key as string] ?? ""}
+              onChange={(val) => setFilters((prev) => ({ ...prev, [key as string]: val }))}
+              placeholder={placeholder}
+              options={getSuggestionsForField(key, optionKey)}
+            />
           </div>
         ))}
       </div>
@@ -141,7 +247,7 @@ export default function ProjectsPage() {
         <button
           onClick={handleSearch}
           disabled={loading}
-          className="bg-[#21409A] text-white text-[14px] font-bold px-8 h-[40px] rounded-lg hover:bg-blue-800 transition-all disabled:opacity-60"
+          className="bg-primary-blue text-white text-[14px] font-bold px-8 h-[40px] rounded-lg hover:brightness-110 transition-all disabled:opacity-60"
         >
           {loading ? "Searching..." : "Search"}
         </button>
@@ -180,9 +286,7 @@ export default function ProjectsPage() {
                 <tr key={project.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{project.project_name}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">
-                    {formatCurrency(project.contract_value)}
-                  </td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(project.contract_value)}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-700">{project.gross_profit_pct ? `${project.gross_profit_pct}%` : "-"}</td>
                   <td className={`px-4 py-4 text-[14px] font-bold ${kpiColor(String(project.spi))}`}>
                     {project.spi ? Number(project.spi).toFixed(2) : "-"}
