@@ -24,6 +24,8 @@ import type {
   HppSummaryResponse,
   RiskListResponse,
   ProgressCurveResponse,
+  ProjectCpiResponse,
+  ProjectSpiResponse,
 } from "@/types/project";
 import { getToken, clearToken } from "@/lib/auth";
 
@@ -216,6 +218,9 @@ export const projectApi = {
 
   exportDashboard: (filters: ProjectFilters = {}): Promise<DashboardExportResponse> =>
     api.get("/projects/export-dashboard", { params: filters }).then((r) => r.data),
+
+  getCpi: (division: string): Promise<ProjectCpiResponse> => api.get(`/projects/${division.toLowerCase()}/cpi`).then((r) => r.data),
+  getSpi: (division: string): Promise<ProjectSpiResponse> => api.get(`/projects/${division.toLowerCase()}/spi`).then((r) => r.data),
 };
 
 export type DashboardExportResponse = {

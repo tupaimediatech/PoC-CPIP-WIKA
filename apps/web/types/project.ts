@@ -1,7 +1,7 @@
-export type ProjectStatus = 'good' | 'warning' | 'critical' | 'unknown';
-export type Division = 'Infrastructure' | 'Building';
-export type IngestionStatus = 'pending' | 'processing' | 'success' | 'failed' | 'partial';
-export type AliasContext = 'project' | 'work_item' | 'material' | 'equipment' | 'period' | 's_curve';
+export type ProjectStatus = "good" | "warning" | "critical" | "unknown";
+export type Division = "Infrastructure" | "Building";
+export type IngestionStatus = "pending" | "processing" | "success" | "failed" | "partial";
+export type AliasContext = "project" | "work_item" | "material" | "equipment" | "period" | "s_curve";
 
 export interface Project {
   id: number;
@@ -20,6 +20,7 @@ export interface Project {
   funding_source: string | null;
   location: string | null;
   contract_value: string;
+  hpp: string;
   planned_cost: string;
   actual_cost: string;
   planned_duration: number;
@@ -127,6 +128,28 @@ export interface ProjectListMeta {
   delay_pct: number;
   available_years: number[];
   active_year: number | null;
+}
+
+export interface ProjectCpiItem {
+  profit_center: string | null;
+  project_name: string;
+  cpi: string;
+  division: string;
+}
+
+export interface ProjectCpiResponse {
+  data: ProjectCpiItem[];
+}
+
+export interface ProjectSpiItem {
+  profit_center: string | null;
+  project_name: string;
+  spi: string;
+  division: string;
+}
+
+export interface ProjectSpiResponse {
+  data: ProjectSpiItem[];
 }
 
 export interface ProjectListResponse {
@@ -449,7 +472,7 @@ export type DashboardFilters = {
   year: string;
 };
 
-export type InsightLevel = 'info' | 'warning' | 'critical';
+export type InsightLevel = "info" | "warning" | "critical";
 
 export interface InsightBullet {
   level: InsightLevel;
@@ -470,7 +493,7 @@ export interface IngestionLog {
   total_rows: number;
   success_rows: number;
   failed_rows: number;
-  status: 'SUCCESS' | 'FAILED' | 'PARTIAL' | 'PENDING' | 'PROCESSING';
+  status: "SUCCESS" | "FAILED" | "PARTIAL" | "PENDING" | "PROCESSING";
   processed_at: string | null;
 }
 

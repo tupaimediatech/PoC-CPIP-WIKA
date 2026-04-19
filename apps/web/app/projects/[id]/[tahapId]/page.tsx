@@ -51,7 +51,7 @@ export default function Level4Page() {
         title={`Level 4 Harsat Per Sumber Daya - Tahap ${data.tahap}`}
         pills={[
           { label: "Tahap", value: data.tahap },
-          { label: "RAB Internal", value: formatCurrency(data.rabInternal) },
+          { label: "Realisasi Biaya", value: formatCurrency(data.rabInternal) },
         ]}
         onExport={() => {}}
       />
@@ -71,23 +71,25 @@ export default function Level4Page() {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {data.items.map((item: any, idx: number) => (
-                <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
-                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{item.name || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{item.volume ? Number(item.volume).toLocaleString("id-ID") : "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{formatSatuan(item.unit || item.satuan)}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{item.harsatInternal || item.internalPrice ? formatCurrency(item.harsatInternal ?? item.internalPrice) : "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(item.totalBiaya)}</td>
-                  <td className="px-4 py-4">
-                    <button
-                      onClick={() => router.push(`/projects/${projectId}/${tahapId}/${item.id}`)}
-                      className="flex items-center gap-1 text-primary-blue text-[13px] font-medium hover:underline"
-                    >
-                      Details <ArrowSquareOutIcon size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
+                <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{item.name || "-"}</td>
+                <td className="px-4 py-4 text-[14px] text-gray-700">{item.volume ? Number(item.volume).toLocaleString("id-ID") : "-"}</td>
+                <td className="px-4 py-4 text-[14px] text-gray-700">{formatSatuan(item.unit || item.satuan)}</td>
+                <td className="px-4 py-4 text-[14px] text-gray-700">
+                  {item.harsatInternal || item.internalPrice ? formatCurrency(item.harsatInternal ?? item.internalPrice) : "-"}
+                </td>
+                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(item.totalBiaya)}</td>
+                <td className="px-4 py-4">
+                  <button
+                    onClick={() => router.push(`/projects/${projectId}/${tahapId}/${item.id}`)}
+                    className="flex items-center gap-1 text-primary-blue text-[13px] font-medium hover:underline"
+                  >
+                    Details <ArrowSquareOutIcon size={14} />
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
           <tfoot>
             <tr className="bg-[#F9FAFB] border-t border-gray-200">

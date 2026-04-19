@@ -2,6 +2,7 @@
 
 import { ReadCvLogoIcon, MoneyWavyIcon, CalendarBlankIcon } from "@phosphor-icons/react";
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { formatKpi } from "@/lib/utils";
 import type { SummaryResponse } from "@/types/project";
 
@@ -40,6 +41,7 @@ interface Tooltip {
 }
 
 export default function DivisionChart({ data }: Props) {
+  const router = useRouter();
   const divisions = Object.entries(data.by_division);
   const chartRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<Tooltip>({
@@ -166,8 +168,16 @@ export default function DivisionChart({ data }: Props) {
             <div key={division}>
               {/* <p className="text-[12px] font-semibold text-gray-500 mb-2">{division}</p> */}
               <div className="grid grid-cols-2 gap-4.5 w-full">
-                <MiniKpiCard label="Cost Performance Index" value={formatKpi(divData.avg_cpi)} sub={division} icon={MoneyWavyIcon} />
-                <MiniKpiCard label="Schedule Performance Index" value={formatKpi(divData.avg_spi)} sub={division} icon={CalendarBlankIcon} />
+                <div onClick={() => router.push(`/projects/cpi/${division.toLowerCase()}`)} className="cursor-pointer group">
+                  <MiniKpiCard label="Cost Performance Index" value={formatKpi(divData.avg_cpi)} sub={division} icon={MoneyWavyIcon} />
+                  {/* Tooltip kecil opsional untuk UX */}
+                  <div className="hidden group-hover:block text-[10px] text-blue-600 font-medium px-2">Click to see detail →</div>
+                </div>
+                <div onClick={() => router.push(`/projects/spi/${division.toLowerCase()}`)} className="cursor-pointer group">
+                  <MiniKpiCard label="Schedule Performance Index" value={formatKpi(divData.avg_spi)} sub={division} icon={CalendarBlankIcon} />
+                  {/* Tooltip kecil opsional untuk UX */}
+                  <div className="hidden group-hover:block text-[10px] text-blue-600 font-medium px-2">Click to see detail →</div>
+                </div>
               </div>
             </div>
           ))}

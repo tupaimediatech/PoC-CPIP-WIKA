@@ -272,9 +272,10 @@ export default function ProjectsPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[#F9FAFB] border-b border-gray-100">
-                <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
+                <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Profit Center</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nilai Kontrak</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">HPP</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Gross Profit</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">SPI</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">CPI</th>
@@ -284,9 +285,10 @@ export default function ProjectsPage() {
             <tbody className="divide-y divide-gray-50">
               {projects.map((project, idx) => (
                 <tr key={project.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
+                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{project.project_code}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{project.project_name}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(project.contract_value)}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{project.hpp || "-"}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-700">{project.gross_profit_pct ? `${project.gross_profit_pct}%` : "-"}</td>
                   <td className={`px-4 py-4 text-[14px] font-bold ${kpiColor(String(project.spi))}`}>
                     {project.spi ? Number(project.spi).toFixed(2) : "-"}
