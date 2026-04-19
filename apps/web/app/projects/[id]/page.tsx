@@ -38,9 +38,11 @@ export default function Level3Page() {
   const phases = data.phases || [];
 
   // Menghitung Total untuk Footer
-  const totalBq = phases.reduce((acc: number, curr: any) => acc + (curr.bqExternal || 0), 0);
-  const totalRab = phases.reduce((acc: number, curr: any) => acc + (curr.rabInternal || 0), 0);
-  const totalDeviasiPct = totalBq > 0 ? ((totalBq - totalRab) / totalBq) * 100 : 0;
+  const totalBq = phases.reduce((acc: number, curr: any) => acc + (curr.bq_external || 0), 0);
+  const totalRealized = phases.reduce((acc: number, curr: any) => acc + (curr.realized_costs || 0), 0);
+
+  // Kalkulasi total deviasi: (BQ - Realized) / BQ * 100
+  const totalDeviasiPct = totalBq > 0 ? ((totalBq - totalRealized) / totalBq) * 100 : 0;
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
@@ -70,15 +72,15 @@ export default function Level3Page() {
             {phases.map((phase: any, index: number) => (
               <tr key={phase.id} className="hover:bg-gray-50/50 transition-colors">
                 <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{index + 1}</td>
-                <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{phase.name}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(phase.bqExternal)}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(phase.rabInternal)}</td>
+                <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{phase.name_of_work_phase}</td>
+                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(phase.bq_external)}</td>
+                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(phase.actual_costs)}</td>
                 <td className="px-4 py-4">
                   <div
-                    className={`inline-flex items-center gap-1 text-[14px] font-bold ${phase.deviasiPct >= 0 ? "text-green-600" : "text-red-600"}`}
+                    className={`inline-flex items-center gap-1 text-[14px] font-bold ${phase.deviasi_pct >= 0 ? "text-green-600" : "text-red-600"}`}
                   >
-                    {phase.deviasiPct >= 0 ? <ArrowUpIcon size={14} /> : <ArrowDownIcon size={14} />}
-                    {Math.abs(phase.deviasiPct).toFixed(1)}%
+                    {phase.deviasi_pct >= 0 ? <ArrowUpIcon size={14} /> : <ArrowDownIcon size={14} />}
+                    {Math.abs(phase.deviasi_pct).toFixed(1)}%
                   </div>
                 </td>
                 <td className="px-4 py-4">
@@ -97,7 +99,7 @@ export default function Level3Page() {
               <td className="px-6 py-4" />
               <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">TOTAL</td>
               <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalBq)}</td>
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalRab)}</td>
+              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalRealized)}</td>
               <td className="px-4 py-4">
                 <span className={`text-[14px] font-bold ${totalDeviasiPct >= 0 ? "text-green-600" : "text-red-600"}`}>
                   {totalDeviasiPct.toFixed(1)}%
