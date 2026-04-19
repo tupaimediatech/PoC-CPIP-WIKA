@@ -15,6 +15,9 @@ import {
   TreeStructureIcon,
   BuildingOfficeIcon,
   ChartBarIcon,
+  SpeedometerIcon,
+  MoneyWavyIcon,
+  CalendarBlankIcon,
 } from "@phosphor-icons/react";
 import { projectApi, periodApi } from "@/lib/api";
 
@@ -32,6 +35,30 @@ const STATIC_BREADCRUMBS: Record<string, BreadcrumbItem[]> = {
   "/projects": [
     { Icon: ChartBarIcon, label: "Projects Analytics", href: "/" },
     { Icon: FileTextIcon, label: "All Projects" },
+  ],
+  "/projects/cpi/building": [
+    { Icon: HouseIcon, label: "Home", href: "/" },
+    { Icon: PresentationChartIcon, label: "Infographic Summary", href: "/" },
+    { Icon: SpeedometerIcon, label: "Division Performance Comparison", href: "/projects" }, // Sesuaikan href jika perlu
+    { Icon: MoneyWavyIcon, label: "CPI Building" },
+  ],
+  "/projects/cpi/infrastructure": [
+    { Icon: HouseIcon, label: "Home", href: "/" },
+    { Icon: PresentationChartIcon, label: "Infographic Summary", href: "/" },
+    { Icon: SpeedometerIcon, label: "Division Performance Comparison", href: "/projects" }, // Sesuaikan href jika perlu
+    { Icon: MoneyWavyIcon, label: "CPI Infrastructure" },
+  ],
+  "/projects/spi/building": [
+    { Icon: HouseIcon, label: "Home", href: "/" },
+    { Icon: PresentationChartIcon, label: "Infographic Summary", href: "/" },
+    { Icon: SpeedometerIcon, label: "Division Performance Comparison", href: "/projects" }, // Sesuaikan href jika perlu
+    { Icon: CalendarBlankIcon, label: "SPI Building" },
+  ],
+  "/projects/spi/infrastructure": [
+    { Icon: HouseIcon, label: "Home", href: "/" },
+    { Icon: PresentationChartIcon, label: "Infographic Summary", href: "/" },
+    { Icon: SpeedometerIcon, label: "Division Performance Comparison", href: "/projects" }, // Sesuaikan href jika perlu
+    { Icon: CalendarBlankIcon, label: "SPI Infrastructure" },
   ],
   "/upload": [
     { Icon: HouseIcon, label: "Home", href: "/" },

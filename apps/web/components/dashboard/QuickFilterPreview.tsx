@@ -5,6 +5,8 @@ import { CaretDownIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { projectApi } from "@/lib/api";
 import type { FilterOptionsResponse } from "@/types/project";
+import * as XLSX from "xlsx";
+
 type FilterState = {
   sbu: string;
   owner: string;
@@ -23,6 +25,7 @@ interface QuickFilterPreviewProps {
 export default function QuickFilterPreview({ onSearch, onReset, onExport }: QuickFilterPreviewProps) {
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [options, setOptions] = useState<FilterOptionsResponse | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,6 +33,43 @@ export default function QuickFilterPreview({ onSearch, onReset, onExport }: Quic
   }, []);
 
   const updateFilter = (key: keyof FilterState, value: string) => setFilters((prev) => ({ ...prev, [key]: value }));
+
+  // --- FUNGSI EXPORT ---
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      // 1. Ambil data dari API berdasarkan filter saat ini
+      const response = await projectApi.exportDashboard(filters);
+      const rawData = response.projects.data;
+
+      // 2. Mapping data agar header Excel rapi
+      const exportData = rawData.map((item: any) => ({
+        "Project Code": item.project_code,
+        "Project Name": item.project_name,
+        Division: item.division,
+        Owner: item.owner,
+        "Contract Value": parseFloat(item.contract_value),
+        "Actual Cost": parseFloat(item.actual_cost),
+        "Progress (%)": item.progress_pct,
+        CPI: item.cpi,
+        SPI: item.spi,
+        Status: item.status,
+      }));
+
+      // 3. Proses menjadi file Excel
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Projects");
+
+      // 4. Download file
+      XLSX.writeFile(workbook, `Dashboard_Export_${new Date().getTime()}.xlsx`);
+    } catch (error) {
+      console.error("Export error:", error);
+      alert("Gagal mengekspor data");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleReset = () => {
     setFilters(EMPTY_FILTERS);
@@ -57,16 +97,15 @@ export default function QuickFilterPreview({ onSearch, onReset, onExport }: Quic
     <div className="bg-white w-full" style={{ padding: "18px 32px" }}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-[18px] font-bold text-[#1B1C1F]">Quick Filter Preview</h2>
-        {onExport && (
-          <button
-            onClick={onExport}
-            className="flex items-center gap-2 bg-primary-blue text-white text-[13px] font-bold rounded-lg px-4 hover:brightness-110 transition-all"
-            style={{ height: "38px" }}
-          >
-            Export Data
-            <DownloadSimpleIcon size={16} weight="bold" />
-          </button>
-        )}
+        <button
+          onClick={handleExport}
+          disabled={isExporting}
+          className={`flex items-center gap-2 bg-primary-blue text-white text-[13px] font-bold rounded-lg px-4 hover:brightness-110 transition-all ${isExporting ? "opacity-50 cursor-not-allowed" : ""}`}
+          style={{ height: "38px" }}
+        >
+          {isExporting ? "Processing..." : "Export Data"}
+          <DownloadSimpleIcon size={16} weight="bold" />
+        </button>
       </div>
 
       <div className="flex items-center gap-4 mb-4">
