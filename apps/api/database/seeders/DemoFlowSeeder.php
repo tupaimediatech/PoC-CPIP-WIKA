@@ -84,9 +84,9 @@ class DemoFlowSeeder extends Seeder
                 'progress_total_pct' => 12.50,
                 'contract_value'     => 850000000000,  // Rp850 Miliar
                 'addendum_value'     => 0,
-                'total_pagu'         => 850000000000,
-                'hpp_plan_total'     => 780000000000,  // RAB Internal
-                'hpp_actual_total'   => 95000000000,  // Realisasi
+                'bq_external'        => 850000000000,
+                'actual_costs'       => 780000000000,  // RAB Internal
+                'realized_costs'     => 95000000000,  // Realisasi
                 'hpp_deviation'      => 685000000000,
                 'deviasi_pct'        => 6.50,
             ]
@@ -107,9 +107,9 @@ class DemoFlowSeeder extends Seeder
                 'progress_total_pct' => 30.70,
                 'contract_value'     => 2000000000000,
                 'addendum_value'     => 0,
-                'total_pagu'         => 2000000000000,
-                'hpp_plan_total'     => 1870000000000,
-                'hpp_actual_total'   => 585000000000,
+                'bq_external'        => 2000000000000,
+                'actual_costs'       => 1870000000000,
+                'realized_costs'     => 585000000000,
                 'hpp_deviation'     => 1285000000000,
                 'deviasi_pct'        => 15.80,
             ]

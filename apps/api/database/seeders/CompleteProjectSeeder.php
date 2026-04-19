@@ -222,9 +222,9 @@ class CompleteProjectSeeder extends Seeder
             'progress_total_pct' => round($project->progress_pct * 0.3, 2),
             'contract_value'   => $project->contract_value * 1_000_000,
             'addendum_value'   => 0,
-            'total_pagu'       => $project->contract_value * 1_000_000,
-            'hpp_plan_total'   => $project->planned_cost * 1_000_000,
-            'hpp_actual_total' => $project->actual_cost * 0.3 * 1_000_000,
+            'bq_external'      => $project->contract_value * 1_000_000,
+            'actual_costs'     => $project->planned_cost * 1_000_000,
+            'realized_costs'   => $project->actual_cost * 0.3 * 1_000_000,
             'hpp_deviation'    => ($project->planned_cost - $project->actual_cost * 0.3) * 1_000_000,
         ]);
 
