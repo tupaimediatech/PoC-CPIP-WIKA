@@ -10,7 +10,7 @@ class ProjectWbsController extends Controller
 {
     /**
      * Level 3 — list of WBS phases for a project.
-     * Maps backend fields to the BQ vs RAB format expected by the frontend.
+     * Returns the canonical API field names that match the current schema.
      */
     public function index(Project $project): JsonResponse
     {
@@ -19,13 +19,13 @@ class ProjectWbsController extends Controller
             ->get();
 
         $phases = $wbsPhases->map(fn(ProjectWbs $wbs) => [
-            'id'          => $wbs->id,
-            'name'        => $wbs->name_of_work_phase,
-            'bqExternal'  => (float) $wbs->bq_external,       // nilai dari owner/client
-            'rabInternal' => (float) $wbs->actual_costs,      // HPP internal (RAB)
-            'realisasi'   => (float) $wbs->realized_costs,    // realisasi biaya
-            'deviasi'     => (float) $wbs->hpp_deviation,     // deviasi %
-            'deviasiPct'  => (float) ($wbs->deviasi_pct ?? 0),
+            'id'                 => $wbs->id,
+            'name_of_work_phase' => $wbs->name_of_work_phase,
+            'bq_external'        => (float) $wbs->bq_external,
+            'actual_costs'       => (float) $wbs->actual_costs,
+            'realized_costs'     => (float) $wbs->realized_costs,
+            'hpp_deviation'      => (float) $wbs->hpp_deviation,
+            'deviasi_pct'        => (float) ($wbs->deviasi_pct ?? 0),
         ]);
 
         return response()->json([
@@ -75,10 +75,13 @@ class ProjectWbsController extends Controller
 
         return response()->json([
             'data' => [
-                'tahap'       => $wbsModel->name_of_work_phase,
-                'rabInternal' => (float) $wbsModel->actual_costs,
-                'bqExternal'  => (float) $wbsModel->bq_external,
-                'items'       => $workItems,
+                'name_of_work_phase' => $wbsModel->name_of_work_phase,
+                'actual_costs'       => (float) $wbsModel->actual_costs,
+                'bq_external'        => (float) $wbsModel->bq_external,
+                'realized_costs'     => (float) $wbsModel->realized_costs,
+                'hpp_deviation'      => (float) $wbsModel->hpp_deviation,
+                'deviasi_pct'        => (float) ($wbsModel->deviasi_pct ?? 0),
+                'items'              => $workItems,
             ],
         ]);
     }
