@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { CaretDownIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { projectApi } from "@/lib/api";
 import type { FilterOptionsResponse } from "@/types/project";
-import * as XLSX from "xlsx";
 
 type FilterState = {
   sbu: string;
@@ -34,38 +33,17 @@ export default function QuickFilterPreview({ onSearch, onReset, onExport }: Quic
 
   const updateFilter = (key: keyof FilterState, value: string) => setFilters((prev) => ({ ...prev, [key]: value }));
 
-  // --- FUNGSI EXPORT ---
+  // --- EXPORT AS PDF: screenshot seluruh halaman dashboard ---
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      // 1. Ambil data dari API berdasarkan filter saat ini
-      const response = await projectApi.exportDashboard(filters);
-      const rawData = response.projects.data;
 
-      // 2. Mapping data agar header Excel rapi
-      const exportData = rawData.map((item: any) => ({
-        "Project Code": item.project_code,
-        "Project Name": item.project_name,
-        Division: item.division,
-        Owner: item.owner,
-        "Contract Value": parseFloat(item.contract_value),
-        "Actual Cost": parseFloat(item.actual_cost),
-        "Progress (%)": item.progress_pct,
-        CPI: item.cpi,
-        SPI: item.spi,
-        Status: item.status,
-      }));
-
-      // 3. Proses menjadi file Excel
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Projects");
-
-      // 4. Download file
-      XLSX.writeFile(workbook, `Dashboard_Export_${new Date().getTime()}.xlsx`);
+      // Dynamically import agar tidak membebani bundle
+      const { exportDashboardToPdf } = await import("@/lib/exportPdf");
+      await exportDashboardToPdf("dashboard-export-root");
     } catch (error) {
-      console.error("Export error:", error);
-      alert("Gagal mengekspor data");
+      console.error("Export PDF error:", error);
+      alert("Gagal mengekspor PDF. Silakan coba lagi.");
     } finally {
       setIsExporting(false);
     }
@@ -76,12 +54,12 @@ export default function QuickFilterPreview({ onSearch, onReset, onExport }: Quic
     router.push(window.location.pathname);
     onReset();
   };
+
   const handleSearch = () => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value) params.set(key, value);
     });
-
     router.push(`?${params.toString()}`);
     onSearch(filters);
   };
@@ -94,17 +72,29 @@ export default function QuickFilterPreview({ onSearch, onReset, onExport }: Quic
   ];
 
   return (
-    <div className="bg-white w-full" style={{ padding: "18px 32px" }}>
+    // data-pdf-ignore="true" agar filter bar tidak ikut tereksport di PDF
+    <div className="bg-white w-full" style={{ padding: "18px 32px" }} data-pdf-ignore="true">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-[18px] font-bold text-[#1B1C1F]">Quick Filter Preview</h2>
         <button
           onClick={handleExport}
           disabled={isExporting}
-          className={`flex items-center gap-2 bg-primary-blue text-white text-[13px] font-bold rounded-lg px-4 hover:brightness-110 transition-all ${isExporting ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`flex items-center gap-2 bg-primary-blue text-white text-[13px] font-bold rounded-lg px-4 hover:brightness-110 transition-all ${
+            isExporting ? "opacity-50 cursor-not-allowed" : ""
+          }`}
           style={{ height: "38px" }}
         >
-          {isExporting ? "Processing..." : "Export Data"}
-          <DownloadSimpleIcon size={16} weight="bold" />
+          {isExporting ? (
+            <>
+              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              Export PDF
+              <DownloadSimpleIcon size={16} weight="bold" />
+            </>
+          )}
         </button>
       </div>
 

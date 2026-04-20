@@ -74,16 +74,18 @@ export default function DashboardSummary() {
     <div className="bg-[#F9FAFB] min-h-screen">
       <QuickFilterPreview onSearch={handleSearch} onReset={handleReset} onExport={() => {}} />
 
-      <KpiCards data={summary} filters={filters} onChange={setFilters} />
-      <DivisionChart data={summary} />
+      <div id="dashboard-export-root">
+        <KpiCards data={summary} filters={filters} onChange={setFilters} />
+        <DivisionChart data={summary} />
 
-      <div className="bg-white flex gap-8 w-full items-stretch" style={{ padding: "18px 32px" }}>
-        <TrendHarsatUtama />
-        <SebaranSBUChart />
+        <div className="bg-white flex gap-8 w-full items-stretch" style={{ padding: "18px 32px" }}>
+          <TrendHarsatUtama />
+          <SebaranSBUChart />
+        </div>
+
+        <ParetoTables profitability={summary.profitability ?? []} overrun={summary.overrun ?? []} />
+        {searchApplied && <RiskProjectTable projects={filteredProjects} />}
       </div>
-
-      <ParetoTables profitability={summary.profitability ?? []} overrun={summary.overrun ?? []} />
-      {searchApplied && <RiskProjectTable projects={filteredProjects} />}
 
       <Snackbar
         title="Success!"

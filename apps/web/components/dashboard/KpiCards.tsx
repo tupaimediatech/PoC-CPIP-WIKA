@@ -98,8 +98,8 @@ function FilterSelect({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="relative flex items-center bg-white border border-gray-200 rounded-md" style={{ height: "27px" }}>
-      <div className="flex items-center gap-0.5 px-2">
+    <div className="relative flex items-center bg-white border border-gray-200 rounded-md px-2" style={{ height: "27px" }}>
+      <div className="flex items-center gap-0.5">
         <span className="text-[12px] font-medium text-gray-500">{label}</span>
         <span className="text-[12px] text-gray-400">:</span>
       </div>
@@ -130,7 +130,7 @@ function KpiCard({ label, value, icon: Icon }: { label: string; value: string | 
           <div className="flex items-center justify-center bg-primary-blue rounded-md" style={{ width: "26px", height: "26px" }}>
             <Icon size={14} className="text-white" />
           </div>
-          <span className="text-[13px] font-semibold text-[#1B1C1F] truncate">{label}</span>
+          <span className="text-[13px] font-semibold text-[#1B1C1F]">{label}</span>
         </div>
         <InfoIcon size={14} weight="regular" className="text-[#1B1C1F] cursor-help shrink-0" />
       </div>
