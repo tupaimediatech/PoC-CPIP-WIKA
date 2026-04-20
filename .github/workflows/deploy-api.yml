@@ -32,10 +32,11 @@ jobs:
           context: apps/api
           file: apps/api/DockerFile
           push: true
-          no-cache: true
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     needs: build-and-push
@@ -57,13 +58,13 @@ jobs:
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
               -p 2083:8080 \
-              -v cpip-data:/var/www/html/database \
+              -v cpip-data:/var/www/html/storage/db \
               -v cpip-storage:/var/www/html/storage/app \
               -e APP_ENV=production \
               -e APP_DEBUG=false \
               -e APP_URL=https://api-cpip.haydaramru.com \
               -e DB_CONNECTION=sqlite \
-              -e DB_DATABASE=/var/www/html/database/database.sqlite \
+              -e DB_DATABASE=/var/www/html/storage/db/database.sqlite \
               ${{ env.IMAGE_NAME }}:latest
 
             docker image prune -f

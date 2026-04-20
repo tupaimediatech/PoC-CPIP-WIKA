@@ -2,10 +2,11 @@
 set -e
 
 echo "==> Setting up SQLite database..."
-if [ ! -f /var/www/html/database/database.sqlite ]; then
-    touch /var/www/html/database/database.sqlite
-    chown www-data:www-data /var/www/html/database/database.sqlite
-    chmod 664 /var/www/html/database/database.sqlite
+mkdir -p /var/www/html/storage/db
+if [ ! -f /var/www/html/storage/db/database.sqlite ]; then
+    touch /var/www/html/storage/db/database.sqlite
+    chown www-data:www-data /var/www/html/storage/db/database.sqlite
+    chmod 664 /var/www/html/storage/db/database.sqlite
 fi
 
 echo "==> Generating app key if needed..."
