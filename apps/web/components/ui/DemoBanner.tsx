@@ -31,22 +31,24 @@ export default function DemoBanner() {
         .marquee-content {
           display: flex;
           white-space: nowrap;
-          /* Durasi 80 detik untuk gerakan yang sangat pelan */
           animation: marquee-slow 240s linear infinite;
+          /* Menggunakan gap lebih konsisten daripada margin individual */
+          gap: 20px;
         }
 
         .marquee-item {
           display: flex;
           align-items: center;
-          margin: 0 48px;
+          /* Mencegah item menciut/berhimpitan */
+          flex-shrink: 0;
         }
 
         .dot {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background-color: #fbbf24; /* amber-400 */
-          margin-right: 12px;
+          background-color: #fbbf24;
+          margin-right: 12px !important;
           box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
         }
 
@@ -55,7 +57,7 @@ export default function DemoBanner() {
           text-transform: uppercase;
           letter-spacing: 0.15em;
           font-weight: 600;
-          margin: 0;
+          margin-left: 10px;
           opacity: 0.9;
         }
 
