@@ -12,6 +12,10 @@ class Project extends Model
 {
     use HasFactory;
 
+    protected $appends = [
+        'delivery_budget_status',
+    ];
+
     protected $fillable = [
         'project_code',
         'project_name',
@@ -143,6 +147,26 @@ class Project extends Model
     public function getIsDelayAttribute(): bool
     {
         return $this->spi < 1;
+    }
+
+    public function getDeliveryBudgetStatusAttribute(): ?string
+    {
+        $spi = $this->attributes['spi'] ?? null;
+        $cpi = $this->attributes['cpi'] ?? null;
+
+        if ($spi === null || $cpi === null) {
+            return null;
+        }
+
+        $spiValue = (float) $spi;
+        $cpiValue = (float) $cpi;
+
+        return match (true) {
+            $spiValue >= 1.0 && $cpiValue >= 1.0 => 'On Time On Budget',
+            $spiValue >= 1.0 && $cpiValue < 1.0  => 'On Time Overbudget',
+            $spiValue < 1.0 && $cpiValue >= 1.0  => 'Delay On Budget',
+            default                               => 'Delay Overbudget',
+        };
     }
 
     /**
