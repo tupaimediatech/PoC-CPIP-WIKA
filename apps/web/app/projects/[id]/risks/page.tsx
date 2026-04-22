@@ -6,6 +6,8 @@ import PageHeader from "@/components/analytics/PageHeader";
 import SCurveChart from "@/components/analytics/SCurveChart";
 import { projectApi } from "@/lib/api";
 import type { ProjectRisk, ProgressCurveResponse } from "@/types/project";
+import { PencilSimple, Trash } from "@phosphor-icons/react";
+
 const SEVERITY_COLOR: Record<string, string> = {
   critical: "text-red-600",
   high: "text-orange-500",
@@ -13,7 +15,254 @@ const SEVERITY_COLOR: Record<string, string> = {
   low: "text-green-600",
 };
 
-export default function Level7Page() {
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface RiskFormData {
+  category: string;
+  risk_title: string;
+  financial_impact_idr: string;
+  status: string;
+}
+
+const EMPTY_FORM: RiskFormData = {
+  category: "",
+  risk_title: "",
+  financial_impact_idr: "",
+  status: "At Risk",
+};
+
+// ─── Risk Modal ───────────────────────────────────────────────────────────────
+function RiskModal({
+  mode,
+  risk,
+  projectId,
+  onClose,
+  onSuccess,
+}: {
+  mode: "create" | "edit";
+  risk?: ProjectRisk;
+  projectId: number;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [form, setForm] = useState<RiskFormData>(
+    mode === "edit" && risk
+      ? {
+          category: risk.category ?? "",
+          risk_title: risk.risk_title ?? "",
+          financial_impact_idr: risk.financial_impact_idr ? String(risk.financial_impact_idr) : "",
+          status: risk.status ?? "At Risk",
+        }
+      : EMPTY_FORM,
+  );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async () => {
+    if (!form.category.trim() || !form.risk_title.trim()) {
+      setError("Kategori Risiko dan Deskripsi Kejadian wajib diisi.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = {
+        category: form.category,
+        risk_title: form.risk_title,
+        financial_impact_idr: form.financial_impact_idr ? Number(form.financial_impact_idr) : null,
+        status: form.status,
+      };
+
+      if (mode === "create") {
+        await fetch(`/api/projects/${projectId}/risks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await fetch(`/api/projects/${projectId}/risks/${risk!.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setError("Terjadi kesalahan. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-[16px] font-bold text-[#1B1C1F]">{mode === "create" ? "Tambah Risiko" : "Edit Risiko"}</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="flex flex-col gap-4">
+          {/* Kategori Risiko */}
+          <div>
+            <label className="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+              Kategori Risiko <span className="text-red-500">*</span>
+            </label>
+            <input
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              placeholder="Contoh: Finansial, Teknis, SDM..."
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1B1C1F] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+            />
+          </div>
+
+          {/* Deskripsi Kejadian */}
+          <div>
+            <label className="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+              Deskripsi Kejadian <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              name="risk_title"
+              value={form.risk_title}
+              onChange={handleChange}
+              placeholder="Deskripsikan kejadian risiko..."
+              rows={3}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1B1C1F] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
+            />
+          </div>
+
+          {/* Dampak (Rp / hari) */}
+          <div>
+            <label className="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Dampak (Rp / hari)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-gray-400 font-medium">Rp</span>
+              <input
+                name="financial_impact_idr"
+                type="number"
+                value={form.financial_impact_idr}
+                onChange={handleChange}
+                placeholder="0"
+                className="w-full border border-gray-200 rounded-lg pl-10 pr-3 py-2.5 text-[14px] text-[#1B1C1F] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1B1C1F] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white"
+            >
+              <option value="At Risk">At Risk</option>
+              <option value="mitigated">Mitigated</option>
+              <option value="closed">Closed</option>
+              <option value="monitoring">Monitoring</option>
+            </select>
+          </div>
+
+          {/* Error */}
+          {error && <p className="text-[13px] text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 mt-6">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="px-5 h-[38px] border border-gray-200 text-gray-600 text-[13px] font-bold rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-5 h-[38px] bg-blue-600 text-white text-[13px] font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-60"
+          >
+            {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            {mode === "create" ? "Simpan" : "Update"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+function DeleteModal({ risk, projectId, onClose, onSuccess }: { risk: ProjectRisk; projectId: number; onClose: () => void; onSuccess: () => void }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      await fetch(`/api/projects/${projectId}/risks/${risk.id}`, {
+        method: "DELETE",
+      });
+      onSuccess();
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+        <div className="flex flex-col items-center text-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center">
+            <span className="text-red-500 text-[20px]">🗑</span>
+          </div>
+          <h2 className="text-[16px] font-bold text-[#1B1C1F]">Hapus Risiko</h2>
+          <p className="text-[14px] text-gray-500 leading-relaxed">
+            Apakah Anda yakin ingin menghapus risiko <span className="font-semibold text-[#1B1C1F]">"{risk.risk_title}"</span>? Tindakan ini tidak
+            dapat dibatalkan.
+          </p>
+        </div>
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="px-5 h-[38px] border border-gray-200 text-gray-600 text-[13px] font-bold rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={loading}
+            className="px-5 h-[38px] bg-red-500 text-white text-[13px] font-bold rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 disabled:opacity-60"
+          >
+            {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function Level6Page() {
   const router = useRouter();
   const params = useParams();
   const projectId = Number(params.id);
@@ -22,7 +271,13 @@ export default function Level7Page() {
   const [curve, setCurve] = useState<ProgressCurveResponse["data"] | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // Modal state
+  const [showCreate, setShowCreate] = useState(false);
+  const [editRisk, setEditRisk] = useState<ProjectRisk | null>(null);
+  const [deleteRisk, setDeleteRisk] = useState<ProjectRisk | null>(null);
+
+  const fetchData = () => {
+    setLoading(true);
     Promise.all([projectApi.risks(projectId), projectApi.progressCurve(projectId)])
       .then(([riskRes, curveRes]) => {
         setRisks(riskRes.data);
@@ -30,6 +285,10 @@ export default function Level7Page() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchData();
   }, [projectId]);
 
   if (loading)
@@ -45,24 +304,32 @@ export default function Level7Page() {
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
-      <PageHeader title="Level 6A Kamus Risiko (Historical Risk Register)" onExport={() => {}} />
+      <PageHeader title="Level 6A Kamus Risiko (Historical Risk Register)" onExport={() => {}}>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex items-center gap-2 bg-blue-600 text-white text-[13px] font-bold rounded-lg px-4 h-[38px] hover:bg-blue-700 transition-colors"
+        >
+          <span className="text-[16px] leading-none">+</span>
+          Tambah Risiko
+        </button>
+      </PageHeader>
 
       <div className="overflow-hidden border border-gray-100 rounded-xl mb-10">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-[#F9FAFB] border-b border-gray-100">
-              {/* Header disesuaikan jumlahnya dengan gambar (5 kolom) */}
               <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Risiko</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Deskripsi Kejadian</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Dampak (Rp / hari)</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {risks.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-gray-400 text-[13px]">
+                <td colSpan={6} className="px-6 py-10 text-center text-gray-400 text-[13px]">
                   No risk data available
                 </td>
               </tr>
@@ -72,20 +339,35 @@ export default function Level7Page() {
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{risk.category ?? "-"}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-700">{risk.risk_title}</td>
-
-                  {/* Kolom Dampak: Menampilkan data dari API dengan gaya panah di gambar */}
                   <td className="px-4 py-4 text-[14px] text-red-600 font-medium">
                     <div className="flex items-center gap-1">
                       <span>↑</span>
                       <span>{risk.financial_impact_idr ? `+Rp${Number(risk.financial_impact_idr).toLocaleString("id-ID")}` : "-"}</span>
                     </div>
                   </td>
-
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFF9E6] border border-[#FEF3C7] w-fit">
                       <div className="w-2 h-2 rounded-full bg-[#D97706]" />
-                      {/* Status tetap mengambil dari API (misal: 'At Risk') */}
                       <span className="text-[#D97706] text-[12px] font-bold">{risk.status ?? "At Risk"}</span>
+                    </div>
+                  </td>
+
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setEditRisk(risk)}
+                        className="flex items-center justify-center w-[32px] h-[32px] bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                        title="Edit"
+                      >
+                        <PencilSimple size={18} weight="bold" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteRisk(risk)}
+                        className="flex items-center justify-center w-[32px] h-[32px] bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
+                        title="Hapus"
+                      >
+                        <Trash size={18} weight="bold" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -148,6 +430,13 @@ export default function Level7Page() {
           Finish Analysis
         </button>
       </div>
+
+      {/* ── Modals ── */}
+      {showCreate && <RiskModal mode="create" projectId={projectId} onClose={() => setShowCreate(false)} onSuccess={fetchData} />}
+
+      {editRisk && <RiskModal mode="edit" risk={editRisk} projectId={projectId} onClose={() => setEditRisk(null)} onSuccess={fetchData} />}
+
+      {deleteRisk && <DeleteModal risk={deleteRisk} projectId={projectId} onClose={() => setDeleteRisk(null)} onSuccess={fetchData} />}
     </div>
   );
 }
