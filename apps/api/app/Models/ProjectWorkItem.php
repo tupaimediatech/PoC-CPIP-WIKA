@@ -17,6 +17,8 @@ class ProjectWorkItem extends Model
         'level',
         'item_no',
         'item_name',
+        'id_material',
+        'material_category',
         'sort_order',
         'volume',
         'satuan',
