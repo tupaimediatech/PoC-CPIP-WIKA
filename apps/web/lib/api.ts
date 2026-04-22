@@ -28,6 +28,7 @@ import type {
   ProjectSpiResponse,
 } from "@/types/project";
 import { getToken, clearToken } from "@/lib/auth";
+import { Material, MaterialFilterOptionsResponse, MaterialListResponse } from "@/types/material";
 
 type UploadRequestError = Error & {
   responseData?: UploadResponse;
@@ -250,6 +251,59 @@ export const periodApi = {
 
 export const workItemApi = {
   detail: (id: number): Promise<WorkItemDetailResponse> => api.get(`/work-items/${id}`).then((r) => r.data),
+};
+
+export const materialApi = {
+  list: (): Promise<MaterialListResponse> => api.get("/materials").then((r) => r.data),
+
+  filterOptions: (): Promise<MaterialFilterOptionsResponse> => api.get("/materials/filter-options").then((r) => r.data),
+
+  detail: (id: number): Promise<{ data: Material }> => api.get(`/materials/${id}`).then((r) => r.data),
+
+  delete: (id: number): Promise<{ message: string }> => api.delete(`/materials/${id}`).then((r) => r.data),
+
+  upload: (files: File | File[], onProgress?: (percent: number) => void): Promise<UploadResponse> => {
+    return new Promise((resolve, reject) => {
+      const form = new FormData();
+      const fileArray = Array.isArray(files) ? files : [files];
+      fileArray.forEach((file) => form.append("files[]", file));
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/materials/upload");
+      xhr.setRequestHeader("Accept", "application/json");
+      const token = getToken();
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+      if (onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded * 100) / event.total);
+            onProgress(percent);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        try {
+          const data = parseXhrPayload(xhr);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            if (data) {
+              resolve(data);
+              return;
+            }
+            reject(buildUploadError(xhr, null));
+            return;
+          }
+          reject(buildUploadError(xhr, data));
+        } catch {
+          reject(buildUploadError(xhr, null));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network Error"));
+      xhr.send(form);
+    });
+  },
 };
 
 export const ingestionApi = {

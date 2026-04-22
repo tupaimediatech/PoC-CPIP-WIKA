@@ -13,11 +13,14 @@ import {
   SignOutIcon,
   CaretDoubleLeftIcon,
   CaretDownIcon,
+  DatabaseIcon,
+  UploadSimpleIcon,
 } from "@phosphor-icons/react";
 import { useSidebar } from "@/components/layout/SidebarContext";
 import { authApi } from "@/lib/api";
 import wika from "@/public/WIka-new.svg";
 import { clearToken, getUser } from "@/lib/auth";
+import { useState } from "react";
 
 const menuGroups = [
   {
@@ -26,7 +29,15 @@ const menuGroups = [
       { href: "/", label: "Home", Icon: HouseIcon },
       { href: "/projects", label: "Projects Analytics", Icon: ChartBarIcon },
       { href: "/reports", label: "Reports and Pareto", Icon: ProjectorScreenChartIcon },
-      { href: "/upload", label: "Data Management", Icon: FilesIcon },
+      {
+        href: "/data-management",
+        label: "Data Management",
+        Icon: FilesIcon,
+        children: [
+          { href: "/data-management/material", label: "Database Material", Icon: DatabaseIcon },
+          { href: "/data-management/upload", label: "Data Ingestion", Icon: UploadSimpleIcon },
+        ],
+      },
     ],
   },
   {
@@ -44,13 +55,29 @@ export default function Sidebar() {
   const router = useRouter();
   const { collapsed, toggle, width } = useSidebar();
 
+  const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const group of menuGroups) {
+      for (const item of group.items) {
+        if ("children" in item && item.children) {
+          const anyChildActive = item.children.some((child) => pathname.startsWith(child.href));
+          if (anyChildActive) initial[item.href] = true;
+        }
+      }
+    }
+    return initial;
+  });
+
+  const toggleDropdown = (href: string) => {
+    setOpenDropdowns((prev) => ({ ...prev, [href]: !prev[href] }));
+  };
+
   const handleLogout = async () => {
     try {
       await authApi.logout();
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
-      // Selalu hapus token dan redirect, apapun hasilnya
       clearToken();
       router.replace("/login");
     }
@@ -90,7 +117,70 @@ export default function Sidebar() {
               {!collapsed && <h3 className="px-4 text-[11px] font-semibold text-gray-400 tracking-wider mb-2">{group.title}</h3>}
               <nav className="space-y-1">
                 {group.items.map((item) => {
+                  const hasChildren = "children" in item && item.children && item.children.length > 0;
+                  const isOpen = openDropdowns[item.href] ?? false;
+
+                  // Sama persis dengan kondisi active sidebar lainnya: pathname.startsWith(item.href)
                   const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+
+                  if (hasChildren) {
+                    return (
+                      <div key={item.href}>
+                        <button
+                          onClick={() => toggleDropdown(item.href)}
+                          title={collapsed ? item.label : undefined}
+                          className={`w-full flex items-center rounded-xl transition-all overflow-hidden whitespace-nowrap ${
+                            collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-4 py-2.5"
+                          } ${
+                            isActive
+                              ? "bg-primary-blue text-white shadow-lg shadow-blue-900/20 font-bold text-[14px] leading-[150%]"
+                              : "text-[#1B1C1F] hover:bg-gray-200/60 font-medium text-[14px] leading-[150%]"
+                          }`}
+                          style={{ fontFamily: "Inter, sans-serif" }}
+                        >
+                          <span className={`shrink-0 ${isActive ? "text-white" : "text-[#1B1C1F]"}`}>
+                            <item.Icon size={20} weight={isActive ? "fill" : "regular"} />
+                          </span>
+                          {!collapsed && (
+                            <>
+                              <span className="flex-1 text-left">{item.label}</span>
+                              <CaretDownIcon
+                                size={14}
+                                className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""} ${isActive ? "text-white" : "text-[#1B1C1F]"}`}
+                              />
+                            </>
+                          )}
+                        </button>
+
+                        {!collapsed && isOpen && (
+                          <div className="mt-1 ml-3 space-y-1 border-l-2 border-gray-200 pl-2">
+                            {item.children!.map((child) => {
+                              // Sama persis dengan kondisi active sidebar lainnya
+                              const isChildActive = pathname.startsWith(child.href);
+                              return (
+                                <Link
+                                  key={child.href}
+                                  href={child.href}
+                                  className={`flex items-center rounded-xl transition-all overflow-hidden whitespace-nowrap gap-3 px-4 py-2.5 ${
+                                    isChildActive
+                                      ? "bg-primary-blue text-white shadow-lg shadow-blue-900/20 font-bold text-[14px] leading-[150%]"
+                                      : "text-[#1B1C1F] hover:bg-gray-200/60 font-medium text-[14px] leading-[150%]"
+                                  }`}
+                                  style={{ fontFamily: "Inter, sans-serif" }}
+                                >
+                                  <span className={`shrink-0 ${isChildActive ? "text-white" : "text-[#1B1C1F]"}`}>
+                                    <child.Icon size={18} weight={isChildActive ? "fill" : "regular"} />
+                                  </span>
+                                  {child.label}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
                   return (
                     <Link
                       key={item.href}
@@ -124,7 +214,6 @@ export default function Sidebar() {
             {menuGroups[1].items.map((item) => {
               const isActive = pathname === item.href;
 
-              // Logika khusus untuk tombol Log Out
               if (item.label === "Log Out") {
                 return (
                   <button

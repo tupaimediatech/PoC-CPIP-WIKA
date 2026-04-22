@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
-import { projectApi } from "@/lib/api";
-import type { Project, FilterOptionsResponse } from "@/types/project";
-import { formatCurrency, formatKpi, kpiColor } from "@/lib/utils";
+import { materialApi } from "@/lib/api";
+import type { Material, MaterialFilterOptionsResponse } from "@/types/material";
 
 const AutocompleteInput = ({
   value,
@@ -48,9 +47,15 @@ const AutocompleteInput = ({
     setIsOpen(false);
   };
 
+  const scrollIntoView = (index: number) => {
+    if (listRef.current) {
+      const item = listRef.current.children[index] as HTMLElement;
+      item?.scrollIntoView({ block: "nearest" });
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isOpen) return;
-
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((prev) => {
@@ -73,13 +78,6 @@ const AutocompleteInput = ({
     } else if (e.key === "Escape") {
       setIsOpen(false);
       setActiveIndex(-1);
-    }
-  };
-
-  const scrollIntoView = (index: number) => {
-    if (listRef.current) {
-      const item = listRef.current.children[index] as HTMLElement;
-      item?.scrollIntoView({ block: "nearest" });
     }
   };
 
@@ -131,34 +129,46 @@ const AutocompleteInput = ({
   );
 };
 
+// ─────────────────────────────────────────────
+// Definisi kolom filter
+// ─────────────────────────────────────────────
 const FILTER_GRID: {
-  key: keyof Project;
+  key: keyof Material;
   label: string;
-  optionKey?: keyof FilterOptionsResponse;
+  optionKey?: keyof MaterialFilterOptionsResponse;
   placeholder?: string;
 }[] = [
-  { key: "project_name", label: "Project Name", placeholder: "Input Project Name" },
-  { key: "contract_type", label: "Contract Pricing Type", optionKey: "contract_type", placeholder: "Select Contract Pricing Type" },
-  { key: "consultant_name", label: "Project Consultant", placeholder: "Input Project Consultant" },
-  { key: "project_code", label: "Profit Center Code /  Internal SPK Code", optionKey: "project_code", placeholder: "Select Code" },
-  { key: "sbu", label: "SBU Project", optionKey: "sbu", placeholder: "Select SBU Project" },
-  { key: "location", label: "Location", placeholder: "Input Location" },
-  { key: "owner", label: "Project Owner (Name & Category)", optionKey: "owner", placeholder: "Select Project Owner" },
-  { key: "payment_method", label: "Payment Method", optionKey: "payment_method", placeholder: "Select Payment Method" },
-  { key: "partnership", label: "Partnership Type", optionKey: "partnership", placeholder: "Select Partnership Type" },
-  { key: "funding_source", label: "Funding Source", optionKey: "funding_source", placeholder: "Select Funding Source" },
-  { key: "planned_duration", label: "Project Duration (Months)", placeholder: "e.g 12 months" },
-  { key: "partner_name", label: "Partnership Name", placeholder: "Enter Partnership Name" },
-  { key: "type_of_contract", label: "Contract Method", optionKey: "type_of_contract" as any, placeholder: "Select Contract Method" },
+  {
+    key: "material_id",
+    label: "ID Material",
+    placeholder: "Input ID Material",
+  },
+  {
+    key: "material_name",
+    label: "Nama Material",
+    placeholder: "Input Nama Material",
+  },
+  {
+    key: "material_category",
+    label: "Kategori Material",
+    optionKey: "material_category",
+    placeholder: "Select Kategori Material",
+  },
+  {
+    key: "project_name",
+    label: "Project Name",
+    optionKey: "project_name",
+    placeholder: "Select Project Name",
+  },
 ];
 
-export default function ProjectsPage() {
+export default function MaterialsPage() {
   const router = useRouter();
-  const [filterOptions, setFilterOptions] = useState<FilterOptionsResponse | null>(null);
+  const [filterOptions, setFilterOptions] = useState<MaterialFilterOptionsResponse | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
-  const [allProjects, setAllProjects] = useState<Project[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [allMaterials, setAllMaterials] = useState<Material[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
 
   const [searchApplied, setSearchApplied] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -166,9 +176,9 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([projectApi.list(), projectApi.filterOptions()])
+    Promise.all([materialApi.list(), materialApi.filterOptions()])
       .then(([res, options]) => {
-        setAllProjects(res.data);
+        setAllMaterials(res.data);
         setFilterOptions(options);
       })
       .catch(console.error)
@@ -178,18 +188,16 @@ export default function ProjectsPage() {
   const handleSearch = () => {
     setLoading(true);
 
-    const filtered = allProjects.filter((project) => {
+    const filtered = allMaterials.filter((material) => {
       return Object.entries(filters).every(([key, value]) => {
         if (!value) return true;
-
-        const projectValue = project[key as keyof Project];
-        if (projectValue === null || projectValue === undefined) return false;
-
-        return String(projectValue).toLowerCase().includes(String(value).toLowerCase());
+        const materialValue = material[key as keyof Material];
+        if (materialValue === null || materialValue === undefined) return false;
+        return String(materialValue).toLowerCase().includes(String(value).toLowerCase());
       });
     });
 
-    setProjects(filtered);
+    setMaterials(filtered);
     setSearchApplied(true);
     setSnackbar(true);
     setLoading(false);
@@ -198,41 +206,35 @@ export default function ProjectsPage() {
   const handleReset = useCallback(() => {
     setFilters({});
     setSearchApplied(false);
-    setProjects([]);
+    setMaterials([]);
   }, []);
 
   const handleSnackbarClose = useCallback(() => setSnackbar(false), []);
 
-  // --- FUNGSI CERDAS: Menarik data dari API Filter atau dari Tabel ---
-  const getSuggestionsForField = (key: keyof Project, optionKey?: keyof FilterOptionsResponse): string[] => {
-    // 1. Coba cari di API Filter Options (untuk dropdown standar seperti division, sbu, owner)
+  // Saran autocomplete: dari filterOptions API atau dari data tabel
+  const getSuggestionsForField = (key: keyof Material, optionKey?: keyof MaterialFilterOptionsResponse): string[] => {
     if (optionKey && filterOptions && filterOptions[optionKey]) {
       const options = filterOptions[optionKey];
       if (Array.isArray(options)) {
         return options.filter((opt) => opt !== null && String(opt).trim() !== "").map(String);
       }
     }
-
-    // 2. Jika bukan dari API (misal nama proyek, lokasi, konsultan), ambil data unik dari data tabel
-    if (allProjects.length > 0) {
-      const uniqueValues = new Set(allProjects.map((p) => String(p[key] || "")).filter((val) => val.trim() !== ""));
+    if (allMaterials.length > 0) {
+      const uniqueValues = new Set(allMaterials.map((m) => String(m[key] || "")).filter((val) => val.trim() !== ""));
       return Array.from(uniqueValues);
     }
-
     return [];
   };
-  // -------------------------------------------------------------------
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
-      <PageHeader title="Projects Filter" onExport={() => {}} />
+      <PageHeader title="Materials Filter" onExport={() => {}} />
 
+      {/* ── Filter Grid ── */}
       <div className="grid grid-cols-3 gap-x-6 gap-y-4 mb-6">
         {FILTER_GRID.map(({ key, label, optionKey, placeholder }) => (
           <div key={key}>
             <label className="text-[14px] font-semibold text-[#1B1C1F] mb-2 block">{label}</label>
-
-            {/* SELURUH FILTER SEKARANG MENGGUNAKAN AUTOCOMPLETE */}
             <AutocompleteInput
               value={filters[key as string] ?? ""}
               onChange={(val) => setFilters((prev) => ({ ...prev, [key as string]: val }))}
@@ -243,6 +245,7 @@ export default function ProjectsPage() {
         ))}
       </div>
 
+      {/* ── Action Buttons ── */}
       <div className="flex justify-end gap-3 mb-10">
         <button
           onClick={handleSearch}
@@ -259,48 +262,37 @@ export default function ProjectsPage() {
         </button>
       </div>
 
-      <h2 className="text-[20px] font-bold text-[#1B1C1F] mb-6">Project Results</h2>
+      {/* ── Results ── */}
+      <h2 className="text-[20px] font-bold text-[#1B1C1F] mb-6">Material Results</h2>
 
       {!searchApplied ? (
         <div className="py-16 text-center text-gray-400 text-[14px]">
-          {loading ? "Fetching data..." : "Apply filters and click Search to view projects"}
+          {loading ? "Fetching data..." : "Apply filters and click Search to view materials"}
         </div>
-      ) : projects.length === 0 ? (
-        <div className="py-16 text-center text-gray-400 text-[14px]">No projects found</div>
+      ) : materials.length === 0 ? (
+        <div className="py-16 text-center text-gray-400 text-[14px]">No materials found</div>
       ) : (
         <div className="overflow-hidden border border-gray-100 rounded-xl">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[#F9FAFB] border-b border-gray-100">
-                <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Profit Center</th>
+                <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Material</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Material</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Material</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nilai Kontrak</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">HPP</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Gross Profit</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">SPI</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">CPI</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {projects.map((project, idx) => (
-                <tr key={project.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{project.project_code}</td>
-                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{project.project_name}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(project.contract_value)}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{project.hpp || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-700">{project.gross_profit_pct ? `${project.gross_profit_pct}%` : "-"}</td>
-                  <td className={`px-4 py-4 text-[14px] font-bold ${kpiColor(String(project.spi))}`}>
-                    {project.spi ? Number(project.spi).toFixed(2) : "-"}
-                  </td>
-                  <td className={`px-4 py-4 text-[14px] font-bold ${kpiColor(String(project.cpi))}`}>
-                    {project.cpi ? Number(project.cpi).toFixed(2) : "-"}
-                  </td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600 capitalize">{project.delivery_budget_status || "-"}</td>
+              {materials.map((material) => (
+                <tr key={material.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{material.material_id}</td>
+                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{material.material_name}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{material.material_category || "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{material.project_name || "-"}</td>
                   <td className="px-4 py-4">
                     <button
-                      onClick={() => router.push(`/projects/${project.id}`)}
+                      onClick={() => router.push(`/materials/${material.id}`)}
                       className="flex items-center gap-1 text-[#21409A] text-[13px] font-medium hover:underline"
                     >
                       Details <ArrowSquareOutIcon size={14} />
@@ -313,7 +305,12 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      <Snackbar title="Success!" message={`Filters applied. Showing ${projects.length} projects`} visible={snackbar} onClose={handleSnackbarClose} />
+      <Snackbar
+        title="Success!"
+        message={`Filters applied. Showing ${materials.length} materials`}
+        visible={snackbar}
+        onClose={handleSnackbarClose}
+      />
     </div>
   );
 }
