@@ -84,7 +84,7 @@ export default function Level4Page() {
                 <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(item.totalBiaya)}</td>
                 <td className="px-4 py-4">
                   <button
-                    onClick={() => router.push(`/projects/${projectId}/${tahapId}/${item.id}`)}
+                    onClick={() => router.push(`/projects/${projectId}/${tahapId}/biaya-langsung/${item.id}`)}
                     className="flex items-center gap-1 text-primary-blue text-[13px] font-medium hover:underline"
                   >
                     Details <ArrowSquareOutIcon size={14} />
