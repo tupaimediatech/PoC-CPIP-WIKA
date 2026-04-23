@@ -644,15 +644,26 @@ class ProjectController extends Controller
             return new PolaCImport();
         }
 
-        // Single-sheet files: try Adaptive first, then Pola B, then Pola A
+        // Single-sheet files: check merged-layout fingerprint FIRST (before Adaptive
+        // claims it via generic project-metadata detection), then Adaptive, then zone-based Pola B.
+        $raw = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+
+        foreach ($raw as $row) {
+            $cells = array_map(fn($c) => strtolower(trim((string) $c)), $row);
+            $rowStr = implode(' ', $cells);
+            if (str_contains($rowStr, 'item pekerjaan')
+                && str_contains($rowStr, 'volume budget')
+                && str_contains($rowStr, 'harga satuan')
+                && str_contains($rowStr, 'vendor')) {
+                return new PolaBImport();
+            }
+        }
+
         $adaptiveImporter = new AdaptiveWorkbookImport();
 
         if ($adaptiveImporter->supports($filePath)) {
             return $adaptiveImporter;
         }
-
-        // Pola B: single sheet with mixed zones (detect HPP + vendor sections)
-        $raw = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
 
         $hasHppHeader = false;
         $hasVendorHeader = false;

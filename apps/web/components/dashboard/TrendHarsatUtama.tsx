@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { harsatApi } from "@/lib/api";
-const FALLBACK_COLORS = ["#CA6939", "#EBAC2F", "#53AD59", "#4EA5DA", "#E76F51", "#2A9D8F"];
 
-const MAX_VALUE = 500;
-const Y_TICKS = [0, 100, 200, 300, 400, 500];
 const PADDING = { top: 10, right: 20, bottom: 0, left: 0 };
 
 function buildSplinePath(points: { x: number; y: number }[]): string {
@@ -26,6 +24,15 @@ function buildSplinePath(points: { x: number; y: number }[]): string {
   return parts.join(" ");
 }
 
+function niceCeil(value: number): number {
+  if (value <= 0) return 10;
+  const exponent = Math.floor(Math.log10(value));
+  const pow = Math.pow(10, exponent);
+  const fraction = value / pow;
+  const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+  return niceFraction * pow;
+}
+
 interface Tooltip {
   visible: boolean;
   x: number;
@@ -43,7 +50,7 @@ interface TrendData {
 }
 
 export default function TrendHarsatUtama() {
-  const chartRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLAnchorElement>(null);
   const [trendData, setTrendData] = useState<TrendData | null>(null);
   const [tooltip, setTooltip] = useState<Tooltip>({
     visible: false,
@@ -59,23 +66,25 @@ export default function TrendHarsatUtama() {
     harsatApi
       .trend()
       .then((res) => {
-        if (res.data) {
-          const withColors: TrendData = {
-            ...res.data,
-            categories: res.data.categories.map((cat, i) => ({
-              ...cat,
-              color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
-            })),
-          };
-          setTrendData(withColors);
-        }
+        if (res.data) setTrendData(res.data);
       })
       .catch(console.error);
   }, []);
 
-  const YEARS = trendData?.years ?? [];
-  const CATEGORIES = trendData?.categories ?? [];
-  const DATA = trendData?.data ?? {};
+  const YEARS = useMemo(() => trendData?.years ?? [], [trendData]);
+  const CATEGORIES = useMemo(() => trendData?.categories ?? [], [trendData]);
+  const DATA = useMemo(() => trendData?.data ?? {}, [trendData]);
+
+  const { maxValue, yTicks } = useMemo(() => {
+    const all = CATEGORIES.flatMap((c) => DATA[c.key] ?? []);
+    const peak = Math.max(0, ...all);
+    const max = niceCeil(peak || 10);
+    const step = max / 5;
+    return {
+      maxValue: max,
+      yTicks: [0, step, step * 2, step * 3, step * 4, max],
+    };
+  }, [CATEGORIES, DATA]);
 
   function showTooltip(e: React.MouseEvent, category: string, color: string) {
     const rect = chartRef.current?.getBoundingClientRect();
@@ -88,7 +97,15 @@ export default function TrendHarsatUtama() {
     const cat = CATEGORIES.find((c) => c.label === category);
     if (!cat) return;
     const catData = DATA[cat.key] ?? [];
-    setTooltip({ visible: true, x: e.clientX - rect.left, y: e.clientY - rect.top, category, year: YEARS[idx], value: catData[idx] ?? 0, color });
+    setTooltip({
+      visible: true,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      category,
+      year: YEARS[idx],
+      value: catData[idx] ?? 0,
+      color,
+    });
   }
 
   function hideTooltip() {
@@ -99,15 +116,24 @@ export default function TrendHarsatUtama() {
   const svgH = 300;
   const chartW = svgW - PADDING.left - PADDING.right;
   const chartH = svgH - PADDING.top - PADDING.bottom;
-  const getX = (idx: number) => PADDING.left + (YEARS.length > 1 ? (idx / (YEARS.length - 1)) * chartW : chartW / 2);
-  const getY = (val: number) => PADDING.top + chartH - (val / MAX_VALUE) * chartH;
+  const getX = (idx: number) =>
+    PADDING.left + (YEARS.length > 1 ? (idx / (YEARS.length - 1)) * chartW : chartW / 2);
+  const getY = (val: number) => PADDING.top + chartH - (val / maxValue) * chartH;
+
+  const formatTick = (n: number) =>
+    Number.isInteger(n) ? n.toString() : n.toFixed(1);
 
   return (
     <div className="flex flex-col flex-1 min-w-0">
       <h2 className="text-[18px] font-bold text-[#1B1C1F] mb-4">Trend Harsat Utama</h2>
 
-      <div ref={chartRef} className="relative bg-white border border-gray-100 rounded-2xl" style={{ height: "100%", padding: "24px 16px 30px 16px" }}>
-        {/* Kontainer Legend diletakkan di dalam card di bagian atas */}
+      <Link
+        href="/data-management/material"
+        aria-label="Lihat Database Material"
+        ref={chartRef}
+        className="relative block bg-white border border-gray-100 rounded-2xl cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue/40"
+        style={{ height: "100%", padding: "24px 16px 30px 16px" }}
+      >
         {CATEGORIES.length > 0 && (
           <div className="flex items-center justify-center gap-5 mb-6">
             {CATEGORIES.map((cat) => (
@@ -119,16 +145,19 @@ export default function TrendHarsatUtama() {
           </div>
         )}
 
-        <p className="text-[11px] text-gray-400 font-medium mb-2">IDR (Million)</p>
+        <p className="text-[11px] text-gray-400 font-medium mb-2">IDR (Milyar)</p>
 
         {YEARS.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-[13px]">
-            No harsat history data. Add data via POST /api/harsat.
+            Belum ada data harsat. Unggah file lewat Data Ingestion.
           </div>
         ) : (
           <>
             {tooltip.visible && (
-              <div className="absolute z-50 pointer-events-none" style={{ left: tooltip.x + 14, top: tooltip.y - 56 }}>
+              <div
+                className="absolute z-50 pointer-events-none"
+                style={{ left: tooltip.x + 14, top: tooltip.y - 56 }}
+              >
                 <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 min-w-30">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tooltip.color }} />
@@ -136,20 +165,26 @@ export default function TrendHarsatUtama() {
                       {tooltip.category} ({tooltip.year})
                     </p>
                   </div>
-                  <span className="text-[18px] font-bold text-gray-900">{tooltip.value}</span>
+                  <span className="text-[18px] font-bold text-gray-900">
+                    {formatTick(tooltip.value)} M
+                  </span>
                 </div>
               </div>
             )}
 
             <div className="flex gap-2 h-full">
               <div className="relative shrink-0" style={{ width: "28px", height: `${svgH}px` }}>
-                {Y_TICKS.map((tick) => (
+                {yTicks.map((tick) => (
                   <span
                     key={tick}
                     className="absolute text-[11px] text-gray-400 font-medium leading-none"
-                    style={{ bottom: `${(tick / MAX_VALUE) * 100}%`, right: 0, transform: "translateY(50%)" }}
+                    style={{
+                      bottom: `${(tick / maxValue) * 100}%`,
+                      right: 0,
+                      transform: "translateY(50%)",
+                    }}
                   >
-                    {tick}
+                    {formatTick(tick)}
                   </span>
                 ))}
               </div>
@@ -157,19 +192,33 @@ export default function TrendHarsatUtama() {
               <div className="flex-1 flex flex-col">
                 <div className="relative" style={{ height: `${svgH}px` }}>
                   <div className="absolute inset-0 pointer-events-none">
-                    {Y_TICKS.map((tick) => (
+                    {yTicks.map((tick) => (
                       <div
                         key={tick}
                         className="absolute w-full"
-                        style={{ bottom: `${(tick / MAX_VALUE) * 100}%`, borderTop: `1px solid ${tick === 0 ? "#D1D5DB" : "#F3F4F6"}` }}
+                        style={{
+                          bottom: `${(tick / maxValue) * 100}%`,
+                          borderTop: `1px solid ${tick === 0 ? "#D1D5DB" : "#F3F4F6"}`,
+                        }}
                       />
                     ))}
                   </div>
 
-                  <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none">
+                  <svg
+                    className="absolute inset-0 w-full h-full"
+                    viewBox={`0 0 ${svgW} ${svgH}`}
+                    preserveAspectRatio="none"
+                  >
                     <defs>
                       {CATEGORIES.map((cat) => (
-                        <linearGradient key={cat.key} id={`grad-${cat.key}`} x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient
+                          key={cat.key}
+                          id={`grad-${cat.key}`}
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
                           <stop offset="0%" stopColor={cat.color} stopOpacity="0.3" />
                           <stop offset="100%" stopColor={cat.color} stopOpacity="0.02" />
                         </linearGradient>
@@ -185,7 +234,14 @@ export default function TrendHarsatUtama() {
                       return (
                         <g key={cat.key}>
                           <path d={areaPath} fill={`url(#grad-${cat.key})`} />
-                          <path d={linePath} fill="none" stroke={cat.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                          <path
+                            d={linePath}
+                            fill="none"
+                            stroke={cat.color}
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                           <path
                             d={linePath}
                             fill="none"
@@ -213,7 +269,7 @@ export default function TrendHarsatUtama() {
             </div>
           </>
         )}
-      </div>
+      </Link>
     </div>
   );
 }

@@ -120,10 +120,20 @@ export default function Sidebar() {
                   const hasChildren = "children" in item && item.children && item.children.length > 0;
                   const isOpen = openDropdowns[item.href] ?? false;
 
-                  // Sama persis dengan kondisi active sidebar lainnya: pathname.startsWith(item.href)
                   const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                  // Parent items with children: soft-active when only a child matches,
+                  // strong-active only when the parent's own route is exact.
+                  const isExactActive = pathname === item.href;
+                  const isChildOnlyActive = hasChildren && isActive && !isExactActive;
 
                   if (hasChildren) {
+                    const parentClass = isExactActive
+                      ? "bg-primary-blue text-white shadow-lg shadow-blue-900/20 font-bold text-[14px] leading-[150%]"
+                      : isChildOnlyActive
+                      ? "bg-gray-100 text-[#1B1C1F] font-semibold text-[14px] leading-[150%]"
+                      : "text-[#1B1C1F] hover:bg-gray-200/60 font-medium text-[14px] leading-[150%]";
+                    const parentIconColor = isExactActive ? "text-white" : "text-[#1B1C1F]";
+
                     return (
                       <div key={item.href}>
                         <button
@@ -131,22 +141,18 @@ export default function Sidebar() {
                           title={collapsed ? item.label : undefined}
                           className={`w-full flex items-center rounded-xl transition-all overflow-hidden whitespace-nowrap ${
                             collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-4 py-2.5"
-                          } ${
-                            isActive
-                              ? "bg-primary-blue text-white shadow-lg shadow-blue-900/20 font-bold text-[14px] leading-[150%]"
-                              : "text-[#1B1C1F] hover:bg-gray-200/60 font-medium text-[14px] leading-[150%]"
-                          }`}
+                          } ${parentClass}`}
                           style={{ fontFamily: "Inter, sans-serif" }}
                         >
-                          <span className={`shrink-0 ${isActive ? "text-white" : "text-[#1B1C1F]"}`}>
-                            <item.Icon size={20} weight={isActive ? "fill" : "regular"} />
+                          <span className={`shrink-0 ${parentIconColor}`}>
+                            <item.Icon size={20} weight={isExactActive ? "fill" : "regular"} />
                           </span>
                           {!collapsed && (
                             <>
                               <span className="flex-1 text-left">{item.label}</span>
                               <CaretDownIcon
                                 size={14}
-                                className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""} ${isActive ? "text-white" : "text-[#1B1C1F]"}`}
+                                className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""} ${parentIconColor}`}
                               />
                             </>
                           )}

@@ -376,7 +376,7 @@ export type ColumnAliasPayload = {
 };
 
 export const harsatApi = {
-  trend: (): Promise<{ data: { years: string[]; categories: { key: string; label: string }[]; data: Record<string, number[]> } | null }> =>
+  trend: (): Promise<{ data: { years: string[]; categories: { key: string; label: string; color: string }[]; data: Record<string, number[]> } | null }> =>
     api.get("/harsat/trend").then((r) => r.data),
 };
 

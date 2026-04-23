@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { materialApi } from "@/lib/api";
@@ -163,7 +161,6 @@ const FILTER_GRID: {
 ];
 
 export default function MaterialsPage() {
-  const router = useRouter();
   const [filterOptions, setFilterOptions] = useState<MaterialFilterOptionsResponse | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
@@ -280,7 +277,6 @@ export default function MaterialsPage() {
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Material</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Material</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -290,14 +286,6 @@ export default function MaterialsPage() {
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{material.material_name}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">{material.material_category || "-"}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">{material.project_name || "-"}</td>
-                  <td className="px-4 py-4">
-                    <button
-                      onClick={() => router.push(`/materials/${material.id}`)}
-                      className="flex items-center gap-1 text-[#21409A] text-[13px] font-medium hover:underline"
-                    >
-                      Details <ArrowSquareOutIcon size={14} />
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>

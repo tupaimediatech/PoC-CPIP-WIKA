@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ColumnAliasController;
 use App\Http\Controllers\EquipmentLogController;
 use App\Http\Controllers\HarsatController;
+use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\MaterialLogController;
 use App\Http\Controllers\ProgressCurveController;
 use App\Http\Controllers\ProjectController;
@@ -13,7 +14,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\WorkItemController;
 use Illuminate\Support\Facades\Route;
 
-// ── Auth (public) ───────────────���─────────────────────────────���────────────────
+// Auth (public)
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login',    [AuthController::class, 'login']);
@@ -26,14 +27,14 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-// ── Roles ──────────────────────────────────────────��───────────────────────────
+// Roles 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/roles', [RoleController::class, 'index']);
     Route::get('/users/{user}/role', [RoleController::class, 'getUserRole']);
     Route::patch('/users/{user}/role', [RoleController::class, 'assignRole']);
 });
 
-// ── Read-only (public for PoC) ─────────────────────────────────────────────────
+// Read-only (public for PoC)
 Route::get('/projects/summary',                    [ProjectController::class, 'summary']);
 Route::get('/projects/sbu-distribution',           [ProjectController::class, 'sbuDistribution']);
 Route::get('/projects/filter-options',             [ProjectController::class, 'filterOptions']);
@@ -44,12 +45,12 @@ Route::get('/projects/infrastructure/spi',         [ProjectController::class, 'i
 Route::get('/projects/{project}/insight',          [ProjectController::class, 'insight'])->whereNumber('project');
 Route::get('/projects',                            [ProjectController::class, 'index']);
 Route::get('/projects/{project}',                  [ProjectController::class, 'show'])->whereNumber('project');
-// ── Public endpoints (no auth required) ─────��─────────────────────────────────
+// Public endpoints (no auth required) 
 Route::get('/column-aliases',                      [ColumnAliasController::class, 'index']);
 Route::get('/column-aliases/{columnAlias}',        [ColumnAliasController::class, 'show']);
 Route::get('/harsat/trend',                        [HarsatController::class, 'trend']);
 
-// ── Protected read endpoints (scoped to authenticated user) ───────────────────
+// Protected read endpoints (scoped to authenticated user)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/projects/export-dashboard',           [ProjectController::class, 'exportDashboard']);
 
@@ -61,6 +62,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/work-items/{workItem}',                          [WorkItemController::class, 'show']);
     Route::get('/wbs-phases/{wbsModel}/materials',                [MaterialLogController::class, 'index']);
     Route::get('/wbs-phases/{wbsModel}/equipment',                [EquipmentLogController::class, 'index']);
+
+    // Database Material page, aggregates across all projects
+    Route::get('/materials',                                      [MaterialController::class, 'index']);
+    Route::get('/materials/filter-options',                       [MaterialController::class, 'filterOptions']);
 
     Route::get('/work-items/{workItem}/materials',                [MaterialLogController::class, 'showByWorkItem']);
     Route::get('/work-items/{workItem}/equipment',                [EquipmentLogController::class, 'showByWorkItem']);
@@ -75,7 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ingestion-files/{ingestionFile}/reprocess', [ProjectController::class, 'reprocess']);
 });
 
-// ── Write endpoints (protected) ────────────────────────────────────────────────
+// Write endpoints (protected)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/projects',                            [ProjectController::class, 'store']);
     Route::put('/projects/{project}',                   [ProjectController::class, 'update']);
