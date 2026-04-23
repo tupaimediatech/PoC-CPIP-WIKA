@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import PageHeader from "@/components/analytics/PageHeader";
 import SCurveChart from "@/components/analytics/SCurveChart";
@@ -15,6 +15,132 @@ const SEVERITY_COLOR: Record<string, string> = {
   low: "text-green-600",
 };
 
+// ─── Autocomplete Input ───────────────────────────────────────────────────────
+function AutocompleteInput({
+  value,
+  onChange,
+  placeholder,
+  options,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  options: string[];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  const filteredOptions = isTyping && value ? options.filter((opt) => opt.toLowerCase().includes(value.toLowerCase())) : options;
+
+  const handleFocus = () => {
+    setIsTyping(false);
+    setActiveIndex(-1);
+    setIsOpen(true);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+    setIsTyping(true);
+    setActiveIndex(-1);
+    setIsOpen(true);
+  };
+
+  const handleSelect = (opt: string) => {
+    onChange(opt);
+    setIsTyping(false);
+    setActiveIndex(-1);
+    setIsOpen(false);
+  };
+
+  const scrollIntoView = (index: number) => {
+    if (listRef.current) {
+      const item = listRef.current.children[index] as HTMLElement;
+      item?.scrollIntoView({ block: "nearest" });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) => {
+        const next = prev < filteredOptions.length - 1 ? prev + 1 : 0;
+        scrollIntoView(next);
+        return next;
+      });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => {
+        const next = prev > 0 ? prev - 1 : filteredOptions.length - 1;
+        scrollIntoView(next);
+        return next;
+      });
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeIndex >= 0 && filteredOptions[activeIndex]) {
+        handleSelect(filteredOptions[activeIndex]);
+      }
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+      setActiveIndex(-1);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={() =>
+          setTimeout(() => {
+            setIsOpen(false);
+            setActiveIndex(-1);
+          }, 200)
+        }
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1B1C1F] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+      />
+
+      {isOpen && (
+        <ul
+          ref={listRef}
+          className="absolute z-[999] w-full mt-1 bg-white border border-[#E0E2E7] rounded-lg shadow-xl max-h-48 overflow-y-auto py-1 animate-in fade-in zoom-in duration-75"
+        >
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((opt, idx) => (
+              <li
+                key={idx}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelect(opt);
+                }}
+                onMouseEnter={() => setActiveIndex(idx)}
+                className={`px-4 py-2 text-[14px] text-[#1B1C1F] cursor-pointer transition-colors font-medium capitalize ${
+                  idx === activeIndex ? "bg-[#EBF0FF] text-[#21409A]" : "hover:bg-[#F2F4F7]"
+                }`}
+              >
+                {opt}
+              </li>
+            ))
+          ) : (
+            <li className="px-4 py-2 text-[12px] text-gray-400 italic">No matches found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const CATEGORY_OPTIONS = ["cost", "schedule", "quality", "safety", "scope", "external"];
+const STATUS_OPTIONS = ["open", "mitigated", "closed", "monitoring"];
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface RiskFormData {
   category: string;
@@ -27,7 +153,7 @@ const EMPTY_FORM: RiskFormData = {
   category: "",
   risk_title: "",
   financial_impact_idr: "",
-  status: "At Risk",
+  status: "open",
 };
 
 // ─── Risk Modal ───────────────────────────────────────────────────────────────
@@ -50,52 +176,42 @@ function RiskModal({
           category: risk.category ?? "",
           risk_title: risk.risk_title ?? "",
           financial_impact_idr: risk.financial_impact_idr ? String(risk.financial_impact_idr) : "",
-          status: risk.status ?? "At Risk",
+          status: risk.status ?? "open",
         }
       : EMPTY_FORM,
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!form.category.trim() || !form.risk_title.trim()) {
       setError("Kategori Risiko dan Deskripsi Kejadian wajib diisi.");
       return;
     }
+
+    const payload = {
+      category: form.category,
+      risk_title: form.risk_title,
+      financial_impact_idr: form.financial_impact_idr ? Number(form.financial_impact_idr) : null,
+      status: form.status,
+    };
+
     setLoading(true);
     setError(null);
-    try {
-      const payload = {
-        category: form.category,
-        risk_title: form.risk_title,
-        financial_impact_idr: form.financial_impact_idr ? Number(form.financial_impact_idr) : null,
-        status: form.status,
-      };
 
-      if (mode === "create") {
-        await fetch(`/api/projects/${projectId}/risks`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await fetch(`/api/projects/${projectId}/risks/${risk!.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
-      onSuccess();
-      onClose();
-    } catch (err) {
-      setError("Terjadi kesalahan. Silakan coba lagi.");
-    } finally {
-      setLoading(false);
-    }
+    const request = mode === "create" ? projectApi.createRisk(projectId, payload) : projectApi.updateRisk(projectId, risk!.id, payload);
+
+    request
+      .then(() => {
+        onSuccess();
+        onClose();
+      })
+      .catch(() => setError("Terjadi kesalahan. Silakan coba lagi."))
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -123,12 +239,11 @@ function RiskModal({
             <label className="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
               Kategori Risiko <span className="text-red-500">*</span>
             </label>
-            <input
-              name="category"
+            <AutocompleteInput
               value={form.category}
-              onChange={handleChange}
-              placeholder="Contoh: Finansial, Teknis, SDM..."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1B1C1F] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+              onChange={(val) => setForm((prev) => ({ ...prev, category: val }))}
+              placeholder="Pilih atau ketik kategori..."
+              options={CATEGORY_OPTIONS}
             />
           </div>
 
@@ -166,17 +281,12 @@ function RiskModal({
           {/* Status */}
           <div>
             <label className="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
-            <select
-              name="status"
+            <AutocompleteInput
               value={form.status}
-              onChange={handleChange}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1B1C1F] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white"
-            >
-              <option value="At Risk">At Risk</option>
-              <option value="mitigated">Mitigated</option>
-              <option value="closed">Closed</option>
-              <option value="monitoring">Monitoring</option>
-            </select>
+              onChange={(val) => setForm((prev) => ({ ...prev, status: val }))}
+              placeholder="Pilih atau ketik status..."
+              options={STATUS_OPTIONS}
+            />
           </div>
 
           {/* Error */}
@@ -210,19 +320,17 @@ function RiskModal({
 function DeleteModal({ risk, projectId, onClose, onSuccess }: { risk: ProjectRisk; projectId: number; onClose: () => void; onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     setLoading(true);
-    try {
-      await fetch(`/api/projects/${projectId}/risks/${risk.id}`, {
-        method: "DELETE",
-      });
-      onSuccess();
-      onClose();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+
+    projectApi
+      .deleteRisk(projectId, risk.id)
+      .then(() => {
+        onSuccess();
+        onClose();
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -278,6 +386,7 @@ export default function Level6Page() {
 
   const fetchData = () => {
     setLoading(true);
+
     Promise.all([projectApi.risks(projectId), projectApi.progressCurve(projectId)])
       .then(([riskRes, curveRes]) => {
         setRisks(riskRes.data);
@@ -337,7 +446,7 @@ export default function Level6Page() {
               risks.map((risk, idx) => (
                 <tr key={risk.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
-                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{risk.category ?? "-"}</td>
+                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F] capitalize">{risk.category ?? "-"}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-700">{risk.risk_title}</td>
                   <td className="px-4 py-4 text-[14px] text-red-600 font-medium">
                     <div className="flex items-center gap-1">
@@ -348,10 +457,9 @@ export default function Level6Page() {
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFF9E6] border border-[#FEF3C7] w-fit">
                       <div className="w-2 h-2 rounded-full bg-[#D97706]" />
-                      <span className="text-[#D97706] text-[12px] font-bold">{risk.status ?? "At Risk"}</span>
+                      <span className="text-[#D97706] text-[12px] font-bold capitalize">{risk.status ?? "open"}</span>
                     </div>
                   </td>
-
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <button

@@ -121,6 +121,13 @@ export interface ProjectProgressCurve {
   updated_at: string;
 }
 
+export interface RiskPayload {
+  category: string;
+  risk_title: string;
+  financial_impact_idr: number | null;
+  status: string;
+}
+
 export interface ProjectListMeta {
   total: number;
   overbudget_count: number;

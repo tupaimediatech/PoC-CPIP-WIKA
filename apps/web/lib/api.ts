@@ -26,6 +26,7 @@ import type {
   ProgressCurveResponse,
   ProjectCpiResponse,
   ProjectSpiResponse,
+  RiskPayload,
 } from "@/types/project";
 import { getToken, clearToken } from "@/lib/auth";
 import { Material, MaterialFilterOptionsResponse, MaterialListResponse } from "@/types/material";
@@ -119,6 +120,12 @@ export const projectApi = {
   progressCurve: (id: number): Promise<ProgressCurveResponse> => api.get(`/projects/${id}/progress-curve`).then((r) => r.data),
 
   risks: (id: number): Promise<RiskListResponse> => api.get(`/projects/${id}/risks`).then((r) => r.data),
+
+  createRisk: (id: number, payload: RiskPayload) => api.post(`/projects/${id}/risks`, payload).then((r) => r.data),
+
+  updateRisk: (id: number, riskId: number, payload: RiskPayload) => api.put(`/projects/${id}/risks/${riskId}`, payload).then((r) => r.data),
+
+  deleteRisk: (id: number, riskId: number) => api.delete(`/projects/${id}/risks/${riskId}`).then((r) => r.data),
 
   filterOptions: (): Promise<FilterOptionsResponse> => api.get("/projects/filter-options").then((r) => r.data),
 
@@ -376,8 +383,9 @@ export type ColumnAliasPayload = {
 };
 
 export const harsatApi = {
-  trend: (): Promise<{ data: { years: string[]; categories: { key: string; label: string; color: string }[]; data: Record<string, number[]> } | null }> =>
-    api.get("/harsat/trend").then((r) => r.data),
+  trend: (): Promise<{
+    data: { years: string[]; categories: { key: string; label: string; color: string }[]; data: Record<string, number[]> } | null;
+  }> => api.get("/harsat/trend").then((r) => r.data),
 };
 
 export const columnAliasApi = {
