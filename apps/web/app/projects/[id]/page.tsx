@@ -84,30 +84,22 @@ export default function Level3Page() {
                   </div>
                 </td>
                 <td className="px-4 py-4">
-                  <button
-                    onClick={() => router.push(`/projects/${projectId}/${phase.id}`)}
-                    className="flex items-center gap-1 text-primary-blue text-[13px] font-medium hover:underline"
-                  >
-                    Details <ArrowSquareOutIcon size={14} />
-                  </button>
-                </td>
-                {/* <td className="px-4 py-4">
                   <div className="flex flex-col gap-2">
                     <button
-                      onClick={() => router.push(`/projects/${projectId}/details/biaya-langsung`)}
+                      onClick={() => router.push(`/projects/${projectId}/${phase.id}/biaya-langsung`)}
                       className="flex items-center gap-1 text-primary-blue text-[13px] font-medium hover:underline"
                     >
                       Biaya Langsung <ArrowSquareOutIcon size={14} />
                     </button>
 
                     <button
-                      onClick={() => router.push(`/projects/${projectId}/details/evaluasi-biaya-tidak-langsung`)}
+                      onClick={() => router.push(`/projects/${projectId}/${phase.id}/evaluasi-biaya-tidak-langsung`)}
                       className="flex items-center gap-1 text-primary-blue text-[13px] font-medium hover:underline"
                     >
                       Evaluasi Biaya Tidak Langsung <ArrowSquareOutIcon size={14} />
                     </button>
                   </div>
-                </td> */}
+                </td>
               </tr>
             ))}
           </tbody>

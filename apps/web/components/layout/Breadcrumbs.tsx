@@ -154,7 +154,7 @@ function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
         base.push({
           Icon: TreeStructureIcon,
           label: phaseName,
-          href: `/projects/${projectId}/${tahapId}`,
+          href: `/projects/${projectId}/${tahapId}/biaya-langsung`,
         });
       }
 
@@ -162,7 +162,7 @@ function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
         base.push({
           Icon: BuildingOfficeIcon,
           label: itemName,
-          href: `/projects/${projectId}/${tahapId}/${itemId}`,
+          href: `/projects/${projectId}/${tahapId}/biaya-langsung/${itemId}`,
         });
       }
 
