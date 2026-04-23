@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ColumnAliasController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipmentLogController;
 use App\Http\Controllers\HarsatController;
 use App\Http\Controllers\MaterialController;
@@ -35,6 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Read-only (public for PoC)
+Route::get('/dashboard',                           [DashboardController::class, 'index']);
 Route::get('/projects/summary',                    [ProjectController::class, 'summary']);
 Route::get('/projects/sbu-distribution',           [ProjectController::class, 'sbuDistribution']);
 Route::get('/projects/filter-options',             [ProjectController::class, 'filterOptions']);
