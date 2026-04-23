@@ -12,7 +12,7 @@ export interface MaterialFilterOptionsResponse {
 }
 
 export interface Material {
-  id: number;
+  id: string;
   material_id: string;
   material_name: string;
   material_category: string;
