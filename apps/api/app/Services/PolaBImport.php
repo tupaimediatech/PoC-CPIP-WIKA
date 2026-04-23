@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\ProjectMaterialLog;
 use App\Models\ProjectWbs;
 use App\Models\ProjectWorkItem;
+use App\Services\WorkItemCalculator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
@@ -41,19 +42,31 @@ class PolaBImport
 
         $spreadsheet = IOFactory::load($filePath);
         $sheet       = $spreadsheet->getActiveSheet();
-        $raw         = $sheet->toArray(null, true, true, false);
+        // formatData=false so percent/currency cells come through as raw numerics
+        // (0.83, not "83.0%") instead of their display strings.
+        $raw         = $sheet->toArray(null, true, false, false);
 
         if (empty($raw)) {
             throw new \RuntimeException('File Excel kosong.');
         }
 
         // ── Deteksi zona ──────────────────────────────────────────────────
-        $hppHeaderRow    = $this->mapper->findHeaderRowByKeywords($raw, ['budget', 'realisasi', 'deviasi']);
-        $vendorHeaderRow = $this->mapper->findHeaderRowByKeywords($raw, ['vendor', 'material', 'qty'])
-                        ?? $this->mapper->findHeaderRowByKeywords($raw, ['supplier', 'material', 'qty']);
+        $mergedHeaderRow = $this->mapper->findHeaderRowByKeywords(
+            $raw,
+            ['item pekerjaan', 'volume budget', 'harga satuan', 'vendor']
+        );
+
+        $hppHeaderRow    = $mergedHeaderRow === null
+            ? $this->mapper->findHeaderRowByKeywords($raw, ['budget', 'realisasi', 'deviasi'])
+            : null;
+        $vendorHeaderRow = $mergedHeaderRow === null
+            ? ($this->mapper->findHeaderRowByKeywords($raw, ['vendor', 'material', 'qty'])
+                ?? $this->mapper->findHeaderRowByKeywords($raw, ['supplier', 'material', 'qty']))
+            : null;
 
         // ── Zona 1: Metadata ──────────────────────────────────────────────
-        $metaRows = array_slice($raw, 0, $hppHeaderRow ?? count($raw));
+        $metaBoundary = $mergedHeaderRow ?? $hppHeaderRow ?? count($raw);
+        $metaRows = array_slice($raw, 0, $metaBoundary);
         $meta     = $this->parseMetadata($metaRows);
 
         if (empty($meta['project_code'])) {
@@ -74,65 +87,119 @@ class PolaBImport
                 'actual_cost'       => $meta['actual_cost'] ?? null,
                 'planned_duration'  => $meta['planned_duration'] ?? null,
                 'actual_duration'   => $meta['actual_duration'] ?? null,
-                'progress_pct'      => $meta['progress_total_pct'] ?? null,
+                'progress_pct'      => $meta['progress_total_pct'] ?? 0,
                 'project_year'      => $meta['project_year'] ?? now()->year,
                 'ingestion_file_id' => $ingestionFileId,
             ]
         );
 
-        // Upsert WBS phase
-        $wbsName = $meta['name_of_work_phase']
-            ?? $meta['period_label']
-            ?? $meta['period']
-            ?? 'PEKERJAAN UMUM';
-
-        $wbsPhase = ProjectWbs::updateOrCreate(
-            ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
-            [
-                'ingestion_file_id'  => $ingestionFileId,
-                'client_name'        => $meta['client_name'] ?? null,
-                'project_manager'    => $meta['project_manager'] ?? null,
-                'report_source'      => 'file_import',
-                'progress_prev_pct'  => $meta['progress_prev_pct'] ?? null,
-                'progress_this_pct'  => $meta['progress_this_pct'] ?? null,
-                'progress_total_pct' => $meta['progress_total_pct'] ?? null,
-                'contract_value'     => $meta['contract_value'] ?? null,
-                'addendum_value'     => $meta['addendum_value'] ?? null,
-                'bq_external'        => $meta['bq_external'] ?? null,
-            ]
-        );
-
         $this->imported++;
 
-        // ── Zona 2: HPP Table ─────────────────────────────────────────────
-        if ($hppHeaderRow !== null) {
-            $hppRows = isset($vendorHeaderRow)
-                ? array_slice($raw, $hppHeaderRow, $vendorHeaderRow - $hppHeaderRow)
-                : array_slice($raw, $hppHeaderRow);
+        if ($mergedHeaderRow !== null) {
+            // ── Merged single-table layout: one WBS phase per Roman-numeral row ──
+            $rows = array_slice($raw, $mergedHeaderRow);
+            $this->parseMergedLayout(
+                $rows,
+                $project,
+                $meta,
+                $ingestionFileId,
+                (int) ($meta['project_year'] ?? $project->project_year)
+            );
+        } else {
+            // ── Traditional: single WBS phase from metadata ───────────────
+            $wbsName = $meta['name_of_work_phase']
+                ?? $meta['period_label']
+                ?? $meta['period']
+                ?? 'PEKERJAAN UMUM';
 
-            $this->parseWorkItems($hppRows, $wbsPhase->id);
+            $wbsPhase = ProjectWbs::updateOrCreate(
+                ['project_id' => $project->id, 'name_of_work_phase' => $wbsName],
+                [
+                    'ingestion_file_id'  => $ingestionFileId,
+                    'client_name'        => $meta['client_name'] ?? null,
+                    'project_manager'    => $meta['project_manager'] ?? null,
+                    'report_source'      => 'file_import',
+                    'progress_prev_pct'  => $meta['progress_prev_pct'] ?? null,
+                    'progress_this_pct'  => $meta['progress_this_pct'] ?? null,
+                    'progress_total_pct' => $meta['progress_total_pct'] ?? null,
+                    'contract_value'     => $meta['contract_value'] ?? null,
+                    'addendum_value'     => $meta['addendum_value'] ?? null,
+                    'bq_external'        => $meta['bq_external'] ?? null,
+                ]
+            );
+
+            // ── Zona 2: HPP Table ─────────────────────────────────────────
+            if ($hppHeaderRow !== null) {
+                $hppRows = isset($vendorHeaderRow)
+                    ? array_slice($raw, $hppHeaderRow, $vendorHeaderRow - $hppHeaderRow)
+                    : array_slice($raw, $hppHeaderRow);
+
+                $this->parseWorkItems($hppRows, $wbsPhase->id);
+            }
+
+            // ── Zona 3: Vendor/Material ───────────────────────────────────
+            if ($vendorHeaderRow !== null) {
+                $vendorRows = array_slice($raw, $vendorHeaderRow);
+                $this->parseMaterialLogs(
+                    $vendorRows,
+                    $wbsPhase->id,
+                    (int) ($meta['project_year'] ?? $project->project_year)
+                );
+            }
         }
 
-        // ── Zona 3: Vendor/Material ───────────────────────────────────────
-        if ($vendorHeaderRow !== null) {
-            $vendorRows = array_slice($raw, $vendorHeaderRow);
-            $this->parseMaterialLogs($vendorRows, $wbsPhase->id);
+        // ── Rollup: per-phase HPP totals + project-level CPI/SPI ──────────
+        $phaseIds = $project->wbsPhases()->pluck('id')->all();
+
+        foreach ($project->wbsPhases()->get() as $phase) {
+            $phasePlan   = (float) ProjectWorkItem::where('period_id', $phase->id)
+                ->whereNull('parent_id')->where('is_total_row', false)->sum('total_budget');
+            $phaseActual = (float) ProjectWorkItem::where('period_id', $phase->id)
+                ->whereNull('parent_id')->where('is_total_row', false)->sum('realisasi');
+            $bqExternal  = (float) $phase->bq_external;
+
+            $phase->update([
+                'actual_costs'   => $phasePlan,
+                'realized_costs' => $phaseActual,
+                'hpp_deviation'  => $phasePlan - $phaseActual,
+                'deviasi_pct'    => $bqExternal > 0 ? (($bqExternal - $phasePlan) / $bqExternal) * 100 : 0,
+            ]);
         }
 
-        // Update HPP totals on WBS phase
-        $hppPlan   = ProjectWorkItem::where('period_id', $wbsPhase->id)
+        // Project-level totals across every phase (top-level items in each phase).
+        $hppPlan   = (float) ProjectWorkItem::whereIn('period_id', $phaseIds)
             ->whereNull('parent_id')->where('is_total_row', false)->sum('total_budget');
-        $hppActual = ProjectWorkItem::where('period_id', $wbsPhase->id)
+        $hppActual = (float) ProjectWorkItem::whereIn('period_id', $phaseIds)
             ->whereNull('parent_id')->where('is_total_row', false)->sum('realisasi');
+        $evSum     = (float) ProjectWorkItem::whereIn('period_id', $phaseIds)
+            ->whereNull('parent_id')->where('is_total_row', false)->sum('earned_value');
+        $pvSum     = (float) ProjectWorkItem::whereIn('period_id', $phaseIds)
+            ->whereNull('parent_id')->where('is_total_row', false)->sum('planned_value');
 
-        $bqExternal = (float) $wbsPhase->bq_external;
+        if ($hppPlan > 0 || $hppActual > 0) {
+            $progressPct = $hppPlan > 0 ? round(($evSum / $hppPlan) * 100, 2) : 0.0;
 
-        $wbsPhase->update([
-            'actual_costs'     => $hppPlan,
-            'realized_costs'   => $hppActual,
-            'hpp_deviation'    => $hppPlan - $hppActual,
-            'deviasi_pct'      => $bqExternal > 0 ? (($bqExternal - $hppPlan) / $bqExternal) * 100 : 0,
-        ]);
+            $project->update([
+                'planned_cost'   => $project->planned_cost   ?: $hppPlan,
+                'actual_cost'    => $project->actual_cost    ?: $hppActual,
+                'contract_value' => $project->contract_value ?: $hppPlan,
+                'progress_pct'   => $progressPct,
+            ]);
+
+            // SPI = EV / PV. Boot hook returns null when duration info is absent, so
+            // write it + status directly without re-triggering the hook.
+            if ($pvSum > 0 && $evSum > 0) {
+                $spi = round($evSum / $pvSum, 4);
+                $cpi = (float) $project->fresh()->cpi;
+                $status = ($cpi < 0.9 || $spi < 0.9) ? 'critical'
+                    : ($cpi >= 1.0 && $spi >= 1.0 ? 'good' : 'warning');
+
+                \DB::table('projects')->where('id', $project->id)->update([
+                    'spi'    => $spi,
+                    'status' => $status,
+                ]);
+            }
+        }
 
         return [
             'total'                => $this->total,
@@ -260,7 +327,7 @@ class PolaBImport
     // ──────────────────────────────────────────────────────────────────────────
     // Parse vendor/material logs table (Zona 3)
     // ──────────────────────────────────────────────────────────────────────────
-    private function parseMaterialLogs(array $rows, int $periodId): void
+    private function parseMaterialLogs(array $rows, int $periodId, int $projectYear): void
     {
         if (empty($rows)) return;
 
@@ -283,25 +350,208 @@ class PolaBImport
             if (empty($supplierName) && empty($materialType)) continue;
 
             $this->total++;
+            $this->createMaterialLog($data, $periodId, $projectYear, $rowIndex + 2, null);
+            $this->imported++;
+        }
+    }
 
-            $isDiscount = str_contains(strtolower($materialType), 'discount') ||
-                          str_contains(strtolower($materialType), 'potongan');
+    // ──────────────────────────────────────────────────────────────────────────
+    // Merged single-table layout: each level-0 (Roman-numeral) row becomes a new
+    // ProjectWbs phase; level-1+ rows become ProjectWorkItems under that phase.
+    // ──────────────────────────────────────────────────────────────────────────
+    private function parseMergedLayout(
+        array $rows,
+        Project $project,
+        array $meta,
+        ?int $ingestionFileId,
+        int $projectYear
+    ): void {
+        if (empty($rows)) return;
 
-            ProjectMaterialLog::create([
-                'period_id'     => $periodId,
-                'work_item_id'  => null,
-                'supplier_name' => $supplierName ?: 'Unknown',
-                'material_type' => $materialType ?: 'Unknown',
-                'qty'           => $this->mapper->parseNumeric($data['qty'] ?? null),
-                'satuan'        => trim((string) ($data['satuan'] ?? '')),
-                'harga_satuan'  => $this->mapper->parseNumeric($data['harga_satuan'] ?? null),
-                'total_tagihan' => $this->mapper->parseNumeric($data['total_tagihan'] ?? null),
-                'is_discount'   => $isDiscount,
-                'source_row'    => $rowIndex + 2,
+        $wiHeaders  = $this->mapper->resolveHeaders($rows[0], 'work_item');
+        $matHeaders = $this->mapper->resolveHeaders($rows[0], 'material');
+
+        $wiUnrecognized  = $this->mapper->findUnrecognized($rows[0], $wiHeaders, 'work_item');
+        $matUnrecognized = $this->mapper->findUnrecognized($rows[0], $matHeaders, 'material');
+        $this->unrecognized = array_merge(
+            $this->unrecognized,
+            array_values(array_intersect($wiUnrecognized, $matUnrecognized))
+        );
+
+        $dataRows  = array_slice($rows, 1);
+        $sortOrder = 0;
+        $parentMap = [];
+        $currentPhase = null;
+
+        foreach ($dataRows as $rowIndex => $row) {
+            if ($this->mapper->isEmptyRow($row)) continue;
+
+            $wi  = array_combine($wiHeaders,  array_pad($row, count($wiHeaders),  null));
+            $mat = array_combine($matHeaders, array_pad($row, count($matHeaders), null));
+
+            $itemName = trim((string) ($wi['item_name'] ?? ''));
+            if ($itemName === '') continue;
+
+            $this->total++;
+
+            $itemNo = trim((string) ($wi['item_no'] ?? ''));
+            $level  = $this->mapper->detectLevel($itemNo, $itemName);
+
+            // Level 0 → new WBS phase. Row itself is NOT a work_item.
+            if ($level === 0) {
+                $currentPhase = ProjectWbs::updateOrCreate(
+                    ['project_id' => $project->id, 'name_of_work_phase' => $itemName],
+                    [
+                        'ingestion_file_id'  => $ingestionFileId,
+                        'client_name'        => $meta['client_name'] ?? null,
+                        'project_manager'    => $meta['project_manager'] ?? null,
+                        'report_source'      => 'file_import',
+                        'progress_prev_pct'  => $meta['progress_prev_pct'] ?? null,
+                        'progress_this_pct'  => $meta['progress_this_pct'] ?? null,
+                        'progress_total_pct' => $meta['progress_total_pct'] ?? null,
+                        'contract_value'     => $meta['contract_value'] ?? null,
+                        'addendum_value'     => $meta['addendum_value'] ?? null,
+                        'bq_external'        => $meta['bq_external'] ?? null,
+                    ]
+                );
+                $parentMap = []; // reset so children start fresh under this phase
+                $sortOrder = 0;
+                $this->imported++;
+                continue;
+            }
+
+            // Level 1+ rows require a current phase. Skip orphans.
+            if ($currentPhase === null) continue;
+
+            // Parent in the work-item tree: level-1 is a root under the phase
+            // (parent_id=null); level-2 points at the last level-1 id; etc.
+            $parentId = $level >= 2 ? ($parentMap[$level - 1] ?? null) : null;
+
+            $volumeBudget   = $this->mapper->parseNumeric($wi['volume'] ?? null);
+            $hargaSatuan    = $this->mapper->parseNumeric($wi['harsat_internal'] ?? null);
+            $volumeAktual   = $this->mapper->parseNumeric($wi['volume_actual'] ?? null);
+            $harsatAktual   = $this->mapper->parseNumeric($wi['harsat_actual'] ?? null);
+            $progressPlan   = $this->mapper->parsePercentage($wi['progress_plan_pct'] ?? null);
+            $actualProgress = $this->mapper->parsePercentage($wi['progress_actual_pct'] ?? null);
+
+            $totalBudget = WorkItemCalculator::nilaiBudget($volumeBudget, $hargaSatuan);
+            $realisasi   = WorkItemCalculator::nilaiAktual($volumeAktual, $harsatAktual);
+            $plannedVal  = WorkItemCalculator::plannedValue($volumeBudget, $hargaSatuan, $progressPlan);
+            $earnedVal   = WorkItemCalculator::earnedValue($volumeBudget, $hargaSatuan, $actualProgress);
+            $actualCost  = WorkItemCalculator::actualCost($volumeAktual, $harsatAktual);
+            $variance    = WorkItemCalculator::variance($totalBudget, $realisasi);
+            $variancePct = WorkItemCalculator::variancePct($totalBudget, $realisasi);
+
+            $vendorContract = $this->mapper->parseNumeric($wi['vendor_contract_value'] ?? null);
+            $terminPaid     = $this->mapper->parseNumeric($wi['termin_paid'] ?? null);
+
+            $isTotalRow = str_contains(strtolower($itemName), 'total') ||
+                          str_contains(strtolower($itemName), 'jumlah');
+
+            $subCategory = trim((string) ($wi['cost_subcategory'] ?? '')) ?: null;
+
+            $item = ProjectWorkItem::create([
+                'period_id'             => $currentPhase->id,
+                'parent_id'             => $parentId,
+                'level'                 => $level,
+                'item_no'               => $itemNo ?: null,
+                'item_name'             => $itemName,
+                // id_material: stable per-project id derived from the Roman-numeral path.
+                // material_category: reuse the Excel's "Sub Kategori" value.
+                'id_material'           => $itemNo ?: null,
+                'material_category'     => $subCategory,
+                'sort_order'            => $sortOrder++,
+                'volume'                => $volumeBudget,
+                'satuan'                => trim((string) ($wi['satuan'] ?? '')) ?: null,
+                'harsat_internal'       => $hargaSatuan,
+                'volume_actual'         => $volumeAktual,
+                'harsat_actual'         => $harsatAktual,
+                'cost_category'         => trim((string) ($wi['cost_category'] ?? '')) ?: null,
+                'cost_subcategory'      => $subCategory,
+                'total_budget'          => $totalBudget,
+                'realisasi'             => $realisasi,
+                'deviasi'               => $variance,
+                'deviasi_pct'           => $variancePct,
+                'bobot_pct'             => $this->mapper->parsePercentage($wi['bobot_pct'] ?? null),
+                'progress_plan_pct'     => $progressPlan,
+                'progress_actual_pct'   => $actualProgress,
+                'planned_value'         => $plannedVal,
+                'earned_value'          => $earnedVal,
+                'actual_cost_item'      => $actualCost,
+                'vendor_name'           => trim((string) ($wi['vendor_name'] ?? '')) ?: null,
+                'po_number'             => trim((string) ($wi['po_number'] ?? '')) ?: null,
+                'vendor_contract_value' => $vendorContract,
+                'termin_paid'           => $terminPaid,
+                'retention'             => WorkItemCalculator::retensi5($vendorContract),
+                'outstanding_debt'      => WorkItemCalculator::sisaHutang($vendorContract, $terminPaid),
+                'data_source'           => trim((string) ($wi['data_source'] ?? '')) ?: null,
+                'notes'                 => trim((string) ($wi['notes'] ?? '')) ?: null,
+                'is_total_row'          => $isTotalRow,
             ]);
+
+            $parentMap[$level] = $item->id;
+
+            $vendorRaw = trim((string) ($mat['supplier_name'] ?? ''));
+            $hasVendor = $vendorRaw !== '' && $vendorRaw !== '-' && $vendorRaw !== '0';
+
+            if ($hasVendor) {
+                $this->createMaterialLog($mat, $currentPhase->id, $projectYear, $rowIndex + 2, $item->id);
+            }
 
             $this->imported++;
         }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Shared: write a single project_material_logs row. Handles extended columns
+    // and the tahun_perolehan fallback.
+    // ──────────────────────────────────────────────────────────────────────────
+    private function createMaterialLog(
+        array $data,
+        int $periodId,
+        int $projectYear,
+        int $sourceRow,
+        ?int $workItemId
+    ): void {
+        $supplierName = trim((string) ($data['supplier_name'] ?? ''));
+        $materialType = trim((string) ($data['material_type'] ?? ''));
+
+        $isDiscount = str_contains(strtolower($materialType), 'discount') ||
+                      str_contains(strtolower($materialType), 'potongan');
+
+        $tahunPerolehan = null;
+        if (array_key_exists('tahun_perolehan', $data) && $data['tahun_perolehan'] !== null && $data['tahun_perolehan'] !== '') {
+            $parsed = (int) $this->mapper->parseNumeric($data['tahun_perolehan']);
+            if ($parsed >= 2000 && $parsed <= 2099) {
+                $tahunPerolehan = $parsed;
+            }
+        }
+        $tahunPerolehan ??= ($projectYear ?: (int) now()->year);
+
+        $rating     = $this->mapper->parseNumeric($data['rating_performa'] ?? null);
+        $pengiriman = $this->mapper->parseNumeric($data['realisasi_pengiriman'] ?? null);
+        $deviasiMkt = $this->mapper->parseNumeric($data['deviasi_harga_market'] ?? null);
+        $lokasi     = trim((string) ($data['lokasi_vendor'] ?? '')) ?: null;
+        $catatan    = trim((string) ($data['catatan_monitoring'] ?? '')) ?: null;
+
+        ProjectMaterialLog::create([
+            'period_id'            => $periodId,
+            'work_item_id'         => $workItemId,
+            'supplier_name'        => $supplierName ?: 'Unknown',
+            'material_type'        => $materialType ?: 'Unknown',
+            'qty'                  => $this->mapper->parseNumeric($data['qty'] ?? null),
+            'satuan'               => trim((string) ($data['satuan'] ?? '')),
+            'harga_satuan'         => $this->mapper->parseNumeric($data['harga_satuan'] ?? null),
+            'total_tagihan'        => $this->mapper->parseNumeric($data['total_tagihan'] ?? null),
+            'is_discount'          => $isDiscount,
+            'source_row'           => $sourceRow,
+            'tahun_perolehan'      => $tahunPerolehan,
+            'lokasi_vendor'        => $lokasi,
+            'rating_performa'      => $rating,
+            'realisasi_pengiriman' => $pengiriman,
+            'deviasi_harga_market' => $deviasiMkt,
+            'catatan_monitoring'   => $catatan,
+        ]);
     }
 
 }
