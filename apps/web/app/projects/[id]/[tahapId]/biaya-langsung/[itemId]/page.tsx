@@ -78,8 +78,11 @@ export default function Level5Page() {
 
   if (!item) return <div className="p-8 text-center text-gray-400">Data item tidak ditemukan.</div>;
 
-  const realisasi = formatRealisasiPengiriman(item.progress_actual_pct);
+  const realisasi = item.realisasi_pengiriman
+    ? { text: item.realisasi_pengiriman, color: "text-blue-600 font-medium" }
+    : formatRealisasiPengiriman(item.progress_actual_pct);
   const deviasi = formatDeviasiHarga(item.harsat_internal, item.harsat_actual);
+  const deviasiText = item.deviasi_harga_market ?? deviasi.text;
   const rating = calcRating(item.progress_actual_pct, deviasi.deviasiPct);
 
   const progressColor =
@@ -117,7 +120,7 @@ export default function Level5Page() {
           <InfoRow label="Nilai Kontrak Vendor" value={item.vendor_contract_value ? formatCurrency(item.vendor_contract_value) : null} />
           <InfoRow label="Harga Satuan Vendor" value={item.harsat_internal ? formatCurrency(item.harsat_internal) : null} />
           <InfoRow label="Realisasi Pengiriman" value={realisasi.text} valueClass={realisasi.color} />
-          <InfoRow label="Deviasi Harga Market" value={deviasi.text} valueClass={deviasi.color} />
+          <InfoRow label="Deviasi Harga Market" value={deviasiText} valueClass={deviasi.color} />
         </div>
       </div>
 

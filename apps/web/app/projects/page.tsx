@@ -289,7 +289,7 @@ export default function ProjectsPage() {
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{project.project_code}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{project.project_name}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(project.contract_value)}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{project.hpp || "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(project.hpp)}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-700">{project.gross_profit_pct ? `${project.gross_profit_pct}%` : "-"}</td>
                   <td className={`px-4 py-4 text-[14px] font-bold ${kpiColor(String(project.spi))}`}>
                     {project.spi ? Number(project.spi).toFixed(2) : "-"}

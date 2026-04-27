@@ -74,7 +74,7 @@ export default function Level3Page() {
                 <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{index + 1}</td>
                 <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{phase.name_of_work_phase}</td>
                 <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(phase.bq_external)}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(phase.actual_costs)}</td>
+                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(phase.realized_costs)}</td>
                 <td className="px-4 py-4">
                   <div
                     className={`inline-flex items-center gap-1 text-[14px] font-bold ${phase.deviasi_pct >= 0 ? "text-green-600" : "text-red-600"}`}

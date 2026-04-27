@@ -158,11 +158,23 @@ class PolaBImport
                 ->whereNull('parent_id')->where('is_total_row', false)->sum('realisasi');
             $bqExternal  = (float) $phase->bq_external;
 
+            // Fallback: merged-layout Excel doesn't expose per-phase contract
+            // metadata, so default BQ External to the phase's planned total.
+            if ($bqExternal <= 0) {
+                $bqExternal = $phasePlan;
+            }
+
+            // Deviasi (%) follows the contract: (Nilai Budget − Nilai Aktual) / Nilai Budget.
+            $deviasiPct = $phasePlan > 0
+                ? (($phasePlan - $phaseActual) / $phasePlan) * 100
+                : 0;
+
             $phase->update([
+                'bq_external'    => $bqExternal,
                 'actual_costs'   => $phasePlan,
                 'realized_costs' => $phaseActual,
                 'hpp_deviation'  => $phasePlan - $phaseActual,
-                'deviasi_pct'    => $bqExternal > 0 ? (($bqExternal - $phasePlan) / $bqExternal) * 100 : 0,
+                'deviasi_pct'    => $deviasiPct,
             ]);
         }
 
@@ -180,10 +192,12 @@ class PolaBImport
             $progressPct = $hppPlan > 0 ? round(($evSum / $hppPlan) * 100, 2) : 0.0;
 
             $project->update([
-                'planned_cost'   => $project->planned_cost   ?: $hppPlan,
-                'actual_cost'    => $project->actual_cost    ?: $hppActual,
-                'contract_value' => $project->contract_value ?: $hppPlan,
-                'progress_pct'   => $progressPct,
+                'planned_cost'     => $project->planned_cost   ?: $hppPlan,
+                'actual_cost'      => $project->actual_cost    ?: $hppActual,
+                'contract_value'   => $project->contract_value ?: $hppPlan,
+                'progress_pct'     => $progressPct,
+                'hpp'              => $hppPlan,
+                'gross_profit_pct' => null,
             ]);
 
             // SPI = EV / PV. Boot hook returns null when duration info is absent, so
