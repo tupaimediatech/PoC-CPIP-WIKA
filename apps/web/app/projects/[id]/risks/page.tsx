@@ -430,7 +430,7 @@ export default function Level7Page() {
               <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Risiko</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Deskripsi Kejadian</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Dampak (Rp / hari)</th>
+              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Realisasi Mitigasi</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
             </tr>

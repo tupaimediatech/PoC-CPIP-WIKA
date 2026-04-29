@@ -67,10 +67,10 @@ const STATIC_BREADCRUMBS: Record<string, BreadcrumbItem[]> = {
     { Icon: UploadIcon, label: "Data Management" },
     { Icon: FileArrowUpIcon, label: "Upload" },
   ],
-  "/data-management/material": [
+  "/data-management/resource": [
     { Icon: HouseIcon, label: "Home", href: "/" },
     { Icon: UploadIcon, label: "Data Management" },
-    { Icon: PackageIcon, label: "Material" },
+    { Icon: PackageIcon, label: "Resource" },
   ],
 };
 

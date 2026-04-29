@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
-import { materialApi } from "@/lib/api";
-import type { Material, MaterialFilterOptionsResponse } from "@/types/material";
+import { resourceApi } from "@/lib/api";
+import type { Resource, ResourceFilterOptionsResponse } from "@/types/resource";
 
 const AutocompleteInput = ({
   value,
@@ -131,26 +132,26 @@ const AutocompleteInput = ({
 // Definisi kolom filter
 // ─────────────────────────────────────────────
 const FILTER_GRID: {
-  key: keyof Material;
+  key: keyof Resource;
   label: string;
-  optionKey?: keyof MaterialFilterOptionsResponse;
+  optionKey?: keyof ResourceFilterOptionsResponse;
   placeholder?: string;
 }[] = [
   {
-    key: "material_id",
-    label: "ID Material",
-    placeholder: "Input ID Material",
+    key: "resource_id",
+    label: "ID Resource",
+    placeholder: "Input ID Resource",
   },
   {
-    key: "material_name",
-    label: "Nama Material",
-    placeholder: "Input Nama Material",
+    key: "resource_name",
+    label: "Nama Resource",
+    placeholder: "Input Nama Resource",
   },
   {
-    key: "material_category",
-    label: "Kategori Material",
-    optionKey: "material_category",
-    placeholder: "Select Kategori Material",
+    key: "resource_category",
+    label: "Kategori Resource",
+    optionKey: "resource_category",
+    placeholder: "Select Kategori Resource",
   },
   {
     key: "project_name",
@@ -158,43 +159,78 @@ const FILTER_GRID: {
     optionKey: "project_name",
     placeholder: "Select Project Name",
   },
+  {
+    key: "location",
+    label: "Lokasi",
+    optionKey: "location",
+    placeholder: "Input Lokasi",
+  },
+  {
+    key: "year",
+    label: "Tahun",
+    optionKey: "year",
+    placeholder: "Input Tahun",
+  },
 ];
 
-export default function MaterialsPage() {
-  const [filterOptions, setFilterOptions] = useState<MaterialFilterOptionsResponse | null>(null);
+export default function ResourcesPage() {
+  const searchParams = useSearchParams();
+  const categoryQuery = searchParams.get("resource_category")?.trim() ?? "";
+
+  const [filterOptions, setFilterOptions] = useState<ResourceFilterOptionsResponse | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
-  const [allMaterials, setAllMaterials] = useState<Material[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const [allResources, setAllResources] = useState<Resource[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
 
   const [searchApplied, setSearchApplied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState(false);
+  const [autoFilterApplied, setAutoFilterApplied] = useState(false);
+
+  const filterResources = (filterValues: Record<string, string>) => {
+    return allResources.filter((resource) => {
+      return Object.entries(filterValues).every(([key, value]) => {
+        if (!value) return true;
+        const resourceValue = resource[key as keyof Resource];
+        if (resourceValue === null || resourceValue === undefined) return false;
+        return String(resourceValue).toLowerCase().includes(String(value).toLowerCase());
+      });
+    });
+  };
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([materialApi.list(), materialApi.filterOptions()])
+    Promise.all([resourceApi.list(), resourceApi.filterOptions()])
       .then(([res, options]) => {
-        setAllMaterials(res.data);
+        setAllResources(res.data);
         setFilterOptions(options);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!categoryQuery || autoFilterApplied || allResources.length === 0) return;
+
+    const nextFilters = {
+      ...filters,
+      resource_category: categoryQuery,
+    };
+
+    setFilters(nextFilters);
+    setResources(filterResources(nextFilters));
+    setSearchApplied(true);
+    setSnackbar(true);
+    setAutoFilterApplied(true);
+  }, [categoryQuery, allResources, autoFilterApplied]);
+
   const handleSearch = () => {
     setLoading(true);
 
-    const filtered = allMaterials.filter((material) => {
-      return Object.entries(filters).every(([key, value]) => {
-        if (!value) return true;
-        const materialValue = material[key as keyof Material];
-        if (materialValue === null || materialValue === undefined) return false;
-        return String(materialValue).toLowerCase().includes(String(value).toLowerCase());
-      });
-    });
+    const filtered = filterResources(filters);
 
-    setMaterials(filtered);
+    setResources(filtered);
     setSearchApplied(true);
     setSnackbar(true);
     setLoading(false);
@@ -203,21 +239,21 @@ export default function MaterialsPage() {
   const handleReset = useCallback(() => {
     setFilters({});
     setSearchApplied(false);
-    setMaterials([]);
+    setResources([]);
   }, []);
 
   const handleSnackbarClose = useCallback(() => setSnackbar(false), []);
 
   // Saran autocomplete: dari filterOptions API atau dari data tabel
-  const getSuggestionsForField = (key: keyof Material, optionKey?: keyof MaterialFilterOptionsResponse): string[] => {
+  const getSuggestionsForField = (key: keyof Resource, optionKey?: keyof ResourceFilterOptionsResponse): string[] => {
     if (optionKey && filterOptions && filterOptions[optionKey]) {
       const options = filterOptions[optionKey];
       if (Array.isArray(options)) {
         return options.filter((opt) => opt !== null && String(opt).trim() !== "").map(String);
       }
     }
-    if (allMaterials.length > 0) {
-      const uniqueValues = new Set(allMaterials.map((m) => String(m[key] || "")).filter((val) => val.trim() !== ""));
+    if (allResources.length > 0) {
+      const uniqueValues = new Set(allResources.map((r) => String(r[key] || "")).filter((val) => val.trim() !== ""));
       return Array.from(uniqueValues);
     }
     return [];
@@ -225,7 +261,7 @@ export default function MaterialsPage() {
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
-      <PageHeader title="Materials Filter" onExport={() => {}} />
+      <PageHeader title="Resources Filter" onExport={() => {}} />
 
       {/* ── Filter Grid ── */}
       <div className="grid grid-cols-3 gap-x-6 gap-y-4 mb-6">
@@ -260,32 +296,36 @@ export default function MaterialsPage() {
       </div>
 
       {/* ── Results ── */}
-      <h2 className="text-[20px] font-bold text-[#1B1C1F] mb-6">Material Results</h2>
+      <h2 className="text-[20px] font-bold text-[#1B1C1F] mb-6">Resource Results</h2>
 
       {!searchApplied ? (
         <div className="py-16 text-center text-gray-400 text-[14px]">
-          {loading ? "Fetching data..." : "Apply filters and click Search to view materials"}
+          {loading ? "Fetching data..." : "Apply filters and click Search to view resources"}
         </div>
-      ) : materials.length === 0 ? (
-        <div className="py-16 text-center text-gray-400 text-[14px]">No materials found</div>
+      ) : resources.length === 0 ? (
+        <div className="py-16 text-center text-gray-400 text-[14px]">No resources found</div>
       ) : (
         <div className="overflow-hidden border border-gray-100 rounded-xl">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[#F9FAFB] border-b border-gray-100">
-                <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Material</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Material</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Material</th>
+                <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Resource</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Resource</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Resource</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Tahun</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {materials.map((material) => (
-                <tr key={material.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{material.material_id}</td>
-                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{material.material_name}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{material.material_category || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{material.project_name || "-"}</td>
+              {resources.map((resource) => (
+                <tr key={resource.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{resource.resource_id}</td>
+                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{resource.resource_name}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.resource_category || "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.project_name || "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.location || "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.year ?? "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -295,7 +335,7 @@ export default function MaterialsPage() {
 
       <Snackbar
         title="Success!"
-        message={`Filters applied. Showing ${materials.length} materials`}
+        message={`Filters applied. Showing ${resources.length} resources`}
         visible={snackbar}
         onClose={handleSnackbarClose}
       />

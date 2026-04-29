@@ -77,12 +77,12 @@ export interface ProjectWorkItem {
   children: ProjectWorkItem[];
 }
 
-export interface ProjectMaterialLog {
+export interface ProjectResourceLog {
   id: number;
   period_id: number;
   work_item_id: number | null;
   supplier_name: string | null;
-  material_type: string | null;
+  resource_type: string | null;
   qty: string | null;
   satuan: string | null;
   harga_satuan: string | null;
@@ -173,8 +173,8 @@ export interface ProjectWorkItemListResponse {
   data: ProjectWorkItem[];
 }
 
-export interface MaterialLogListResponse {
-  data: ProjectMaterialLog[];
+export interface ResourceLogListResponse {
+  data: ProjectResourceLog[];
   meta: {
     total_tagihan: number;
     total_rows: number;
@@ -337,10 +337,10 @@ export interface HppSummaryResponse {
   };
 }
 
-// Level 5 — material/vendor (legacy)
-export interface MaterialLogLevel5 {
+// Level 5 — resource/vendor (legacy)
+export interface ResourceLogLevel5 {
   id: number;
-  material_type: string | null;
+  resource_type: string | null;
   volume: number;
   satuan: string | null;
   vendor: {
@@ -358,8 +358,8 @@ export interface MaterialLogLevel5 {
   catatanMonitoring: string | null;
 }
 
-export interface MaterialLogLevel5ListResponse {
-  data: MaterialLogLevel5[];
+export interface ResourceLogLevel5ListResponse {
+  data: ResourceLogLevel5[];
   meta: { total_tagihan: number; total_rows: number };
 }
 
