@@ -14,6 +14,7 @@ class WorkItemController extends Controller
     public function show(ProjectWorkItem $workItem): JsonResponse
     {
         $wbs = $workItem->period;
+        $materialLog = $workItem->materialLogs()->latest('id')->first();
 
         return response()->json([
             'data' => [
@@ -45,6 +46,8 @@ class WorkItemController extends Controller
                 'outstanding_debt' => (float) ($workItem->outstanding_debt ?? 0),
                 'data_source'      => $workItem->data_source,
                 'notes'            => $workItem->notes,
+                'realisasi_pengiriman' => $materialLog?->realisasi_pengiriman,
+                'deviasi_harga_market' => $materialLog?->deviasi_harga_market,
             ],
         ]);
     }

@@ -313,6 +313,8 @@ export interface WorkItemDetailLevel5 {
   outstanding_debt: number;
   data_source: string | null;
   notes: string | null;
+  realisasi_pengiriman: string | null;
+  deviasi_harga_market: string | null;
 }
 
 export interface WorkItemDetailResponse {
