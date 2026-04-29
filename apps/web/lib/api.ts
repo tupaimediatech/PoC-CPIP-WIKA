@@ -12,14 +12,14 @@ import type {
   AliasContext,
   ProjectPeriodListResponse,
   ProjectWorkItemListResponse,
-  MaterialLogListResponse,
+  ResourceLogListResponse,
   EquipmentLogListResponse,
   ProgressCurveListResponse,
   FilterOptionsResponse,
   SbuDistributionItem,
   ProjectPhaseListResponse,
   WorkItemLevel4ListResponse,
-  MaterialLogLevel5ListResponse,
+  ResourceLogLevel5ListResponse,
   WorkItemDetailResponse,
   HppSummaryResponse,
   RiskListResponse,
@@ -30,7 +30,7 @@ import type {
   FinancialResponse,
 } from "@/types/project";
 import { getToken, clearToken } from "@/lib/auth";
-import { Material, MaterialFilterOptionsResponse, MaterialListResponse } from "@/types/material";
+import { Resource, ResourceFilterOptionsResponse, ResourceListResponse } from "@/types/resource";
 import { DashboardApiResponse } from "@/types/dashboard";
 
 type UploadRequestError = Error & {
@@ -257,7 +257,7 @@ export type DashboardExportResponse = {
 export const periodApi = {
   workItems: (periodId: number): Promise<WorkItemLevel4ListResponse> => api.get(`/wbs-phases/${periodId}/work-items`).then((r) => r.data),
 
-  materials: (periodId: number): Promise<MaterialLogLevel5ListResponse> => api.get(`/wbs-phases/${periodId}/materials`).then((r) => r.data),
+  resources: (periodId: number): Promise<ResourceLogLevel5ListResponse> => api.get(`/wbs-phases/${periodId}/resources`).then((r) => r.data),
 
   equipment: (periodId: number): Promise<EquipmentLogListResponse> => api.get(`/wbs-phases/${periodId}/equipment`).then((r) => r.data),
 
@@ -268,14 +268,14 @@ export const workItemApi = {
   detail: (id: number): Promise<WorkItemDetailResponse> => api.get(`/work-items/${id}`).then((r) => r.data),
 };
 
-export const materialApi = {
-  list: (): Promise<MaterialListResponse> => api.get("/materials").then((r) => r.data),
+export const resourceApi = {
+  list: (): Promise<ResourceListResponse> => api.get("/resources").then((r) => r.data),
 
-  filterOptions: (): Promise<MaterialFilterOptionsResponse> => api.get("/materials/filter-options").then((r) => r.data),
+  filterOptions: (): Promise<ResourceFilterOptionsResponse> => api.get("/resources/filter-options").then((r) => r.data),
 
-  detail: (id: number): Promise<{ data: Material }> => api.get(`/materials/${id}`).then((r) => r.data),
+  detail: (id: number): Promise<{ data: Resource }> => api.get(`/resources/${id}`).then((r) => r.data),
 
-  delete: (id: number): Promise<{ message: string }> => api.delete(`/materials/${id}`).then((r) => r.data),
+  delete: (id: number): Promise<{ message: string }> => api.delete(`/resources/${id}`).then((r) => r.data),
 
   upload: (files: File | File[], onProgress?: (percent: number) => void): Promise<UploadResponse> => {
     return new Promise((resolve, reject) => {
@@ -284,7 +284,7 @@ export const materialApi = {
       fileArray.forEach((file) => form.append("files[]", file));
 
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/materials/upload");
+      xhr.open("POST", "/api/resources/upload");
       xhr.setRequestHeader("Accept", "application/json");
       const token = getToken();
       if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);

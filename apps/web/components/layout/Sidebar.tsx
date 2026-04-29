@@ -34,7 +34,7 @@ const menuGroups = [
         label: "Data Management",
         Icon: FilesIcon,
         children: [
-          { href: "/data-management/material", label: "Database Material", Icon: DatabaseIcon },
+          { href: "/data-management/resource", label: "Database Resource", Icon: DatabaseIcon },
           { href: "/data-management/upload", label: "Data Ingestion", Icon: UploadSimpleIcon },
         ],
       },

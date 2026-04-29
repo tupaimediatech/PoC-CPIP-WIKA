@@ -75,7 +75,7 @@ export default function FinancialPage() {
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
       <PageHeader
-        title={`level 3  Profit & Loss Summary - ${data.project_name}`}
+        title={`Level 3  Profit & Loss Summary - ${data.project_name}`}
         pills={[
           { label: "SBU", value: data.sbu ?? "-" },
           { label: "Project Owner", value: data.owner ?? "-" },
@@ -124,25 +124,37 @@ export default function FinancialPage() {
                 </button>
               </td>
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr
+              className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+              onClick={() => router.push(`/data-management/resource?resource_category=Material`)}
+            >
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Material</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(material)}</td>
               <td className="px-4 py-3" />
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr
+              className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+              onClick={() => router.push(`/data-management/resource?resource_category=Upah`)}
+            >
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Upah</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(upah)}</td>
               <td className="px-4 py-3" />
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr
+              className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+              onClick={() => router.push(`/data-management/resource?resource_category=Alat`)}
+            >
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Alat</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(alat)}</td>
               <td className="px-4 py-3" />
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr
+              className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+              onClick={() => router.push(`/data-management/resource?resource_category=Subkon`)}
+            >
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Subkon</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(subkon)}</td>
