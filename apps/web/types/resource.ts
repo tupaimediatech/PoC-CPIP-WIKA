@@ -4,19 +4,8 @@ export interface Resource {
   resource_name: string;
   resource_category: string;
   project_name: string;
-}
-
-export interface ResourceFilterOptionsResponse {
-  resource_category?: string[];
-  project_name?: string[];
-}
-
-export interface Resource {
-  id: string;
-  resource_id: string;
-  resource_name: string;
-  resource_category: string;
-  project_name: string;
+  location?: string;
+  year?: string | number;
 }
 
 export interface ResourceListResponse {
@@ -26,4 +15,6 @@ export interface ResourceListResponse {
 export interface ResourceFilterOptionsResponse {
   resource_category?: string[];
   project_name?: string[];
+  location?: string[];
+  year?: string[];
 }

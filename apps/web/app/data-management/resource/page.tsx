@@ -159,6 +159,18 @@ const FILTER_GRID: {
     optionKey: "project_name",
     placeholder: "Select Project Name",
   },
+  {
+    key: "location",
+    label: "Lokasi",
+    optionKey: "location",
+    placeholder: "Input Lokasi",
+  },
+  {
+    key: "year",
+    label: "Tahun",
+    optionKey: "year",
+    placeholder: "Input Tahun",
+  },
 ];
 
 export default function ResourcesPage() {
@@ -301,6 +313,8 @@ export default function ResourcesPage() {
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Resource</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Resource</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Tahun</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -310,6 +324,8 @@ export default function ResourcesPage() {
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{resource.resource_name}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">{resource.resource_category || "-"}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">{resource.project_name || "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.location || "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.year ?? "-"}</td>
                 </tr>
               ))}
             </tbody>
