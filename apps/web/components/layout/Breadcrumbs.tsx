@@ -144,10 +144,10 @@ function useDynamicBreadcrumbs(pathname: string): BreadcrumbItem[] | null {
     }
 
     Promise.all(fetches).then(() => {
-      // Always add Financial Summary with project name for project-related pages
+      // Always add Profit & Loss with project name for project-related pages
       base.push({
         Icon: MoneyWavyIcon,
-        label: `Financial Summary (${projectName})`,
+        label: `Profit & Loss (${projectName})`,
         href: `/projects/${projectId}`,
       });
 

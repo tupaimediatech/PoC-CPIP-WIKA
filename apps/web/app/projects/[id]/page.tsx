@@ -8,7 +8,7 @@ import BackButton from "@/components/analytics/BackButton";
 import { projectApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 
-export default function FinancialPage() {
+export default function ProfitLossPage() {
   const router = useRouter();
   const params = useParams();
   const projectId = Number(params.id);
@@ -19,7 +19,7 @@ export default function FinancialPage() {
 
   useEffect(() => {
     projectApi
-      .financial(projectId)
+      .profitloss(projectId)
       .then((res) => setData(res.data))
       .catch((err) => {
         console.error("API Error:", err);

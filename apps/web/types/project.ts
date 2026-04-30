@@ -498,11 +498,11 @@ export interface InsightResponse {
   };
 }
 
-export interface FinancialResponse {
-  data: FinancialData;
+export interface ProfitLossResponse {
+  data: ProfitLossData;
 }
 
-export interface FinancialData {
+export interface ProfitLossData {
   project_name: string;
   sbu?: string;
   owner?: string;
