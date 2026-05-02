@@ -21,6 +21,7 @@ export interface Project {
   location: string | null;
   contract_value: string;
   hpp: string;
+  hpp_pct: string | null;
   planned_cost: string;
   delivery_budget_status: string;
   actual_cost: string;

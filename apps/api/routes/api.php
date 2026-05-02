@@ -46,6 +46,7 @@ Route::get('/projects/building/spi',               [ProjectController::class, 'b
 Route::get('/projects/infrastructure/cpi',         [ProjectController::class, 'infrastructureCpiList']);
 Route::get('/projects/infrastructure/spi',         [ProjectController::class, 'infrastructureSpiList']);
 Route::get('/projects/{project}/insight',          [ProjectController::class, 'insight'])->whereNumber('project');
+Route::get('/projects/{project}/financial',        [ProjectController::class, 'financial'])->whereNumber('project');
 Route::get('/projects',                            [ProjectController::class, 'index']);
 Route::get('/projects/{project}',                  [ProjectController::class, 'show'])->whereNumber('project');
 // Public endpoints (no auth required) 

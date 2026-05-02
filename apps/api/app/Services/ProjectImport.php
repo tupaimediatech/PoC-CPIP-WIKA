@@ -70,9 +70,12 @@ class ProjectImport
 
             $data = array_combine($headers, $row);
 
-            // Normalize division casing if present
+            // Normalize division casing if present; otherwise resolve from project_code prefix.
             if (!empty($data['division'])) {
                 $data['division'] = ucwords(strtolower(trim((string) $data['division'])));
+            } elseif (!empty($data['project_code'])) {
+                $resolved = DivisionResolver::fromCode((string) $data['project_code']);
+                if ($resolved !== null) $data['division'] = $resolved;
             }
 
             $validator = $this->makeValidator($data);

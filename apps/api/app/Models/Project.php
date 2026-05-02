@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Services\DivisionResolver;
 use App\Services\KpiCalculatorService;
 
 class Project extends Model
@@ -15,6 +16,7 @@ class Project extends Model
 
     protected $appends = [
         'delivery_budget_status',
+        'hpp_pct',
     ];
 
     protected $fillable = [
@@ -33,15 +35,19 @@ class Project extends Model
         'funding_source',
         'location',
         'contract_value',
+        'addendum_value',
+        'bq_external',
         'planned_cost',
         'actual_cost',
         'hpp',
+        'tarif_pph_final',
         'planned_duration',
         'actual_duration',
         'progress_pct',
         'gross_profit_pct',
         'project_year',
         'start_date',
+        'planned_end_date',
         'cpi',
         'spi',
         'status',
@@ -50,12 +56,16 @@ class Project extends Model
 
     protected $casts = [
         'contract_value'   => 'decimal:2',
+        'addendum_value'   => 'decimal:2',
+        'bq_external'      => 'decimal:2',
         'planned_cost'     => 'decimal:2',
         'actual_cost'      => 'decimal:2',
         'hpp'             => 'decimal:2',
+        'tarif_pph_final'  => 'decimal:4',
         'progress_pct'     => 'decimal:2',
         'project_year'     => 'integer',
         'start_date'       => 'date',
+        'planned_end_date' => 'date',
         'cpi'              => 'decimal:4',
         'spi'              => 'decimal:4',
         'planned_duration' => 'integer',
@@ -168,6 +178,30 @@ class Project extends Model
             $spiValue < 1.0 && $cpiValue >= 1.0  => 'Delay On Budget',
             default                               => 'Delay Overbudget',
         };
+    }
+
+    /**
+     * Resolve the project's division.
+     *
+     * The stored column may be null for older imports that pre-date the
+     * DivisionResolver wiring. When null, derive it from the project_code
+     * prefix (e.g. PRJ-JBT-001 → Infrastructure, PRJ-GDG-003 → Building) so
+     * dashboard groupings always have a real division key.
+     */
+    public function getDivisionAttribute(?string $value): ?string
+    {
+        if (!empty($value)) return $value;
+        return DivisionResolver::fromCode($this->attributes['project_code'] ?? null);
+    }
+
+    public function getHppPctAttribute(): ?string
+    {
+        $contract = (float) ($this->attributes['contract_value'] ?? 0);
+        $actual   = (float) ($this->attributes['actual_cost'] ?? 0);
+
+        if ($contract <= 0) return null;
+
+        return number_format(($actual / $contract) * 100, 2, '.', '');
     }
 
     /**

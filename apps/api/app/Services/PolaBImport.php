@@ -80,7 +80,7 @@ class PolaBImport
             ['project_code' => $meta['project_code']],
             [
                 'project_name'      => $meta['project_name'] ?? $meta['project_code'],
-                'division'          => $meta['division'] ?? null,
+                'division'          => $meta['division'] ?? \App\Services\DivisionResolver::fromCode($meta['project_code'] ?? null),
                 'owner'             => $meta['client_name'] ?? null,
                 'contract_value'    => $meta['contract_value'] ?? null,
                 'planned_cost'      => $meta['planned_cost'] ?? null,

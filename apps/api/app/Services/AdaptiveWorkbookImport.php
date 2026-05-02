@@ -644,7 +644,7 @@ class AdaptiveWorkbookImport
                 [
                     'ingestion_file_id' => $ingestionFileId,
                     'project_name'      => trim((string) $data['project_name']),
-                    'division'          => !empty($data['division']) ? trim((string) $data['division']) : null,
+                    'division'          => !empty($data['division']) ? trim((string) $data['division']) : \App\Services\DivisionResolver::fromCode($data['project_code'] ?? null),
                     'owner'             => !empty($data['owner'])    ? trim((string) $data['owner'])    : null,
                     'contract_value'    => $numeric('contract_value'),
                     'planned_cost'      => $numeric('planned_cost'),

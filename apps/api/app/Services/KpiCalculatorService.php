@@ -2,8 +2,63 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Collection;
+
 class KpiCalculatorService
 {
+    /**
+     * Aggregate EV/PV/AC over leaf work items (bobot_pct > 0).
+     * Returns null CPI/SPI when denominators are 0.
+     *
+     * EV = volume * harsat_internal * progress_actual_pct
+     * PV = volume * harsat_internal * progress_plan_pct
+     * AC = volume_actual * harsat_actual
+     *
+     * progress_*_pct values may be stored as fractions (0..1) or percentages (0..100);
+     * normalize to fraction first.
+     */
+    public function summarizeFromWorkItems(Collection $items): array
+    {
+        $sumEv = 0.0;
+        $sumPv = 0.0;
+        $sumAc = 0.0;
+
+        foreach ($items as $row) {
+            $bobot = (float) ($row->bobot_pct ?? 0);
+            if ($bobot <= 0) continue;
+
+            $vol      = (float) ($row->volume ?? 0);
+            $hs       = (float) ($row->harsat_internal ?? 0);
+            $volAct   = (float) ($row->volume_actual ?? 0);
+            $hsAct    = (float) ($row->harsat_actual ?? 0);
+            $plan     = $this->normalizeFraction((float) ($row->progress_plan_pct ?? 0));
+            $actual   = $this->normalizeFraction((float) ($row->progress_actual_pct ?? 0));
+
+            $budget = $vol * $hs;
+            $sumPv += $budget * $plan;
+            $sumEv += $budget * $actual;
+            $sumAc += $volAct * $hsAct;
+        }
+
+        $cpi = $sumAc > 0 ? round($sumEv / $sumAc, 4) : null;
+        $spi = $sumPv > 0 ? round($sumEv / $sumPv, 4) : null;
+
+        return [
+            'pv'  => $sumPv,
+            'ev'  => $sumEv,
+            'ac'  => $sumAc,
+            'cpi' => $cpi,
+            'spi' => $spi,
+        ];
+    }
+
+    private function normalizeFraction(float $v): float
+    {
+        // Treat values > 1.5 as percentages (e.g. 92 → 0.92)
+        return $v > 1.5 ? $v / 100.0 : $v;
+    }
+
+
     /**
      * Calculate CPI, SPI, and status for a project.
      *
