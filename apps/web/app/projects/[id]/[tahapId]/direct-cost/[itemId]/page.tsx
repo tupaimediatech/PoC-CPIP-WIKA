@@ -110,7 +110,7 @@ export default function Level5Page() {
           <h3 className="text-[16px] font-bold text-[#1B1C1F] mb-5">Informasi Vendor</h3>
           <InfoRow label="Nama Vendor" value={item.vendor_name} />
           <InfoRow label="Tahun Perolehan" value={extractYear(item.po_number)} />
-          <InfoRow label="Lokasi Vendor" value="-" />
+          <InfoRow label="Lokasi Vendor" value={item.vendor_lokasi} />
           <InfoRow label="Rating Performa" value={`${rating.score}/5`} valueClass={rating.color} />
         </div>
 
@@ -121,6 +121,8 @@ export default function Level5Page() {
           <InfoRow label="Harga Satuan Vendor" value={item.harsat_internal ? formatCurrency(item.harsat_internal) : null} />
           <InfoRow label="Realisasi Pengiriman" value={realisasi.text} valueClass={realisasi.color} />
           <InfoRow label="Deviasi Harga Market" value={deviasiText} valueClass={deviasi.color} />
+          {/* <InfoRow label="Retensi 5%" value={item.retention ? formatCurrency(item.retention) : null} />
+          <InfoRow label="Sisa Hutang" value={item.outstanding_debt ? formatCurrency(item.outstanding_debt) : null} /> */}
         </div>
       </div>
 
