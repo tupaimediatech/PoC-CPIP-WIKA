@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProjectVendor;
 use App\Models\ProjectWbs;
 use App\Models\ProjectWorkItem;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,27 @@ class WorkItemController extends Controller
     {
         $wbs = $workItem->period;
         $materialLog = $workItem->materialLogs()->latest('id')->first();
+
+        $vendor = null;
+        if ($wbs && $workItem->po_number) {
+            $vendor = ProjectVendor::where('project_id', $wbs->project_id)
+                ->where('po_number', $workItem->po_number)
+                ->first();
+        }
+        if (!$vendor && $wbs && $workItem->vendor_name) {
+            $vendor = ProjectVendor::where('project_id', $wbs->project_id)
+                ->where('vendor_name', $workItem->vendor_name)
+                ->first();
+        }
+
+        $kontrak = (float) ($workItem->vendor_contract_value ?? 0);
+        $termin  = (float) ($workItem->termin_paid ?? 0);
+        $retention = $workItem->retention !== null
+            ? (float) $workItem->retention
+            : $kontrak * 0.05;
+        $outstanding = $workItem->outstanding_debt !== null
+            ? (float) $workItem->outstanding_debt
+            : $kontrak * 0.95 - $termin;
 
         return response()->json([
             'data' => [
@@ -40,14 +62,16 @@ class WorkItemController extends Controller
                 'harsat_actual'    => (float) ($workItem->harsat_actual ?? 0),
                 'vendor_name'      => $workItem->vendor_name,
                 'po_number'        => $workItem->po_number,
-                'vendor_contract_value' => (float) ($workItem->vendor_contract_value ?? 0),
-                'termin_paid'      => (float) ($workItem->termin_paid ?? 0),
-                'retention'        => (float) ($workItem->retention ?? 0),
-                'outstanding_debt' => (float) ($workItem->outstanding_debt ?? 0),
+                'vendor_contract_value' => $kontrak,
+                'termin_paid'      => $termin,
+                'retention'        => $retention,
+                'outstanding_debt' => $outstanding,
                 'data_source'      => $workItem->data_source,
                 'notes'            => $workItem->notes,
                 'realisasi_pengiriman' => $materialLog?->realisasi_pengiriman,
                 'deviasi_harga_market' => $materialLog?->deviasi_harga_market,
+                'vendor_lokasi'    => $vendor?->lokasi,
+                'vendor_npwp'      => $vendor?->npwp,
             ],
         ]);
     }
