@@ -316,6 +316,8 @@ export interface WorkItemDetailLevel5 {
   notes: string | null;
   realisasi_pengiriman: string | null;
   deviasi_harga_market: string | null;
+  vendor_lokasi: string | null;
+  vendor_npwp: string | null;
 }
 
 export interface WorkItemDetailResponse {
