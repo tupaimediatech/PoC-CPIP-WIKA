@@ -79,18 +79,15 @@ export default function QuickFilterPreview({ filterOptions, onSearch, onReset, o
       year: filters.year,
       location: filters.location,
       funding_source: filters.funding_source,
+      contractRange: "",
     });
   };
-
-  const yearOptions = (filterOptions.year ?? []).map((y) => String(y));
 
   const filterDefs: { key: keyof FilterState; label: string; options: string[] }[] = [
     { key: "sbu", label: "SBU", options: filterOptions.sbu ?? [] },
     { key: "owner", label: "Owner", options: filterOptions.owner ?? [] },
     { key: "contract", label: "Contract", options: filterOptions.contract_type ?? [] },
     { key: "partnership", label: "Partnership", options: filterOptions.partnership ?? [] },
-    { key: "division", label: "Division", options: filterOptions.division ?? [] },
-    { key: "year", label: "Year", options: yearOptions },
   ];
 
   return (
@@ -167,15 +164,16 @@ function FilterPill({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="relative flex items-center bg-white border border-gray-200 rounded-md cursor-pointer" style={{ height: "27px" }}>
-      <div className="flex items-center gap-1 px-2">
+    <div className="relative flex items-center bg-white border border-gray-200 rounded-md cursor-pointer" style={{ height: "27px", width: "200px" }}>
+      <div className="flex items-center gap-1 px-2 flex-shrink-0">
         <span className="text-[12px] font-medium text-gray-500">{label}</span>
         <span className="text-[12px] text-gray-400">:</span>
       </div>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-transparent text-[12px] font-medium text-[#1B1C1F] pr-6 pl-0 focus:outline-none cursor-pointer"
+        className="appearance-none bg-transparent text-[12px] font-medium text-[#1B1C1F] pr-6 pl-1 focus:outline-none cursor-pointer flex-1 min-w-0 truncate"
+        title={value || placeholder}
       >
         <option value="">{placeholder}</option>
         {options.map((opt) => (
@@ -184,7 +182,7 @@ function FilterPill({
           </option>
         ))}
       </select>
-      <CaretDownIcon size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+      <CaretDownIcon size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none flex-shrink-0" />
     </div>
   );
 }

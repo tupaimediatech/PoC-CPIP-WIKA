@@ -63,7 +63,7 @@ export default function Level4Page() {
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Item Sumber Daya</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Volume</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Satuan</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Material</th>
+              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Resource</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Harsat Internal</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Total Biaya</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Detail</th>
@@ -76,7 +76,7 @@ export default function Level4Page() {
                 <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{item.name || "-"}</td>
                 <td className="px-4 py-4 text-[14px] text-gray-700">{item.volume ? Number(item.volume).toLocaleString("id-ID") : "-"}</td>
                 <td className="px-4 py-4 text-[14px] text-gray-700">{formatSatuan(item.unit || item.satuan)}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700">{item.material_category || "-"}</td>
+                <td className="px-4 py-4 text-[14px] text-gray-700">{item.resource_category || "-"}</td>
                 <td className="px-4 py-4 text-[14px] text-gray-700">
                   {item.harsatInternal || item.internalPrice ? formatCurrency(item.harsatInternal ?? item.internalPrice) : "-"}
                 </td>

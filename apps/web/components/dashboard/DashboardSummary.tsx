@@ -21,6 +21,7 @@ export type ActiveFilters = {
   year: string;
   location: string;
   funding_source: string;
+  contractRange: string;
 };
 
 const EMPTY_FILTERS: ActiveFilters = {
@@ -32,6 +33,7 @@ const EMPTY_FILTERS: ActiveFilters = {
   year: "",
   location: "",
   funding_source: "",
+  contractRange: "",
 };
 
 function computeSummary(projects: DashboardProject[]): DashboardSummaryData {
@@ -122,6 +124,13 @@ export default function DashboardSummary() {
       if (activeFilters.funding_source && (p.funding_source ?? "") !== activeFilters.funding_source) return false;
       if (activeFilters.location && (p.location ?? "") !== activeFilters.location) return false;
       if (activeFilters.year && String(p.project_year) !== activeFilters.year) return false;
+      if (activeFilters.contractRange) {
+        const valueInBillions = parseFloat(p.contract_value || "0") / 1e9;
+        const [minStr, maxStr] = activeFilters.contractRange.split("-");
+        const min = parseFloat(minStr);
+        const max = maxStr?.endsWith("+") ? Infinity : parseFloat(maxStr || "0");
+        if (valueInBillions < min || valueInBillions >= max) return false;
+      }
       return true;
     });
   }, [apiData, activeFilters]);
@@ -130,6 +139,36 @@ export default function DashboardSummary() {
     if (!apiData) return null;
     return computeSummary(filteredProjects);
   }, [filteredProjects, apiData]);
+
+  const contractOptions = useMemo(() => {
+    if (!apiData) return [{ v: "", l: "All" }];
+    const values = apiData.projects.data
+      .map((p) => parseFloat(p.contract_value || "0") / 1e9)
+      .filter((v) => !isNaN(v) && v > 0)
+      .sort((a, b) => a - b);
+    if (values.length === 0) return [{ v: "", l: "All" }];
+    const min = Math.floor(values[0] * 10) / 10;
+    const max = Math.ceil(values[values.length - 1] * 10) / 10;
+    const range = max - min;
+    if (range === 0)
+      return [
+        { v: "", l: "All" },
+        { v: `${min}+`, l: `≥ ${min} M` },
+      ];
+    const numRanges = 4;
+    const step = range / numRanges;
+    const ranges = [{ v: "", l: "All" }];
+    for (let i = 0; i < numRanges; i++) {
+      const start = min + i * step;
+      const end = min + (i + 1) * step;
+      if (i === numRanges - 1) {
+        ranges.push({ v: `${start.toFixed(1)}+`, l: `≥ ${start.toFixed(1)} B` });
+      } else {
+        ranges.push({ v: `${start.toFixed(1)}-${end.toFixed(1)}`, l: `${start.toFixed(1)} - ${end.toFixed(1)} B` });
+      }
+    }
+    return ranges;
+  }, [apiData]);
 
   const handleSearch = useCallback((filters: ActiveFilters) => {
     setActiveFilters(filters);
@@ -157,7 +196,7 @@ export default function DashboardSummary() {
 
   if (!summary || !apiData) return null;
 
-  const kpiFilters = { division: activeFilters.division, contractRange: "", year: activeFilters.year };
+  const kpiFilters = { division: activeFilters.division, contractRange: activeFilters.contractRange, year: activeFilters.year };
 
   return (
     <div className="bg-[#F9FAFB] min-h-screen">
@@ -168,11 +207,14 @@ export default function DashboardSummary() {
           data={summary}
           filters={kpiFilters}
           divisionOptions={apiData.filter_options.division ?? []}
+          availableYears={apiData.projects.meta.available_years ?? []}
+          contractOptions={contractOptions}
           onChange={(f) =>
             setActiveFilters((prev) => ({
               ...prev,
               division: f.division,
               year: f.year,
+              contractRange: f.contractRange,
             }))
           }
         />

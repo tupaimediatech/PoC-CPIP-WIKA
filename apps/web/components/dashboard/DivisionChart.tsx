@@ -40,6 +40,35 @@ interface Tooltip {
   color: string;
 }
 
+function getSummaryDescription(divisions: [string, { avg_cpi: number; avg_spi: number }][]) {
+  if (divisions.length === 0) {
+    return "No division data available yet. Upload project data to see insights.";
+  }
+
+  const sortedByCpi = [...divisions].sort((a, b) => b[1].avg_cpi - a[1].avg_cpi);
+  const sortedBySpi = [...divisions].sort((a, b) => b[1].avg_spi - a[1].avg_spi);
+
+  const bestCpi = sortedByCpi[0][0];
+  const worstCpi = sortedByCpi[sortedByCpi.length - 1][0];
+  const bestSpi = sortedBySpi[0][0];
+  const worstSpi = sortedBySpi[sortedBySpi.length - 1][0];
+
+  const costPhrase = `${bestCpi} outperforms ${worstCpi}, especially in cost control.`;
+  const allBehindSchedule = divisions.every(([, d]) => d.avg_spi < 1.0);
+  const someBehindSchedule = divisions.some(([, d]) => d.avg_spi < 1.0);
+
+  let schedulePhrase = "";
+  if (allBehindSchedule) {
+    schedulePhrase = `Both divisions are behind schedule, but the delay is more critical in ${worstSpi}.`;
+  } else if (someBehindSchedule) {
+    schedulePhrase = `${worstSpi} is the most delayed division while others are closer to schedule.`;
+  } else {
+    schedulePhrase = `All divisions are on schedule.`;
+  }
+
+  return `${costPhrase} ${schedulePhrase}`;
+}
+
 export default function DivisionChart({ data }: Props) {
   const router = useRouter();
   const divisions = Object.entries(data.by_division);
@@ -194,13 +223,7 @@ export default function DivisionChart({ data }: Props) {
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2">
-              {divisions.length > 0 ? (
-                <p className="text-[13px] leading-relaxed text-gray-600">
-                  {divisions.map(([name, d]) => `${name}: CPI ${formatKpi(d.avg_cpi)}, SPI ${formatKpi(d.avg_spi)}`).join(" | ")}
-                </p>
-              ) : (
-                <p className="text-[13px] leading-relaxed text-gray-400">No division data available yet. Upload project data to see insights.</p>
-              )}
+              <p className="text-[13px] leading-relaxed text-gray-600">{getSummaryDescription(divisions)}</p>
             </div>
           </div>
         </div>

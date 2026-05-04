@@ -14,18 +14,6 @@ import {
 import { formatKpi } from "@/lib/utils";
 import type { DashboardSummaryData } from "@/types/dashboard";
 
-const CONTRACTS = [
-  { v: "", l: "All" },
-  { v: "0-500", l: "< 500 M" },
-  { v: "500-999", l: "≥ 500 M" },
-];
-const YEARS = [
-  { v: "", l: "Year" },
-  { v: "2024", l: "2024" },
-  { v: "2025", l: "2025" },
-  { v: "2026", l: "2026" },
-];
-
 export type DashboardFilters = {
   division: string;
   contractRange: string;
@@ -36,10 +24,12 @@ type Props = {
   data: DashboardSummaryData;
   filters: DashboardFilters;
   divisionOptions: string[];
+  availableYears: number[];
+  contractOptions: { v: string; l: string }[];
   onChange: (filters: DashboardFilters) => void;
 };
 
-export default function KpiCards({ data, filters, divisionOptions, onChange }: Props) {
+export default function KpiCards({ data, filters, divisionOptions, availableYears, contractOptions, onChange }: Props) {
   const updateFilter = (key: keyof DashboardFilters, value: string) => {
     onChange({ ...filters, [key]: value });
   };
@@ -48,6 +38,8 @@ export default function KpiCards({ data, filters, divisionOptions, onChange }: P
     { v: "", l: "All" },
     ...divisionOptions.filter((option) => option && option.trim() !== "").map((option) => ({ v: option, l: option })),
   ];
+
+  const yearOptionItems = [{ v: "", l: "All" }, ...availableYears.map((year) => ({ v: year.toString(), l: year.toString() }))];
 
   return (
     <div className="flex flex-col bg-white w-full" style={{ padding: "18px 32px" }}>
@@ -66,10 +58,10 @@ export default function KpiCards({ data, filters, divisionOptions, onChange }: P
             <FilterSelect
               label="Contract Value"
               value={filters.contractRange}
-              options={CONTRACTS}
+              options={contractOptions}
               onChange={(v) => updateFilter("contractRange", v)}
             />
-            <FilterSelect label="Year" value={filters.year} options={YEARS} onChange={(v) => updateFilter("year", v)} />
+            <FilterSelect label="Year" value={filters.year} options={yearOptionItems} onChange={(v) => updateFilter("year", v)} />
           </div>
 
           {(filters.division || filters.contractRange || filters.year) && (
@@ -105,9 +97,9 @@ function FilterSelect({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="relative flex items-center bg-white border border-gray-200 rounded-md px-2" style={{ height: "27px" }}>
+    <div className="relative flex items-center bg-white border border-gray-200 rounded-md px-2" style={{ height: "27px", width: "150px" }}>
       <div className="flex items-center gap-0.5">
-        <span className="text-[12px] font-medium text-gray-500">{label}</span>
+        <span className="text-[12px] font-medium text-gray-500 whitespace-nowrap">{label}</span>
         <span className="text-[12px] text-gray-400">:</span>
       </div>
       <select

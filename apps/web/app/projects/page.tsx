@@ -21,29 +21,31 @@ const AutocompleteInput = ({
   options: string[];
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const filteredOptions = isTyping && value ? options.filter((opt) => opt.toLowerCase().includes(value.toLowerCase())) : options;
+  // Filter dropdown options by the internal search query — NOT by the committed value
+  const filteredOptions = searchQuery ? options.filter((opt) => opt.toLowerCase().includes(searchQuery.toLowerCase())) : options;
 
   const handleFocus = () => {
-    setIsTyping(false);
+    setSearchQuery(""); // clear search so all options show on open
     setActiveIndex(-1);
     setIsOpen(true);
   };
 
+  // Typing only updates the internal search query, never the committed value
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
-    setIsTyping(true);
+    setSearchQuery(e.target.value);
     setActiveIndex(-1);
     setIsOpen(true);
   };
 
+  // Only committing a click/enter actually updates the value
   const handleSelect = (opt: string) => {
     onChange(opt);
-    setIsTyping(false);
+    setSearchQuery("");
     setActiveIndex(-1);
     setIsOpen(false);
   };
@@ -72,8 +74,18 @@ const AutocompleteInput = ({
       }
     } else if (e.key === "Escape") {
       setIsOpen(false);
+      setSearchQuery("");
       setActiveIndex(-1);
     }
+  };
+
+  // On blur: close and discard search — input reverts to committed value
+  const handleBlur = () => {
+    setTimeout(() => {
+      setIsOpen(false);
+      setSearchQuery("");
+      setActiveIndex(-1);
+    }, 200);
   };
 
   const scrollIntoView = (index: number) => {
@@ -83,20 +95,19 @@ const AutocompleteInput = ({
     }
   };
 
+  // While open: show what the user is typing (searchQuery)
+  // While closed: show the committed value
+  const displayValue = isOpen ? searchQuery : value;
+
   return (
     <div className="relative" ref={wrapperRef}>
       <input
         type="text"
         placeholder={placeholder}
-        value={value}
+        value={displayValue}
         onChange={handleChange}
         onFocus={handleFocus}
-        onBlur={() =>
-          setTimeout(() => {
-            setIsOpen(false);
-            setActiveIndex(-1);
-          }, 200)
-        }
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className="w-full bg-white border border-[#E0E2E7] rounded-lg text-[14px] text-[#1B1C1F] px-4 h-[37px] focus:outline-none focus:border-blue-500 placeholder:text-[#98A2B3] transition-all"
       />
@@ -234,27 +245,6 @@ export default function ProjectsPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
-
-  const getMatchedProjects = useCallback(() => {
-    const nameFilter = filters["project_name"] ?? "";
-    const codeFilter = filters["project_code"] ?? "";
-
-    if (!nameFilter && !codeFilter) return allProjects;
-
-    return allProjects.filter((p) => {
-      const matchName = nameFilter
-        ? String(p.project_name ?? "")
-            .toLowerCase()
-            .includes(nameFilter.toLowerCase())
-        : true;
-      const matchCode = codeFilter
-        ? String(p.project_code ?? "")
-            .toLowerCase()
-            .includes(codeFilter.toLowerCase())
-        : true;
-      return matchName && matchCode;
-    });
-  }, [allProjects, filters]);
 
   useEffect(() => {
     const nameFilter = filters["project_name"] ?? "";
