@@ -33,9 +33,9 @@ class MaterialLogController extends Controller
      * Level 5 — material/vendor logs for a specific work item.
      * Returns materials linked to the specific work item (work_item_id).
      */
-    public function showByWorkItem(ProjectWorkItem $workItem): JsonResponse
+    public function showByResourceCategory(ProjectWorkItem $resourceCategory): JsonResponse
     {
-        $logs = $workItem->materialLogs()
+        $logs = $resourceCategory->materialLogs()
             ->where('is_discount', false)
             ->orderBy('id')
             ->get();

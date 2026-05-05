@@ -52,8 +52,8 @@ class ResourceApiTest extends TestCase
             'period_id' => $wbs->id,
             'level' => 1,
             'item_name' => 'Besi Beton',
-            'id_material' => 'MAT-001',
-            'material_category' => 'Material',
+            'id_resource' => 'MAT-001',
+            'resource_category' => 'Material',
             'sort_order' => 1,
             'is_total_row' => false,
         ], $overrides));
@@ -79,20 +79,54 @@ class ResourceApiTest extends TestCase
     }
 
     #[Test]
+    public function it_returns_resource_categories_for_a_wbs_phase(): void
+    {
+        $project = $this->makeProject();
+        $wbs = $this->makeWbs($project);
+
+        $this->makeWorkItem($wbs, [
+            'id_resource' => 'MAT-001',
+            'resource_category' => 'Material',
+        ]);
+
+        $this->getJson("/api/wbs-phases/{$wbs->id}/resource-category")
+            ->assertOk()
+            ->assertJsonPath('data.tahap', 'PEKERJAAN STRUKTUR')
+            ->assertJsonPath('data.items.0.id_resource', 'MAT-001')
+            ->assertJsonPath('data.items.0.resource_category', 'Material');
+    }
+
+    #[Test]
+    public function it_returns_resource_category_detail(): void
+    {
+        $project = $this->makeProject();
+        $wbs = $this->makeWbs($project);
+        $resourceCategory = $this->makeWorkItem($wbs, [
+            'id_resource' => 'MAT-001',
+            'resource_category' => 'Material',
+        ]);
+
+        $this->getJson("/api/resource-category/{$resourceCategory->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id_resource', 'MAT-001')
+            ->assertJsonPath('data.resource_category', 'Material');
+    }
+
+    #[Test]
     public function it_excludes_total_rows_and_rows_without_resource_id(): void
     {
         $project = $this->makeProject();
         $wbs = $this->makeWbs($project);
 
-        $this->makeWorkItem($wbs, ['id_material' => 'MAT-001']);
+        $this->makeWorkItem($wbs, ['id_resource' => 'MAT-001']);
         $this->makeWorkItem($wbs, [
             'item_name' => 'Total Material',
-            'id_material' => 'TOTAL-001',
+            'id_resource' => 'TOTAL-001',
             'is_total_row' => true,
         ]);
         $this->makeWorkItem($wbs, [
             'item_name' => 'No Resource',
-            'id_material' => null,
+            'id_resource' => null,
         ]);
 
         $this->getJson('/api/resources')
@@ -119,13 +153,13 @@ class ResourceApiTest extends TestCase
 
         $this->makeWorkItem($this->makeWbs($project), [
             'item_name' => 'Ready Mix K-350',
-            'id_material' => 'RMX-350',
-            'material_category' => 'Beton',
+            'id_resource' => 'RMX-350',
+            'resource_category' => 'Beton',
         ]);
         $this->makeWorkItem($this->makeWbs($otherProject), [
             'item_name' => 'Excavator',
-            'id_material' => 'ALT-001',
-            'material_category' => 'Alat',
+            'id_resource' => 'ALT-001',
+            'resource_category' => 'Alat',
         ]);
 
         $queries = [
@@ -156,12 +190,12 @@ class ResourceApiTest extends TestCase
         $wbs = $this->makeWbs($project);
 
         $this->makeWorkItem($wbs, [
-            'id_material' => 'MAT-001',
-            'material_category' => 'Material',
+            'id_resource' => 'MAT-001',
+            'resource_category' => 'Material',
         ]);
         $this->makeWorkItem($wbs, [
-            'id_material' => 'MAT-002',
-            'material_category' => 'Material',
+            'id_resource' => 'MAT-002',
+            'resource_category' => 'Material',
         ]);
 
         $this->getJson('/api/resources/filter-options')

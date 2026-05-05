@@ -18,22 +18,22 @@ class ResourceController extends Controller
         $query = DB::table('project_work_items as pwi')
             ->join('project_wbs as pw', 'pw.id', '=', 'pwi.period_id')
             ->join('projects as p', 'p.id', '=', 'pw.project_id')
-            ->whereNotNull('pwi.id_material')
+            ->whereNotNull('pwi.id_resource')
             ->where('pwi.is_total_row', false)
             ->select([
                 'pwi.id',
-                'pwi.id_material as resource_id',
+                'pwi.id_resource as resource_id',
                 'pwi.item_name as resource_name',
-                'pwi.material_category as resource_category',
+                'pwi.resource_category as resource_category',
                 'p.project_name',
                 'p.location',
                 'p.project_year as year',
             ])
             ->orderBy('p.project_name')
-            ->orderBy('pwi.id_material');
+            ->orderBy('pwi.id_resource');
 
         if ($request->filled('resource_id')) {
-            $query->where('pwi.id_material', 'like', '%' . $request->query('resource_id') . '%');
+            $query->where('pwi.id_resource', 'like', '%' . $request->query('resource_id') . '%');
         }
 
         if ($request->filled('resource_name')) {
@@ -41,7 +41,7 @@ class ResourceController extends Controller
         }
 
         if ($request->filled('resource_category')) {
-            $query->where('pwi.material_category', $request->query('resource_category'));
+            $query->where('pwi.resource_category', $request->query('resource_category'));
         }
 
         if ($request->filled('project_name')) {
@@ -65,18 +65,18 @@ class ResourceController extends Controller
     public function filterOptions(): JsonResponse
     {
         $resourceCategories = DB::table('project_work_items')
-            ->whereNotNull('id_material')
-            ->whereNotNull('material_category')
-            ->where('material_category', '!=', '')
+            ->whereNotNull('id_resource')
+            ->whereNotNull('resource_category')
+            ->where('resource_category', '!=', '')
             ->where('is_total_row', false)
             ->distinct()
-            ->orderBy('material_category')
-            ->pluck('material_category');
+            ->orderBy('resource_category')
+            ->pluck('resource_category');
 
         $projects = DB::table('project_work_items as pwi')
             ->join('project_wbs as pw', 'pw.id', '=', 'pwi.period_id')
             ->join('projects as p', 'p.id', '=', 'pw.project_id')
-            ->whereNotNull('pwi.id_material')
+            ->whereNotNull('pwi.id_resource')
             ->whereNotNull('p.project_name')
             ->where('p.project_name', '!=', '')
             ->where('pwi.is_total_row', false)
@@ -87,7 +87,7 @@ class ResourceController extends Controller
         $locations = DB::table('project_work_items as pwi')
             ->join('project_wbs as pw', 'pw.id', '=', 'pwi.period_id')
             ->join('projects as p', 'p.id', '=', 'pw.project_id')
-            ->whereNotNull('pwi.id_material')
+            ->whereNotNull('pwi.id_resource')
             ->whereNotNull('p.location')
             ->where('p.location', '!=', '')
             ->where('pwi.is_total_row', false)
@@ -98,7 +98,7 @@ class ResourceController extends Controller
         $years = DB::table('project_work_items as pwi')
             ->join('project_wbs as pw', 'pw.id', '=', 'pwi.period_id')
             ->join('projects as p', 'p.id', '=', 'pw.project_id')
-            ->whereNotNull('pwi.id_material')
+            ->whereNotNull('pwi.id_resource')
             ->whereNotNull('p.project_year')
             ->where('pwi.is_total_row', false)
             ->distinct()
