@@ -12,62 +12,62 @@ class WorkItemController extends Controller
     /**
      * Level 5 — single work item detail with vendor/contract data.
      */
-    public function show(ProjectWorkItem $workItem): JsonResponse
+    public function show(ProjectWorkItem $resourceCategory): JsonResponse
     {
-        $wbs = $workItem->period;
-        $materialLog = $workItem->materialLogs()->latest('id')->first();
+        $wbs = $resourceCategory->period;
+        $materialLog = $resourceCategory->materialLogs()->latest('id')->first();
 
         $vendor = null;
-        if ($wbs && $workItem->po_number) {
+        if ($wbs && $resourceCategory->po_number) {
             $vendor = ProjectVendor::where('project_id', $wbs->project_id)
-                ->where('po_number', $workItem->po_number)
+                ->where('po_number', $resourceCategory->po_number)
                 ->first();
         }
-        if (!$vendor && $wbs && $workItem->vendor_name) {
+        if (!$vendor && $wbs && $resourceCategory->vendor_name) {
             $vendor = ProjectVendor::where('project_id', $wbs->project_id)
-                ->where('vendor_name', $workItem->vendor_name)
+                ->where('vendor_name', $resourceCategory->vendor_name)
                 ->first();
         }
 
-        $kontrak = (float) ($workItem->vendor_contract_value ?? 0);
-        $termin  = (float) ($workItem->termin_paid ?? 0);
-        $retention = $workItem->retention !== null
-            ? (float) $workItem->retention
+        $kontrak = (float) ($resourceCategory->vendor_contract_value ?? 0);
+        $termin  = (float) ($resourceCategory->termin_paid ?? 0);
+        $retention = $resourceCategory->retention !== null
+            ? (float) $resourceCategory->retention
             : $kontrak * 0.05;
-        $outstanding = $workItem->outstanding_debt !== null
-            ? (float) $workItem->outstanding_debt
+        $outstanding = $resourceCategory->outstanding_debt !== null
+            ? (float) $resourceCategory->outstanding_debt
             : $kontrak * 0.95 - $termin;
 
         return response()->json([
             'data' => [
-                'id'               => $workItem->id,
-                'item_name'        => $workItem->item_name,
-                'item_no'          => $workItem->item_no,
-                'id_material'      => $workItem->id_material,
-                'material_category'=> $workItem->material_category,
+                'id'               => $resourceCategory->id,
+                'item_name'        => $resourceCategory->item_name,
+                'item_no'          => $resourceCategory->item_no,
+                'id_resource'      => $resourceCategory->id_resource,
+                'resource_category'=> $resourceCategory->resource_category,
                 'tahap'            => $wbs?->name_of_work_phase,
-                'volume'           => (float) ($workItem->volume ?? 0),
-                'satuan'           => $workItem->satuan,
-                'harsat_internal'  => (float) ($workItem->harsat_internal ?? 0),
-                'total_budget'     => (float) ($workItem->total_budget ?? 0),
-                'realisasi'        => (float) ($workItem->realisasi ?? 0),
-                'cost_category'    => $workItem->cost_category,
-                'cost_subcategory' => $workItem->cost_subcategory,
-                'bobot_pct'        => (float) ($workItem->bobot_pct ?? 0),
-                'progress_plan_pct'   => (float) ($workItem->progress_plan_pct ?? 0),
-                'progress_actual_pct' => (float) ($workItem->progress_actual_pct ?? 0),
-                'planned_value'    => (float) ($workItem->planned_value ?? 0),
-                'earned_value'     => (float) ($workItem->earned_value ?? 0),
-                'actual_cost_item' => (float) ($workItem->actual_cost_item ?? 0),
-                'harsat_actual'    => (float) ($workItem->harsat_actual ?? 0),
-                'vendor_name'      => $workItem->vendor_name,
-                'po_number'        => $workItem->po_number,
+                'volume'           => (float) ($resourceCategory->volume ?? 0),
+                'satuan'           => $resourceCategory->satuan,
+                'harsat_internal'  => (float) ($resourceCategory->harsat_internal ?? 0),
+                'total_budget'     => (float) ($resourceCategory->total_budget ?? 0),
+                'realisasi'        => (float) ($resourceCategory->realisasi ?? 0),
+                'cost_category'    => $resourceCategory->cost_category,
+                'cost_subcategory' => $resourceCategory->cost_subcategory,
+                'bobot_pct'        => (float) ($resourceCategory->bobot_pct ?? 0),
+                'progress_plan_pct'   => (float) ($resourceCategory->progress_plan_pct ?? 0),
+                'progress_actual_pct' => (float) ($resourceCategory->progress_actual_pct ?? 0),
+                'planned_value'    => (float) ($resourceCategory->planned_value ?? 0),
+                'earned_value'     => (float) ($resourceCategory->earned_value ?? 0),
+                'actual_cost_item' => (float) ($resourceCategory->actual_cost_item ?? 0),
+                'harsat_actual'    => (float) ($resourceCategory->harsat_actual ?? 0),
+                'vendor_name'      => $resourceCategory->vendor_name,
+                'po_number'        => $resourceCategory->po_number,
                 'vendor_contract_value' => $kontrak,
                 'termin_paid'      => $termin,
                 'retention'        => $retention,
                 'outstanding_debt' => $outstanding,
-                'data_source'      => $workItem->data_source,
-                'notes'            => $workItem->notes,
+                'data_source'      => $resourceCategory->data_source,
+                'notes'            => $resourceCategory->notes,
                 'realisasi_pengiriman' => $materialLog?->realisasi_pengiriman,
                 'deviasi_harga_market' => $materialLog?->deviasi_harga_market,
                 'vendor_lokasi'    => $vendor?->lokasi,
@@ -147,8 +147,8 @@ class WorkItemController extends Controller
                     'id'             => $item->id,
                     'name'           => $item->item_name,
                     'item_no'        => $item->item_no,
-                    'id_material'    => $item->id_material,
-                    'material_category' => $item->material_category,
+                    'id_resource'    => $item->id_resource,
+                    'resource_category' => $item->resource_category,
                     'volume'         => $item->volume,
                     'unit'           => $item->satuan,
                     'internalPrice'  => $item->harsat_internal,

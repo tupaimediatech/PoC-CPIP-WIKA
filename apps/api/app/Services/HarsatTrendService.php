@@ -24,13 +24,13 @@ class HarsatTrendService
         $rows = DB::table('project_work_items as pwi')
             ->join('project_wbs as pw', 'pw.id', '=', 'pwi.period_id')
             ->join('projects as p', 'p.id', '=', 'pw.project_id')
-            ->whereNotNull('pwi.id_material')
-            ->whereNotNull('pwi.material_category')
-            ->where('pwi.material_category', '!=', '')
+            ->whereNotNull('pwi.id_resource')
+            ->whereNotNull('pwi.resource_category')
+            ->where('pwi.resource_category', '!=', '')
             ->whereNotNull('p.project_year')
             ->where('pwi.is_total_row', false)
             ->select([
-                'pwi.material_category',
+                'pwi.resource_category',
                 'p.project_year',
                 'pwi.harsat_internal',
                 'pwi.harsat_actual',
@@ -48,7 +48,7 @@ class HarsatTrendService
         $yearSet          = [];
 
         foreach ($rows as $row) {
-            $category = trim((string) $row->material_category);
+            $category = trim((string) $row->resource_category);
             if ($category === '') {
                 continue;
             }
