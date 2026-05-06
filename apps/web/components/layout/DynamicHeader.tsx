@@ -2,14 +2,32 @@
 
 import { CaretDown } from "@phosphor-icons/react";
 import { getUser } from "@/lib/auth";
+import { usePathname } from "next/navigation";
 
 export default function DynamicHeader() {
+  const pathname = usePathname();
+
+  const getTitle = () => {
+    switch (pathname) {
+      case "/data-management/resource":
+        return "Database Resource Dashboard";
+      case "/projects":
+        return "Projects Analytics";
+      case "/reports":
+        return "Report & Pareto";
+      case "/data-management/upload":
+        return "Data Ingestion";
+      default:
+        return "Projects Performance Analytics Dashboard";
+    }
+  };
+
   return (
     <header
       className="flex items-center justify-between border-b border-[#E9E9EA] bg-white sticky top-0 z-15"
       style={{ height: "89px", padding: "0 32px" }}
     >
-      <h1 className="text-[#1B1C1F] font-bold text-[20px] leading-tight">Projects Performance Analytics Dashboard</h1>
+      <h1 className="text-[#1B1C1F] font-bold text-[20px] leading-tight">{getTitle()}</h1>
 
       <div className="flex items-center gap-4">
         <span className="text-[14px] font-medium text-[#1B1C1F]">{getUser()?.name ?? "—"}</span>
