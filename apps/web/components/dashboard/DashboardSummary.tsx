@@ -237,7 +237,7 @@ export default function DashboardSummary() {
         message={`Filters applied. Showing ${filteredProjects.length} projects`}
         visible={snackbar}
         onClose={handleSnackbarClose}
-      />
+      /> 
     </div>
   );
 }
