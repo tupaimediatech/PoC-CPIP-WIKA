@@ -155,6 +155,7 @@ export default function DashboardSummary() {
         { v: "", l: "All" },
         { v: `${min}+`, l: `≥ ${min} M` },
       ];
+      
     const numRanges = 4;
     const step = range / numRanges;
     const ranges = [{ v: "", l: "All" }];
