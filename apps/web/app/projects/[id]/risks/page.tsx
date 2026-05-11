@@ -426,7 +426,7 @@ export default function Level7Page() {
       <div className="overflow-hidden border border-gray-100 rounded-xl mb-10">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[#F9FAFB] border-b border-gray-100">
+            <tr className="border-b border-gray-100" style={{ backgroundColor: "#F9FAFB" }}>
               <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Risiko</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Deskripsi Kejadian</th>
@@ -444,7 +444,7 @@ export default function Level7Page() {
               </tr>
             ) : (
               risks.map((risk, idx) => (
-                <tr key={risk.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr key={risk.id} className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F] capitalize">{risk.category ?? "-"}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-700">{risk.risk_title}</td>

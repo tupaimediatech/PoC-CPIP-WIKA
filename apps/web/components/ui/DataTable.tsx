@@ -151,7 +151,7 @@ export default function DataTable<T extends Record<string, any>>({
           <table className="w-full border-collapse">
             {/* HEADER */}
             <thead>
-              <tr className="bg-[#F9FAFB] border-b border-gray-200">
+              <tr className="border-b border-gray-200" style={{ backgroundColor: "#F9FAFB" }}>
                 {columns.map((col) => (
                   <th
                     key={String(col.key)}
@@ -254,7 +254,7 @@ export default function DataTable<T extends Record<string, any>>({
             {/* FOOTER */}
             {footer && (
               <tfoot>
-                <tr className="bg-[#F9FAFB] border-t border-gray-200">
+                <tr className="border-t border-gray-200" style={{ backgroundColor: "#F9FAFB" }}>
                   {columns.map((col) => (
                     <td
                       key={String(col.key)}

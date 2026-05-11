@@ -378,7 +378,7 @@ export default function ProjectsPage() {
         <div className="overflow-x-auto border border-gray-100 rounded-xl">
           <table className="w-full border-collapse min-w-max">
             <thead>
-              <tr className="bg-[#F9FAFB] border-b border-gray-100">
+              <tr className="border-b border-gray-100" style={{ backgroundColor: "#F9FAFB" }}>
                 <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Profit Center</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nilai Kontrak</th>
@@ -390,14 +390,17 @@ export default function ProjectsPage() {
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">SPI</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">CPI</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider sticky right-0 bg-[#F9FAFB] z-20 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
+                <th
+                  className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider sticky right-0 z-20 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]"
+                  style={{ backgroundColor: "#F9FAFB" }}
+                >
                   Action
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {projects.map((project) => (
-                <tr key={project.id} className="group hover:bg-gray-50/50 transition-colors">
+                <tr key={project.id} className="group hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{project.project_code}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{project.project_name}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(project.contract_value)}</td>
@@ -426,7 +429,10 @@ export default function ProjectsPage() {
                       {project.delivery_budget_status || "-"}
                     </span>
                   </td>
-                  <td className="px-4 py-4 sticky right-0 bg-white group-hover:bg-[#F9FAFB] transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
+                  <td
+                    className="px-4 py-4 sticky right-0 bg-white group-hover:transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]"
+                    style={{ backgroundColor: "#F9FAFB" }}
+                  >
                     <button
                       onClick={() => router.push(`/projects/${project.id}`)}
                       className="flex items-center gap-1 text-[#21409A] text-[13px] font-medium hover:underline"

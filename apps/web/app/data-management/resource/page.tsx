@@ -366,7 +366,7 @@ export default function ResourcesPage() {
           <div className="overflow-x-auto border border-gray-100 rounded-xl">
             <table className="w-full border-collapse min-w-max">
               <thead>
-                <tr className="bg-[#F9FAFB] border-b border-gray-100">
+                <tr className="border-b border-gray-100" style={{ backgroundColor: "#F9FAFB" }}>
                   <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Resource</th>
                   <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Resource</th>
                   <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori</th>
@@ -377,12 +377,14 @@ export default function ResourcesPage() {
                   <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
                   <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
                   <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Tahun</th>
-                  <th className="px-4 py-4 sticky right-0 bg-[#F9FAFB] z-20 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">Action</th>
+                  <th className="px-4 py-4 sticky right-0 z-20 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]" style={{ backgroundColor: "#F9FAFB" }}>
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {resources.map((resource) => (
-                  <tr key={resource.id} className="group hover:bg-gray-50/50 transition-colors">
+                  <tr key={resource.id} className="group hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
                     <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{resource.resource_id}</td>
                     <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{resource.resource_name}</td>
                     <td className="px-4 py-4 text-[14px] text-gray-600">{resource.resource_category || "-"}</td>
@@ -393,7 +395,10 @@ export default function ResourcesPage() {
                     <td className="px-4 py-4 text-[14px] text-gray-600">{resource.project_name || "-"}</td>
                     <td className="px-4 py-4 text-[14px] text-gray-600">{resource.location || "-"}</td>
                     <td className="px-4 py-4 text-[14px] text-gray-600">{resource.year ?? "-"}</td>
-                    <td className="px-4 py-4 sticky right-0 bg-white group-hover:bg-[#F9FAFB] transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
+                    <td
+                      className="px-4 py-4 sticky right-0 bg-white group-hover:transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]"
+                      style={{ backgroundColor: "#F9FAFB" }}
+                    >
                       <button className="flex items-center gap-1 text-[#21409A] text-[13px] font-medium hover:underline">
                         Details <ArrowSquareOutIcon size={14} />
                       </button>

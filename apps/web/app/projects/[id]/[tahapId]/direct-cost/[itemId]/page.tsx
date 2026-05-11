@@ -159,7 +159,7 @@ export default function Level5Page() {
       {item.notes && (
         <div className="mb-8">
           <h3 className="text-[16px] font-bold text-[#1B1C1F] mb-3">Catatan</h3>
-          <div className="bg-[#F9FAFB] rounded-2xl p-6 border border-gray-50">
+          <div className="rounded-2xl p-6 border border-gray-50" style={{ backgroundColor: "#F9FAFB" }}>
             <p className="text-[14px] text-gray-600 leading-relaxed">{item.notes}</p>
           </div>
         </div>

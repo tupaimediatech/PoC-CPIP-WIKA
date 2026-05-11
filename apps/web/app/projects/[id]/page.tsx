@@ -87,7 +87,7 @@ export default function ProfitLossPage() {
       <div className="overflow-hidden border border-gray-100 rounded-xl mb-8">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[#F9FAFB] border-b border-gray-100">
+            <tr className="border-b border-gray-100" style={{ backgroundColor: "#F9FAFB" }}>
               <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Uraian</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Realisasi</th>
@@ -103,7 +103,7 @@ export default function ProfitLossPage() {
               <td className="px-4 py-3" />
               <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Penjualan</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(penjualan)}</td>
@@ -163,37 +163,37 @@ export default function ProfitLossPage() {
                 </button>
               </td>
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Fasilitas</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(fasilitas)}</td>
               <td className="px-4 py-3" />
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Sekretariat</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(sekretariat)}</td>
               <td className="px-4 py-3" />
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Kendaraan</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(kendaraan)}</td>
               <td className="px-4 py-3" />
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Personalia</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(personalia)}</td>
               <td className="px-4 py-3" />
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Keuangan</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(keuangan)}</td>
               <td className="px-4 py-3" />
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Umum</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(umum)}</td>
@@ -207,13 +207,13 @@ export default function ProfitLossPage() {
               <td className="px-4 py-3" />
               <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Biaya Pemeliharaan</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(biayaPemeliharaan)}</td>
               <td className="px-4 py-3" />
             </tr>
-            <tr className="hover:bg-gray-50/50 transition-colors">
+            <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Risiko</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(risiko)}</td>

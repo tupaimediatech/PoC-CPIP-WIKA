@@ -199,10 +199,10 @@ export default function DashboardSummary() {
   const kpiFilters = { division: activeFilters.division, contractRange: activeFilters.contractRange, year: activeFilters.year };
 
   return (
-    <div className="bg-[#F9FAFB] min-h-screen">
-      <QuickFilterPreview filterOptions={apiData.filter_options} onSearch={handleSearch} onReset={handleReset} onExport={() => {}} />
+    <div className="min-h-screen" style={{ backgroundColor: "#F9FAFB" }}>
+      <div id="Dashboard-export">
+        <QuickFilterPreview filterOptions={apiData.filter_options} onSearch={handleSearch} onReset={handleReset} onExport={() => {}} />
 
-      <div id="dashboard-export-root">
         <KpiCards
           data={summary}
           filters={kpiFilters}

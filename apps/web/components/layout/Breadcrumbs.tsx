@@ -217,7 +217,7 @@ export default function Breadcrumbs() {
 
   return (
     <div className="flex items-center bg-white border-b border-[#E9E9EA]" style={{ height: "50px", padding: "0 32px" }}>
-      <div className="flex items-center bg-[#F9FAFB] rounded-lg px-4" style={{ height: "34px" }}>
+      <div className="flex items-center rounded-lg px-4" style={{ backgroundColor: "#F9FAFB" }} style={{ height: "34px" }}>
         <div className="flex items-center gap-2">
           {items.map((item, index) => {
             const isLast = index === items.length - 1;
