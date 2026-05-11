@@ -255,7 +255,7 @@ export type DashboardExportResponse = {
 };
 
 export const periodApi = {
-  workItems: (periodId: number): Promise<WorkItemLevel4ListResponse> => api.get(`/wbs-phases/${periodId}/work-items`).then((r) => r.data),
+  workItems: (periodId: number): Promise<WorkItemLevel4ListResponse> => api.get(`/wbs-phases/${periodId}/resource-category`).then((r) => r.data),
 
   resources: (periodId: number): Promise<ResourceLogLevel5ListResponse> => api.get(`/wbs-phases/${periodId}/resources`).then((r) => r.data),
 
@@ -265,7 +265,7 @@ export const periodApi = {
 };
 
 export const workItemApi = {
-  detail: (id: number): Promise<WorkItemDetailResponse> => api.get(`/work-items/${id}`).then((r) => r.data),
+  detail: (id: number): Promise<WorkItemDetailResponse> => api.get(`/resource-category/${id}`).then((r) => r.data),
 };
 
 export const resourceApi = {

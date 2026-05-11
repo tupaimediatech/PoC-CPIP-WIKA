@@ -70,6 +70,8 @@ export interface ProjectWorkItem {
   level: number;
   item_no: string | null;
   item_name: string;
+  id_resource: string | null;
+  resource_category: string | null;
   sort_order: number | null;
   budget_awal: string | null;
   addendum: string | null;
@@ -301,6 +303,8 @@ export interface WorkItemDetailLevel5 {
   id: number;
   item_name: string;
   item_no: string | null;
+  id_resource: string | null;
+  resource_category: string | null;
   tahap: string | null;
   volume: number;
   satuan: string | null;

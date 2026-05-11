@@ -29,9 +29,9 @@ class EquipmentLogController extends Controller
      * Level 5 — equipment logs for a specific work item.
      * Returns equipment linked to the specific work item (work_item_id).
      */
-    public function showByWorkItem(ProjectWorkItem $workItem): JsonResponse
+    public function showByResourceCategory(ProjectWorkItem $resourceCategory): JsonResponse
     {
-        $logs = $workItem->equipmentLogs()
+        $logs = $resourceCategory->equipmentLogs()
             ->orderBy('vendor_name')
             ->orderBy('id')
             ->get();

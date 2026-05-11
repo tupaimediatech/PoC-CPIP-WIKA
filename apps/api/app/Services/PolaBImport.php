@@ -470,10 +470,10 @@ class PolaBImport
                 'level'                 => $level,
                 'item_no'               => $itemNo ?: null,
                 'item_name'             => $itemName,
-                // id_material: stable per-project id derived from the Roman-numeral path.
-                // material_category: reuse the Excel's "Sub Kategori" value.
-                'id_material'           => $itemNo ?: null,
-                'material_category'     => $subCategory,
+                // id_resource: stable per-project id derived from the Roman-numeral path.
+                // resource_category: reuse the Excel's "Sub Kategori" value.
+                'id_resource'           => $itemNo ?: null,
+                'resource_category'     => $subCategory,
                 'sort_order'            => $sortOrder++,
                 'volume'                => $volumeBudget,
                 'satuan'                => trim((string) ($wi['satuan'] ?? '')) ?: null,

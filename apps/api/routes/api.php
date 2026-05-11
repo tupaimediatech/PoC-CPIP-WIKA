@@ -61,9 +61,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/projects/{project}/wbs-phases',                    [ProjectWbsController::class, 'index']);
     Route::get('/projects/{project}/wbs-phases/{wbsModel}',        [ProjectWbsController::class, 'show']);
 
-    Route::get('/wbs-phases/{wbsModel}/work-items',               [WorkItemController::class, 'index']);
+    Route::get('/wbs-phases/{wbsModel}/resource-category',        [WorkItemController::class, 'index']);
     Route::get('/wbs-phases/{wbsModel}/hpp-summary',              [WorkItemController::class, 'hppSummary']);
-    Route::get('/work-items/{workItem}',                          [WorkItemController::class, 'show']);
+    Route::get('/resource-category/{resourceCategory}',           [WorkItemController::class, 'show']);
     Route::get('/wbs-phases/{wbsModel}/materials',                [MaterialLogController::class, 'index']);
     Route::get('/wbs-phases/{wbsModel}/equipment',                [EquipmentLogController::class, 'index']);
 
@@ -73,8 +73,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/resources',                                      [ResourceController::class, 'index']);
     Route::get('/resources/filter-options',                       [ResourceController::class, 'filterOptions']);
 
-    Route::get('/work-items/{workItem}/materials',                [MaterialLogController::class, 'showByWorkItem']);
-    Route::get('/work-items/{workItem}/equipment',                [EquipmentLogController::class, 'showByWorkItem']);
+    Route::get('/resource-category/{resourceCategory}/materials', [MaterialLogController::class, 'showByResourceCategory']);
+    Route::get('/resource-category/{resourceCategory}/equipment', [EquipmentLogController::class, 'showByResourceCategory']);
 
     Route::get('/projects/{project}/progress-curve',   [ProgressCurveController::class, 'index']);
     Route::get('/projects/{project}/risks',            [ProjectRiskController::class, 'index']);

@@ -222,7 +222,7 @@ export default function DashboardSummary() {
         { v: "", l: "All" },
         { v: `${min}+`, l: `≥ ${min} M` },
       ];
-
+      
     const numRanges = 4;
 
     const step = range / numRanges;
@@ -328,7 +328,7 @@ export default function DashboardSummary() {
         message={`Filters applied. Showing ${filteredProjects.length} projects`}
         visible={snackbar}
         onClose={handleSnackbarClose}
-      />
+      /> 
     </div>
   );
 }
