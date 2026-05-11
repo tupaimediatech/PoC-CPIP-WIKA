@@ -35,6 +35,9 @@ export interface Project {
   spi: string | null;
   status: ProjectStatus;
   ingestion_file_id: number | null;
+  unit: string | null;
+  volume: string | null;
+  harsat: string | null;
   created_at: string;
   updated_at: string;
 }

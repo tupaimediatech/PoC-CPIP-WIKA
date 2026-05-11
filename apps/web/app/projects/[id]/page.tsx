@@ -144,42 +144,6 @@ export default function ProfitLossPage() {
                 <td className="px-4 py-3 text-[12px] text-primary-blue font-medium opacity-0 group-hover:opacity-100 text-right">View Resource</td>
               </tr>
             ))}
-            {/* <tr
-              className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-              onClick={() => router.push(`/data-management/resource?resource_category=Material`)}
-            >
-              <td className="px-6 py-3" />
-              <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Material</td>
-              <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(material)}</td>
-              <td className="px-4 py-3" />
-            </tr>
-            <tr
-              className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-              onClick={() => router.push(`/data-management/resource?resource_category=Upah`)}
-            >
-              <td className="px-6 py-3" />
-              <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Upah</td>
-              <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(upah)}</td>
-              <td className="px-4 py-3" />
-            </tr>
-            <tr
-              className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-              onClick={() => router.push(`/data-management/resource?resource_category=Alat`)}
-            >
-              <td className="px-6 py-3" />
-              <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Alat</td>
-              <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(alat)}</td>
-              <td className="px-4 py-3" />
-            </tr>
-            <tr
-              className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-              onClick={() => router.push(`/data-management/resource?resource_category=Subkon`)}
-            >
-              <td className="px-6 py-3" />
-              <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Subkon</td>
-              <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(subkon)}</td>
-              <td className="px-4 py-3" />
-            </tr> */}
 
             {/* ── III. BIAYA TAK LANGSUNG ── */}
             <tr className="bg-[#F3F6FD]">
@@ -254,34 +218,41 @@ export default function ProfitLossPage() {
           </tbody>
 
           {/* ── Footer / Summary ── */}
-          <tfoot>
-            <tr className="bg-[#F9FAFB] border-t border-gray-200">
-              <td className="px-6 py-4" />
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">TOTAL BIAYA (II+III+IV)</td>
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalBiaya)}</td>
-              <td className="px-4 py-4" />
+          <tfoot className="border-t-2 border-gray-100">
+            {/* V. TOTAL BIAYA */}
+            <tr className="bg-[#F3F6FD]">
+              <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">V</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">TOTAL BIAYA (II+III+IV)</td>
+              <td className="px-4 py-3 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalBiaya)}</td>
+              <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
-            <tr className="bg-[#F9FAFB] border-t border-gray-100">
-              <td className="px-6 py-4" />
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">BEBAN PPH FINAL</td>
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(bebanPphFinal)}</td>
-              <td className="px-4 py-4" />
-            </tr>
-            <tr className="bg-[#F9FAFB] border-t border-gray-100">
-              <td className="px-6 py-4" />
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">LABA KOTOR (I-V)</td>
-              <td className="px-4 py-4">
+
+            {/* VI. LABA KOTOR */}
+            <tr className="bg-[#F3F6FD]">
+              <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">VI</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">LABA KOTOR (I-V)</td>
+              <td className="px-4 py-3">
                 <span className={`text-[14px] font-bold ${labaKotor >= 0 ? "text-green-600" : "text-red-600"}`}>{formatCurrency(labaKotor)}</span>
               </td>
-              <td className="px-4 py-4" />
+              <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
-            <tr className="bg-[#F9FAFB] border-t border-gray-100">
-              <td className="px-6 py-4" />
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">LSP</td>
-              <td className="px-4 py-4">
+
+            {/* VII. BEBAN PPH FINAL */}
+            <tr className="bg-[#F3F6FD]">
+              <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">VII</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">BEBAN PPH FINAL</td>
+              <td className="px-4 py-3 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(bebanPphFinal)}</td>
+              <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
+            </tr>
+
+            {/* VIII. LSP */}
+            <tr className="bg-[#F3F6FD]">
+              <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">VIII</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">LSP</td>
+              <td className="px-4 py-3">
                 <span className={`text-[14px] font-bold ${lsp >= 0 ? "text-green-600" : "text-red-600"}`}>{formatCurrency(lsp)}</span>
               </td>
-              <td className="px-4 py-4" />
+              <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
           </tfoot>
         </table>

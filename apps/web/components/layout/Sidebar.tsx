@@ -28,7 +28,6 @@ const menuGroups = [
     items: [
       { href: "/", label: "Home", Icon: HouseIcon },
       { href: "/projects", label: "Projects Analytics", Icon: ChartBarIcon },
-      { href: "/reports", label: "Reports and Pareto", Icon: ProjectorScreenChartIcon },
       {
         href: "/data-management",
         label: "Data Management",
