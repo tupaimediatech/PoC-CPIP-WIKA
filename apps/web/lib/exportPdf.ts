@@ -1,59 +1,197 @@
-// lib/exportPdf.ts
+// lib/exporter.ts
+
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
-export async function exportDashboardToPdf(elementId = "dashboard-export-root") {
+interface ExportOptions {
+  filename?: string;
+  backgroundColor?: string;
+  quality?: number;
+  padding?: number;
+}
+
+function sanitizeUnsupportedColors(root: HTMLElement | Document) {
+  const elements = root.querySelectorAll<HTMLElement>("*");
+
+  elements.forEach((el) => {
+    const computed = window.getComputedStyle(el);
+
+    const properties = [
+      "color",
+      "backgroundColor",
+      "borderColor",
+      "borderTopColor",
+      "borderRightColor",
+      "borderBottomColor",
+      "borderLeftColor",
+      "outlineColor",
+      "textDecorationColor",
+      "boxShadow",
+    ];
+
+    properties.forEach((prop) => {
+      const value = computed[prop as any];
+
+      if (typeof value === "string" && (value.includes("lab(") || value.includes("oklab(") || value.includes("lch(") || value.includes("oklch("))) {
+        switch (prop) {
+          case "backgroundColor":
+            el.style.backgroundColor = "#ffffff";
+            break;
+
+          case "color":
+            el.style.color = "#000000";
+            break;
+
+          case "borderColor":
+          case "borderTopColor":
+          case "borderRightColor":
+          case "borderBottomColor":
+          case "borderLeftColor":
+            el.style.borderColor = "#d1d5db";
+            break;
+
+          case "outlineColor":
+            el.style.outlineColor = "#d1d5db";
+            break;
+
+          case "textDecorationColor":
+            el.style.textDecorationColor = "#000000";
+            break;
+
+          case "boxShadow":
+            el.style.boxShadow = "none";
+            break;
+        }
+      }
+    });
+  });
+}
+
+export async function exportElementToPdf(elementId: string, options: ExportOptions = {}) {
+  const { filename = `Export_${Date.now()}`, backgroundColor = "#FFFFFF", quality = 2, padding = 24 } = options;
+
   const source = document.getElementById(elementId);
-  if (!source) return;
 
-  // 1. Simpan original style untuk dikembalikan nanti
+  if (!source) {
+    console.error(`Element with id "${elementId}" not found.`);
+    return false;
+  }
+
   const originalStyle = source.style.cssText;
-  const originalWidth = source.offsetWidth;
-
-  // 2. FORCE WIDTH agar tidak offside saat diproses html2canvas
-  // Kita kunci lebarnya sesuai tampilan di layar agar layout tidak berantakan
-  source.style.width = `${originalWidth}px`;
-  source.style.minWidth = `${originalWidth}px`;
-  source.style.maxWidth = `${originalWidth}px`;
-  source.style.position = "relative"; // Memastikan koordinat anak elemen benar
 
   try {
-    // 3. Render dengan optimasi font dan skala
+    // gunakan ukuran asli element
+    const rect = source.getBoundingClientRect();
+
+    const contentWidth = rect.width;
+    const contentHeight = source.scrollHeight;
+
+    // total size + padding
+    const exportWidth = contentWidth + padding * 2;
+    const exportHeight = contentHeight + padding * 2;
+
     const canvas = await html2canvas(source, {
-      scale: 3, // Naikkan ke 3 untuk ketajaman teks maksimal
+      scale: quality,
+
       useCORS: true,
+
+      allowTaint: false,
+
       logging: false,
-      backgroundColor: "#FCF9F1", // Warna cream sesuai desain UI kamu
-      allowTaint: true,
-      // Penting: windowWidth memastikan media queries yang terbaca adalah versi desktop
-      windowWidth: 1440,
+
+      backgroundColor,
+
+      foreignObjectRendering: false,
+
+      removeContainer: true,
+
+      width: contentWidth,
+
+      height: contentHeight,
+
+      windowWidth: document.documentElement.clientWidth,
+
+      windowHeight: document.documentElement.clientHeight,
+
       onclone: (clonedDoc) => {
-        // Pastikan elemen di dalam clone tidak memiliki scrollbar yang mengganggu
         const clonedElement = clonedDoc.getElementById(elementId);
+
         if (clonedElement) {
+          sanitizeUnsupportedColors(clonedDoc);
+
+          clonedElement.style.width = `${contentWidth}px`;
+
+          clonedElement.style.minWidth = `${contentWidth}px`;
+
+          clonedElement.style.maxWidth = `${contentWidth}px`;
+
           clonedElement.style.overflow = "visible";
+
+          clonedElement.style.height = "auto";
+
+          clonedElement.style.transform = "none";
+
+          // FIX chart responsive stretch
+          const charts = clonedElement.querySelectorAll("canvas");
+
+          charts.forEach((chart) => {
+            const parent = chart.parentElement;
+
+            if (parent) {
+              parent.style.width = "100%";
+              parent.style.maxWidth = "100%";
+            }
+
+            chart.style.maxWidth = "100%";
+            chart.style.width = "100%";
+            chart.style.height = "auto";
+          });
         }
       },
     });
 
-    const imgData = canvas.toDataURL("image/png");
+    // canvas baru dengan padding
+    const finalCanvas = document.createElement("canvas");
 
-    // 4. Hitung dimensi PDF dalam Landscape
-    // Menggunakan rasio agar pas di satu halaman
+    finalCanvas.width = exportWidth * quality;
+    finalCanvas.height = exportHeight * quality;
+
+    const ctx = finalCanvas.getContext("2d");
+
+    if (!ctx) {
+      throw new Error("Failed to create canvas context");
+    }
+
+    // background
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+    // gambar utama dengan padding
+    ctx.drawImage(canvas, padding * quality, padding * quality);
+
+    const imgData = finalCanvas.toDataURL("image/jpeg", 0.95);
+
     const pdf = new jsPDF({
-      orientation: "portrait",
+      orientation: exportWidth > exportHeight ? "landscape" : "portrait",
+
       unit: "px",
-      format: [canvas.width / 3, canvas.height / 3], // Kembali ke ukuran asli (skala 1)
+
+      format: [exportWidth, exportHeight],
+
       hotfixes: ["px_scaling"],
+
+      compress: true,
     });
 
-    pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 3, canvas.height / 3, undefined, "FAST");
+    pdf.addImage(imgData, "JPEG", 0, 0, exportWidth, exportHeight, undefined, "FAST");
 
-    pdf.save(`Dashboard_Export_${new Date().getTime()}.pdf`);
+    pdf.save(`${filename}.pdf`);
+
+    return true;
   } catch (error) {
-    console.error("PDF Export failed:", error);
+    console.error("Export failed:", error);
+    throw error;
   } finally {
-    // 5. KEMBALIKAN STYLE ASLI agar dashboard di web tidak rusak setelah export
     source.style.cssText = originalStyle;
   }
 }

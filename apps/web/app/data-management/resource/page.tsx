@@ -9,6 +9,7 @@ import { resourceApi, dashboardApi } from "@/lib/api";
 import TrendHarsatUtama from "@/components/dashboard/TrendHarsatUtama";
 import type { Resource, ResourceFilterOptionsResponse } from "@/types/resource";
 import { formatCurrency } from "@/lib/utils";
+import { exportElementToPdf } from "@/lib/exportPdf";
 
 // --- Types & Components (AutocompleteInput, FILTER_GRID sama seperti sebelumnya) ---
 interface FilterState {
@@ -241,7 +242,20 @@ export default function ResourcesPage() {
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
-      <PageHeader title="Resources Filter" onExport={() => {}} />
+      <PageHeader
+        title="Resources Filter"
+        onExport={async () => {
+          try {
+            await exportElementToPdf("resource-export", {
+              filename: "Resources_Report",
+              backgroundColor: "#FFFFFF",
+              quality: 2,
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+      />
 
       {/* ── Filter Grid ── */}
       <div className="grid grid-cols-3 gap-x-6 gap-y-4 mb-6">
@@ -275,7 +289,6 @@ export default function ResourcesPage() {
           </div>
         ))}
       </div>
-
       {/* ── Action Buttons ── */}
       <div className="flex justify-end gap-3 mb-10">
         <button
@@ -293,104 +306,105 @@ export default function ResourcesPage() {
         </button>
       </div>
 
-      {harsatTrend && (
-        <div className="mb-10 border border-gray-100 rounded-2xl p-6 shadow-sm">
-          <TrendHarsatUtama harsatTrend={harsatTrend} />
-        </div>
-      )}
+      <div id="resource-export" className="">
+        {harsatTrend && (
+          <div className="mb-10 border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <TrendHarsatUtama harsatTrend={harsatTrend} />
+          </div>
+        )}
 
-      {/* ── Results Header, Back Button & Summary (Conditional) ── */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[20px] font-bold text-[#1B1C1F]">Resource Results</h2>
+        {/* ── Results Header, Back Button & Summary (Conditional) ── */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[20px] font-bold text-[#1B1C1F]">Resource Results</h2>
 
-          {/* Tombol Back Sejajar Di Kanan */}
-          {fromLevel3 && (
-            <button
-              onClick={() => router.back()} // Kembali persis ke tabel Level 3 P&L
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm group"
-            >
-              <ArrowLeft size={16} className="text-gray-500 group-hover:text-gray-800 transition-colors" />
-              Back to Level 3 P&L
-            </button>
+            {/* Tombol Back Sejajar Di Kanan */}
+            {fromLevel3 && (
+              <button
+                onClick={() => router.back()} // Kembali persis ke tabel Level 3 P&L
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm group"
+              >
+                <ArrowLeft size={16} className="text-gray-500 group-hover:text-gray-800 transition-colors" />
+                Back to Level 3 P&L
+              </button>
+            )}
+          </div>
+
+          {/* Tampil Eksklusif Jika Berasal Dari Level 3 Menggunakan Warna Bersih/Premium */}
+          {fromLevel3 && searchApplied && (
+            <div className="flex items-center gap-8 bg-[#FCFBFA] px-6 py-4 rounded-xl border border-[#F2EFEA] shadow-sm">
+              {projectNameQuery && (
+                <div>
+                  <p className="text-[12px] text-gray-500 font-medium mb-1">Project Name</p>
+                  <p className="text-[14px] font-bold text-[#1B1C1F]">{projectNameQuery}</p>
+                </div>
+              )}
+              {categoryQuery && (
+                <div>
+                  <p className="text-[12px] text-gray-500 font-medium mb-1">Kategori Resource</p>
+                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-blue-50 text-blue-700">
+                    {categoryQuery}
+                  </div>
+                </div>
+              )}
+              <div className="ml-auto flex flex-col items-end">
+                <p className="text-[12px] text-gray-500 font-medium mb-1">Total Harsat (Dari Level 3)</p>
+                <p className="text-[16px] font-bold text-[#1B1C1F]">{formatCurrency(totalHarsatParam)}</p>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Tampil Eksklusif Jika Berasal Dari Level 3 Menggunakan Warna Bersih/Premium */}
-        {fromLevel3 && searchApplied && (
-          <div className="flex items-center gap-8 bg-[#FCFBFA] px-6 py-4 rounded-xl border border-[#F2EFEA] shadow-sm">
-            {projectNameQuery && (
-              <div>
-                <p className="text-[12px] text-gray-500 font-medium mb-1">Project Name</p>
-                <p className="text-[14px] font-bold text-[#1B1C1F]">{projectNameQuery}</p>
-              </div>
-            )}
-            {categoryQuery && (
-              <div>
-                <p className="text-[12px] text-gray-500 font-medium mb-1">Kategori Resource</p>
-                <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-blue-50 text-blue-700">
-                  {categoryQuery}
-                </div>
-              </div>
-            )}
-            <div className="ml-auto flex flex-col items-end">
-              <p className="text-[12px] text-gray-500 font-medium mb-1">Total Harsat (Dari Level 3)</p>
-              <p className="text-[16px] font-bold text-[#1B1C1F]">{formatCurrency(totalHarsatParam)}</p>
-            </div>
+        {/* ── Results Table ── */}
+        {!searchApplied ? (
+          <div className="py-16 text-center text-gray-400 text-[14px]">
+            {loading ? "Fetching data..." : "Apply filters and click Search to view resources"}
+          </div>
+        ) : resources.length === 0 ? (
+          <div className="py-16 text-center text-gray-400 text-[14px]">No resources found</div>
+        ) : (
+          <div className="overflow-x-auto border border-gray-100 rounded-xl">
+            <table className="w-full border-collapse min-w-max">
+              <thead>
+                <tr className="bg-[#F9FAFB] border-b border-gray-100">
+                  <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Resource</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Resource</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Unit</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Quantity</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Harga Satuan</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Tahun</th>
+                  <th className="px-4 py-4 sticky right-0 bg-[#F9FAFB] z-20 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {resources.map((resource) => (
+                  <tr key={resource.id} className="group hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{resource.resource_id}</td>
+                    <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{resource.resource_name}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.resource_category || "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.unit || "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.quantity ? Number(resource.quantity).toLocaleString() : "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(resource.price)}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(resource.total)}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.project_name || "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.location || "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.year ?? "-"}</td>
+                    <td className="px-4 py-4 sticky right-0 bg-white group-hover:bg-[#F9FAFB] transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
+                      <button className="flex items-center gap-1 text-[#21409A] text-[13px] font-medium hover:underline">
+                        Details <ArrowSquareOutIcon size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
-
-      {/* ── Results Table ── */}
-      {!searchApplied ? (
-        <div className="py-16 text-center text-gray-400 text-[14px]">
-          {loading ? "Fetching data..." : "Apply filters and click Search to view resources"}
-        </div>
-      ) : resources.length === 0 ? (
-        <div className="py-16 text-center text-gray-400 text-[14px]">No resources found</div>
-      ) : (
-        <div className="overflow-x-auto border border-gray-100 rounded-xl">
-          <table className="w-full border-collapse min-w-max">
-            <thead>
-              <tr className="bg-[#F9FAFB] border-b border-gray-100">
-                <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Resource</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Resource</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Unit</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Quantity</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Harga Satuan</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Total</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Tahun</th>
-                <th className="px-4 py-4 sticky right-0 bg-[#F9FAFB] z-20 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {resources.map((resource) => (
-                <tr key={resource.id} className="group hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{resource.resource_id}</td>
-                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{resource.resource_name}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.resource_category || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.unit || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.quantity ? Number(resource.quantity).toLocaleString() : "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(resource.price)}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(resource.total)}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.project_name || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.location || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.year ?? "-"}</td>
-                  <td className="px-4 py-4 sticky right-0 bg-white group-hover:bg-[#F9FAFB] transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
-                    <button className="flex items-center gap-1 text-[#21409A] text-[13px] font-medium hover:underline">
-                      Details <ArrowSquareOutIcon size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
       <Snackbar
         title="Success!"
         message={`Filters applied. Showing ${resources.length} resources`}
