@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
-import { ArrowSquareOutIcon } from "@phosphor-icons/react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { ArrowSquareOutIcon, ArrowLeft } from "@phosphor-icons/react";
 import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { resourceApi, dashboardApi } from "@/lib/api";
 import TrendHarsatUtama from "@/components/dashboard/TrendHarsatUtama";
 import type { Resource, ResourceFilterOptionsResponse } from "@/types/resource";
 import { formatCurrency } from "@/lib/utils";
+import { exportElementToPdf } from "@/lib/exportPdf";
 
-// --- Types ---
+// --- Types & Components (AutocompleteInput, FILTER_GRID sama seperti sebelumnya) ---
 interface FilterState {
   [key: string]: string;
   year_start: string;
@@ -43,14 +44,12 @@ const AutocompleteInput = ({
     setActiveIndex(-1);
     setIsOpen(true);
   };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
     setIsTyping(true);
     setActiveIndex(-1);
     setIsOpen(true);
   };
-
   const handleSelect = (opt: string) => {
     onChange(opt);
     setIsTyping(false);
@@ -114,12 +113,7 @@ const AutocompleteInput = ({
   );
 };
 
-const FILTER_GRID: {
-  key: keyof Resource | "year_range";
-  label: string;
-  optionKey?: keyof ResourceFilterOptionsResponse;
-  placeholder?: string;
-}[] = [
+const FILTER_GRID: { key: keyof Resource | "year_range"; label: string; optionKey?: keyof ResourceFilterOptionsResponse; placeholder?: string }[] = [
   { key: "resource_id", label: "ID Resource", placeholder: "Input ID Resource" },
   { key: "resource_name", label: "Nama Resource", placeholder: "Input Nama Resource" },
   { key: "resource_category", label: "Kategori Resource", optionKey: "resource_category", placeholder: "Select Kategori Resource" },
@@ -129,8 +123,15 @@ const FILTER_GRID: {
 ];
 
 export default function ResourcesPage() {
+  const router = useRouter(); // Digunakan untuk tombol back
   const searchParams = useSearchParams();
+
+  // Parameter dari Level 3
   const categoryQuery = searchParams.get("resource_category")?.trim() ?? "";
+  const projectNameQuery = searchParams.get("project_name")?.trim() ?? "";
+  const fromLevel3 = searchParams.get("from_level3") === "true";
+  const totalHarsatParam = searchParams.get("total_harsat") ? Number(searchParams.get("total_harsat")) : 0;
+  const projectIdParam = searchParams.get("project_id"); // Jika suatu saat ingin navigasi custom selain back
 
   const [filterOptions, setFilterOptions] = useState<ResourceFilterOptionsResponse | null>(null);
   const [filters, setFilters] = useState<FilterState>({ year_start: "", year_end: "" });
@@ -156,7 +157,6 @@ export default function ResourcesPage() {
 
   const filterResources = (filterValues: FilterState) => {
     return allResources.filter((resource) => {
-      // Standard text filters
       const matchStandard = Object.entries(filterValues).every(([key, value]) => {
         if (!value || key === "year_start" || key === "year_end") return true;
         const resourceValue = resource[key as keyof Resource];
@@ -165,11 +165,9 @@ export default function ResourcesPage() {
           .includes(String(value).toLowerCase());
       });
 
-      // Year Range Logic
       const resourceYear = Number(resource.year);
       const startYear = filterValues.year_start ? Number(filterValues.year_start) : null;
       const endYear = filterValues.year_end ? Number(filterValues.year_end) : null;
-
       let matchYear = true;
       if (startYear && endYear) {
         matchYear = resourceYear >= startYear && resourceYear <= endYear;
@@ -184,26 +182,31 @@ export default function ResourcesPage() {
   };
 
   useEffect(() => {
-    if (!categoryQuery || autoFilterApplied || allResources.length === 0) return;
-    const nextFilters = { ...filters, resource_category: categoryQuery };
+    if ((!categoryQuery && !projectNameQuery) || autoFilterApplied || allResources.length === 0) return;
+
+    const nextFilters = {
+      ...filters,
+      ...(categoryQuery && { resource_category: categoryQuery }),
+      ...(projectNameQuery && { project_name: projectNameQuery }),
+    };
+
     setFilters(nextFilters);
     setResources(filterResources(nextFilters));
     setSearchApplied(true);
     setSnackbar(true);
     setAutoFilterApplied(true);
-  }, [categoryQuery, allResources, autoFilterApplied]);
+  }, [categoryQuery, projectNameQuery, allResources, autoFilterApplied]);
 
-  // --- Handlers for Year Range Validation ---
+  // Handlers Validasi Tahun & Filter (Sama Seperti Sebelumnya)
   const handleStartYearChange = (val: string) => {
     setFilters((prev) => {
       const newState = { ...prev, year_start: val };
       if (prev.year_end && val && Number(val) > Number(prev.year_end)) {
-        newState.year_end = ""; // Reset end jika start melampaui end
+        newState.year_end = "";
       }
       return newState;
     });
   };
-
   const handleEndYearChange = (val: string) => {
     if (!val || !filters.year_start || Number(val) >= Number(filters.year_start)) {
       setFilters((prev) => ({ ...prev, year_end: val }));
@@ -217,15 +220,10 @@ export default function ResourcesPage() {
     } else {
       options = Array.from(new Set(allResources.map((r) => String(r[key as keyof Resource] || "")))).filter((v) => v !== "");
     }
-
-    // Sort numerik
     const sortedOptions = options.sort((a, b) => Number(a) - Number(b));
-
-    // Validasi opsi End Year agar tidak lebih kecil dari Start Year
     if (isEndYear && filters.year_start) {
       return sortedOptions.filter((year) => Number(year) >= Number(filters.year_start));
     }
-
     return sortedOptions;
   };
 
@@ -236,7 +234,6 @@ export default function ResourcesPage() {
     setSnackbar(true);
     setLoading(false);
   };
-
   const handleReset = useCallback(() => {
     setFilters({ year_start: "", year_end: "" });
     setSearchApplied(false);
@@ -245,14 +242,26 @@ export default function ResourcesPage() {
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
-      <PageHeader title="Resources Filter" onExport={() => {}} />
+      <PageHeader
+        title="Resources Filter"
+        onExport={async () => {
+          try {
+            await exportElementToPdf("resource-export", {
+              filename: "Resources_Report",
+              backgroundColor: "#FFFFFF",
+              quality: 2,
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+      />
 
       {/* ── Filter Grid ── */}
       <div className="grid grid-cols-3 gap-x-6 gap-y-4 mb-6">
         {FILTER_GRID.map(({ key, label, optionKey, placeholder }) => (
           <div key={key}>
             <label className="text-[14px] font-semibold text-[#1B1C1F] mb-2 block">{label}</label>
-
             {key === "year_range" ? (
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                 <AutocompleteInput
@@ -280,7 +289,6 @@ export default function ResourcesPage() {
           </div>
         ))}
       </div>
-
       {/* ── Action Buttons ── */}
       <div className="flex justify-end gap-3 mb-10">
         <button
@@ -298,64 +306,110 @@ export default function ResourcesPage() {
         </button>
       </div>
 
-      {harsatTrend && (
-        <div className="mb-10 border border-gray-100 rounded-2xl p-6 shadow-sm">
-          <TrendHarsatUtama harsatTrend={harsatTrend} />
-        </div>
-      )}
+      <div id="resource-export" className="">
+        {harsatTrend && (
+          <div className="mb-10 border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <TrendHarsatUtama harsatTrend={harsatTrend} />
+          </div>
+        )}
 
-      {/* ── Results ── */}
-      <h2 className="text-[20px] font-bold text-[#1B1C1F] mb-6">Resource Results</h2>
+        {/* ── Results Header, Back Button & Summary (Conditional) ── */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[20px] font-bold text-[#1B1C1F]">Resource Results</h2>
 
-      {!searchApplied ? (
-        <div className="py-16 text-center text-gray-400 text-[14px]">
-          {loading ? "Fetching data..." : "Apply filters and click Search to view resources"}
+            {/* Tombol Back Sejajar Di Kanan */}
+            {fromLevel3 && (
+              <button
+                onClick={() => router.back()} // Kembali persis ke tabel Level 3 P&L
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm group"
+              >
+                <ArrowLeft size={16} className="text-gray-500 group-hover:text-gray-800 transition-colors" />
+                Back to Level 3 P&L
+              </button>
+            )}
+          </div>
+
+          {/* Tampil Eksklusif Jika Berasal Dari Level 3 Menggunakan Warna Bersih/Premium */}
+          {fromLevel3 && searchApplied && (
+            <div className="flex items-center gap-8 bg-[#FCFBFA] px-6 py-4 rounded-xl border border-[#F2EFEA] shadow-sm">
+              {projectNameQuery && (
+                <div>
+                  <p className="text-[12px] text-gray-500 font-medium mb-1">Project Name</p>
+                  <p className="text-[14px] font-bold text-[#1B1C1F]">{projectNameQuery}</p>
+                </div>
+              )}
+              {categoryQuery && (
+                <div>
+                  <p className="text-[12px] text-gray-500 font-medium mb-1">Kategori Resource</p>
+                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-blue-50 text-blue-700">
+                    {categoryQuery}
+                  </div>
+                </div>
+              )}
+              <div className="ml-auto flex flex-col items-end">
+                <p className="text-[12px] text-gray-500 font-medium mb-1">Total Harsat (Dari Level 3)</p>
+                <p className="text-[16px] font-bold text-[#1B1C1F]">{formatCurrency(totalHarsatParam)}</p>
+              </div>
+            </div>
+          )}
         </div>
-      ) : resources.length === 0 ? (
-        <div className="py-16 text-center text-gray-400 text-[14px]">No resources found</div>
-      ) : (
-        <div className="overflow-x-auto border border-gray-100 rounded-xl">
-          <table className="w-full border-collapse min-w-max">
-            <thead>
-              <tr className="bg-[#F9FAFB] border-b border-gray-100">
-                <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Resource</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Resource</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Unit</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Quantity</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Harga Satuan</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Total</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Tahun</th>
-                <th className="px-4 py-4 sticky right-0 bg-[#F9FAFB] z-20 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {resources.map((resource) => (
-                <tr key={resource.id} className="group hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{resource.resource_id}</td>
-                  <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{resource.resource_name}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.resource_category || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.unit || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.quantity ? Number(resource.quantity).toLocaleString() : "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(resource.price)}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(resource.total)}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.project_name || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.location || "-"}</td>
-                  <td className="px-4 py-4 text-[14px] text-gray-600">{resource.year ?? "-"}</td>
-                  <td className="px-4 py-4 sticky right-0 bg-white group-hover:bg-[#F9FAFB] transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
-                    <button className="flex items-center gap-1 text-[#21409A] text-[13px] font-medium hover:underline">
-                      Details <ArrowSquareOutIcon size={14} />
-                    </button>
-                  </td>
+
+        {/* ── Results Table ── */}
+        {!searchApplied ? (
+          <div className="py-16 text-center text-gray-400 text-[14px]">
+            {loading ? "Fetching data..." : "Apply filters and click Search to view resources"}
+          </div>
+        ) : resources.length === 0 ? (
+          <div className="py-16 text-center text-gray-400 text-[14px]">No resources found</div>
+        ) : (
+          <div className="overflow-x-auto border border-gray-100 rounded-xl">
+            <table className="w-full border-collapse min-w-max">
+              <thead>
+                <tr className="border-b border-gray-100" style={{ backgroundColor: "#F9FAFB" }}>
+                  <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Resource</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nama Resource</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Unit</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Quantity</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Harga Satuan</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
+                  <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Tahun</th>
+                  <th className="px-4 py-4 sticky right-0 z-20 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]" style={{ backgroundColor: "#F9FAFB" }}>
+                    Action
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {resources.map((resource) => (
+                  <tr key={resource.id} className="group hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
+                    <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{resource.resource_id}</td>
+                    <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{resource.resource_name}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.resource_category || "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.unit || "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.quantity ? Number(resource.quantity).toLocaleString() : "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(resource.price)}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(resource.total)}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.project_name || "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.location || "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{resource.year ?? "-"}</td>
+                    <td
+                      className="px-4 py-4 sticky right-0 bg-white group-hover:transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]"
+                      style={{ backgroundColor: "#F9FAFB" }}
+                    >
+                      <button className="flex items-center gap-1 text-[#21409A] text-[13px] font-medium hover:underline">
+                        Details <ArrowSquareOutIcon size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
       <Snackbar
         title="Success!"
         message={`Filters applied. Showing ${resources.length} resources`}

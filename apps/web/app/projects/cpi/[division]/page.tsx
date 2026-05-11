@@ -37,7 +37,7 @@ export default function CpiOverviewPage() {
   if (loading) return <div className="p-10 text-center text-gray-400">Loading data...</div>;
 
   return (
-    <div className="bg-[#F9FAFB] min-h-screen p-6">
+    <div className="min-h-screen p-6" style={{ backgroundColor: "#F9FAFB" }}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-[18px] font-semibold text-gray-900">Cost Performance Index</h1>
@@ -61,7 +61,7 @@ export default function CpiOverviewPage() {
           <table className="w-full text-left border-collapse">
             {/* thead — light gray background */}
             <thead>
-              <tr className="bg-[#F9FAFB] border-b border-gray-200">
+              <tr className="border-b border-gray-200" style={{ backgroundColor: "#F9FAFB" }}>
                 <th className="px-6 py-3 text-[12px] font-medium text-gray-500 whitespace-nowrap">Profit Center</th>
                 <th className="px-6 py-3 text-[12px] font-medium text-gray-500 whitespace-nowrap">Project Name</th>
                 <th className="px-6 py-3 text-[12px] font-medium text-gray-500 whitespace-nowrap">Division</th>

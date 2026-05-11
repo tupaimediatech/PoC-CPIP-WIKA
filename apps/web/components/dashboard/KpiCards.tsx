@@ -7,17 +7,19 @@ import {
   MoneyWavyIcon,
   CalendarBlankIcon,
   InfoIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
   CaretDownIcon,
 } from "@phosphor-icons/react";
+
 import { formatKpi } from "@/lib/utils";
 import type { DashboardSummaryData } from "@/types/dashboard";
 
 export type DashboardFilters = {
   division: string;
   contractRange: string;
-  year: string;
+
+  // UPDATED
+  startYear: string;
+  endYear: string;
 };
 
 type Props = {
@@ -31,15 +33,49 @@ type Props = {
 
 export default function KpiCards({ data, filters, divisionOptions, availableYears, contractOptions, onChange }: Props) {
   const updateFilter = (key: keyof DashboardFilters, value: string) => {
-    onChange({ ...filters, [key]: value });
+    onChange({
+      ...filters,
+      [key]: value,
+    });
   };
 
   const divisionOptionItems = [
     { v: "", l: "All" },
-    ...divisionOptions.filter((option) => option && option.trim() !== "").map((option) => ({ v: option, l: option })),
+
+    ...divisionOptions
+      .filter((option) => option && option.trim() !== "")
+      .map((option) => ({
+        v: option,
+        l: option,
+      })),
   ];
 
-  const yearOptionItems = [{ v: "", l: "All" }, ...availableYears.map((year) => ({ v: year.toString(), l: year.toString() }))];
+  // UPDATED YEAR RANGE
+  const sortedYears = [...availableYears].sort((a, b) => a - b);
+
+  const yearOptionItems = [
+    { v: "", l: "All" },
+
+    ...sortedYears.map((year) => ({
+      v: year.toString(),
+      l: year.toString(),
+    })),
+  ];
+
+  const endYearOptions = [
+    { v: "", l: "All" },
+
+    ...sortedYears
+      .filter((year) => {
+        if (!filters.startYear) return true;
+
+        return year >= Number(filters.startYear);
+      })
+      .map((year) => ({
+        v: year.toString(),
+        l: year.toString(),
+      })),
+  ];
 
   return (
     <div className="flex flex-col bg-white w-full" style={{ padding: "18px 32px" }}>
@@ -55,18 +91,52 @@ export default function KpiCards({ data, filters, divisionOptions, availableYear
             }}
           >
             <FilterSelect label="Division" value={filters.division} options={divisionOptionItems} onChange={(v) => updateFilter("division", v)} />
+
             <FilterSelect
               label="Contract Value"
               value={filters.contractRange}
               options={contractOptions}
               onChange={(v) => updateFilter("contractRange", v)}
             />
-            <FilterSelect label="Year" value={filters.year} options={yearOptionItems} onChange={(v) => updateFilter("year", v)} />
+
+            {/* START YEAR */}
+            <FilterSelect
+              label="Start Year"
+              value={filters.startYear}
+              options={yearOptionItems}
+              onChange={(v) => {
+                const nextStart = v;
+
+                let nextEnd = filters.endYear;
+
+                // RESET END YEAR
+                // JIKA LEBIH KECIL DARI START YEAR
+                if (nextEnd && nextStart && Number(nextEnd) < Number(nextStart)) {
+                  nextEnd = "";
+                }
+
+                onChange({
+                  ...filters,
+                  startYear: nextStart,
+                  endYear: nextEnd,
+                });
+              }}
+            />
+
+            {/* END YEAR */}
+            <FilterSelect label="End Year" value={filters.endYear} options={endYearOptions} onChange={(v) => updateFilter("endYear", v)} />
           </div>
 
-          {(filters.division || filters.contractRange || filters.year) && (
+          {(filters.division || filters.contractRange || filters.startYear || filters.endYear) && (
             <button
-              onClick={() => onChange({ division: "", contractRange: "", year: "" })}
+              onClick={() =>
+                onChange({
+                  division: "",
+                  contractRange: "",
+                  startYear: "",
+                  endYear: "",
+                })
+              }
               className="text-[11px] text-blue-600 font-bold hover:underline ml-1"
             >
               Reset
@@ -77,8 +147,11 @@ export default function KpiCards({ data, filters, divisionOptions, availableYear
 
       <div className="grid grid-cols-4 gap-4">
         <KpiCard label="Total Projects" value={data.total_projects || "—"} icon={ProjectorScreenIcon} />
+
         <KpiCard label="Average Unit Rate" value="—" icon={StackOverflowLogoIcon} />
+
         <KpiCard label="Average CPI" value={data.total_projects > 0 ? formatKpi(data.avg_cpi) : "—"} icon={MoneyWavyIcon} />
+
         <KpiCard label="Average SPI" value={data.total_projects > 0 ? formatKpi(data.avg_spi) : "—"} icon={CalendarBlankIcon} />
       </div>
     </div>
@@ -97,11 +170,19 @@ function FilterSelect({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="relative flex items-center bg-white border border-gray-200 rounded-md px-2" style={{ height: "27px", width: "150px" }}>
+    <div
+      className="relative flex items-center bg-white border border-gray-200 rounded-md px-2"
+      style={{
+        height: "27px",
+        width: "150px",
+      }}
+    >
       <div className="flex items-center gap-0.5">
         <span className="text-[12px] font-medium text-gray-500 whitespace-nowrap">{label}</span>
+
         <span className="text-[12px] text-gray-400">:</span>
       </div>
+
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -113,6 +194,7 @@ function FilterSelect({
           </option>
         ))}
       </select>
+
       <CaretDownIcon size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
     </div>
   );
@@ -126,13 +208,22 @@ function KpiCard({ label, value, icon: Icon }: { label: string; value: string | 
     >
       <div className="flex items-center justify-between mb-2" style={{ height: "26px" }}>
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center bg-primary-blue rounded-md" style={{ width: "26px", height: "26px" }}>
+          <div
+            className="flex items-center justify-center bg-primary-blue rounded-md"
+            style={{
+              width: "26px",
+              height: "26px",
+            }}
+          >
             <Icon size={14} className="text-white" />
           </div>
+
           <span className="text-[13px] font-semibold text-[#1B1C1F]">{label}</span>
         </div>
+
         <InfoIcon size={14} weight="regular" className="text-[#1B1C1F] cursor-help shrink-0" />
       </div>
+
       <div className="mt-1">
         <h2 className="text-[32px] font-bold text-[#1B1C1F] leading-tight">{value}</h2>
       </div>
