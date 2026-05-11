@@ -375,27 +375,35 @@ export default function ProjectsPage() {
       ) : projects.length === 0 ? (
         <div className="py-16 text-center text-gray-400 text-[14px]">No projects found</div>
       ) : (
-        <div className="overflow-hidden border border-gray-100 rounded-xl">
-          <table className="w-full border-collapse">
+        <div className="overflow-x-auto border border-gray-100 rounded-xl">
+          <table className="w-full border-collapse min-w-max">
             <thead>
               <tr className="bg-[#F9FAFB] border-b border-gray-100">
                 <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Profit Center</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Nilai Kontrak</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Unit</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Volume Pekerjaan</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Harga Satuan Pekerjaan</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">HPP</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Gross Profit</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">SPI</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">CPI</th>
                 <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Action</th>
+                <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider sticky right-0 bg-[#F9FAFB] z-20 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {projects.map((project) => (
-                <tr key={project.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr key={project.id} className="group hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{project.project_code}</td>
                   <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{project.project_name}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(project.contract_value)}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{project.unit || "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{project.volume ? Number(project.volume).toLocaleString() : "-"}</td>
+                  <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(project.harsat)}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-600">{project.hpp_pct != null ? `${Number(project.hpp_pct).toFixed(2)}%` : "-"}</td>
                   <td className="px-4 py-4 text-[14px] text-gray-700">{project.gross_profit_pct ? `${project.gross_profit_pct}%` : "-"}</td>
                   <td className={`px-4 py-4 text-[14px] font-bold ${kpiColor(String(project.spi))}`}>
@@ -418,7 +426,7 @@ export default function ProjectsPage() {
                       {project.delivery_budget_status || "-"}
                     </span>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 sticky right-0 bg-white group-hover:bg-[#F9FAFB] transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
                     <button
                       onClick={() => router.push(`/projects/${project.id}`)}
                       className="flex items-center gap-1 text-[#21409A] text-[13px] font-medium hover:underline"
