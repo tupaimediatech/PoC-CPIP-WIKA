@@ -273,6 +273,13 @@ export interface WorkItemLevel4 {
   id: number;
   name: string;
   item_no: string | null;
+  id_resource?: string;
+  volume?: number | string;
+  unit?: string;
+  satuan?: string;
+  resource_category?: string;
+  harsatInternal?: number;
+  internalPrice?: number;
   totalBiaya: number;
   realisasi: number;
   deviasi: number;
