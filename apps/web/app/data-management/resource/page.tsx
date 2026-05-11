@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
-import { ArrowSquareOutIcon } from "@phosphor-icons/react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { ArrowSquareOutIcon, ArrowLeft } from "@phosphor-icons/react";
 import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { resourceApi, dashboardApi } from "@/lib/api";
@@ -10,7 +10,7 @@ import TrendHarsatUtama from "@/components/dashboard/TrendHarsatUtama";
 import type { Resource, ResourceFilterOptionsResponse } from "@/types/resource";
 import { formatCurrency } from "@/lib/utils";
 
-// --- Types ---
+// --- Types & Components (AutocompleteInput, FILTER_GRID sama seperti sebelumnya) ---
 interface FilterState {
   [key: string]: string;
   year_start: string;
@@ -43,14 +43,12 @@ const AutocompleteInput = ({
     setActiveIndex(-1);
     setIsOpen(true);
   };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
     setIsTyping(true);
     setActiveIndex(-1);
     setIsOpen(true);
   };
-
   const handleSelect = (opt: string) => {
     onChange(opt);
     setIsTyping(false);
@@ -114,12 +112,7 @@ const AutocompleteInput = ({
   );
 };
 
-const FILTER_GRID: {
-  key: keyof Resource | "year_range";
-  label: string;
-  optionKey?: keyof ResourceFilterOptionsResponse;
-  placeholder?: string;
-}[] = [
+const FILTER_GRID: { key: keyof Resource | "year_range"; label: string; optionKey?: keyof ResourceFilterOptionsResponse; placeholder?: string }[] = [
   { key: "resource_id", label: "ID Resource", placeholder: "Input ID Resource" },
   { key: "resource_name", label: "Nama Resource", placeholder: "Input Nama Resource" },
   { key: "resource_category", label: "Kategori Resource", optionKey: "resource_category", placeholder: "Select Kategori Resource" },
@@ -129,8 +122,15 @@ const FILTER_GRID: {
 ];
 
 export default function ResourcesPage() {
+  const router = useRouter(); // Digunakan untuk tombol back
   const searchParams = useSearchParams();
+
+  // Parameter dari Level 3
   const categoryQuery = searchParams.get("resource_category")?.trim() ?? "";
+  const projectNameQuery = searchParams.get("project_name")?.trim() ?? "";
+  const fromLevel3 = searchParams.get("from_level3") === "true";
+  const totalHarsatParam = searchParams.get("total_harsat") ? Number(searchParams.get("total_harsat")) : 0;
+  const projectIdParam = searchParams.get("project_id"); // Jika suatu saat ingin navigasi custom selain back
 
   const [filterOptions, setFilterOptions] = useState<ResourceFilterOptionsResponse | null>(null);
   const [filters, setFilters] = useState<FilterState>({ year_start: "", year_end: "" });
@@ -156,7 +156,6 @@ export default function ResourcesPage() {
 
   const filterResources = (filterValues: FilterState) => {
     return allResources.filter((resource) => {
-      // Standard text filters
       const matchStandard = Object.entries(filterValues).every(([key, value]) => {
         if (!value || key === "year_start" || key === "year_end") return true;
         const resourceValue = resource[key as keyof Resource];
@@ -165,11 +164,9 @@ export default function ResourcesPage() {
           .includes(String(value).toLowerCase());
       });
 
-      // Year Range Logic
       const resourceYear = Number(resource.year);
       const startYear = filterValues.year_start ? Number(filterValues.year_start) : null;
       const endYear = filterValues.year_end ? Number(filterValues.year_end) : null;
-
       let matchYear = true;
       if (startYear && endYear) {
         matchYear = resourceYear >= startYear && resourceYear <= endYear;
@@ -184,26 +181,31 @@ export default function ResourcesPage() {
   };
 
   useEffect(() => {
-    if (!categoryQuery || autoFilterApplied || allResources.length === 0) return;
-    const nextFilters = { ...filters, resource_category: categoryQuery };
+    if ((!categoryQuery && !projectNameQuery) || autoFilterApplied || allResources.length === 0) return;
+
+    const nextFilters = {
+      ...filters,
+      ...(categoryQuery && { resource_category: categoryQuery }),
+      ...(projectNameQuery && { project_name: projectNameQuery }),
+    };
+
     setFilters(nextFilters);
     setResources(filterResources(nextFilters));
     setSearchApplied(true);
     setSnackbar(true);
     setAutoFilterApplied(true);
-  }, [categoryQuery, allResources, autoFilterApplied]);
+  }, [categoryQuery, projectNameQuery, allResources, autoFilterApplied]);
 
-  // --- Handlers for Year Range Validation ---
+  // Handlers Validasi Tahun & Filter (Sama Seperti Sebelumnya)
   const handleStartYearChange = (val: string) => {
     setFilters((prev) => {
       const newState = { ...prev, year_start: val };
       if (prev.year_end && val && Number(val) > Number(prev.year_end)) {
-        newState.year_end = ""; // Reset end jika start melampaui end
+        newState.year_end = "";
       }
       return newState;
     });
   };
-
   const handleEndYearChange = (val: string) => {
     if (!val || !filters.year_start || Number(val) >= Number(filters.year_start)) {
       setFilters((prev) => ({ ...prev, year_end: val }));
@@ -217,15 +219,10 @@ export default function ResourcesPage() {
     } else {
       options = Array.from(new Set(allResources.map((r) => String(r[key as keyof Resource] || "")))).filter((v) => v !== "");
     }
-
-    // Sort numerik
     const sortedOptions = options.sort((a, b) => Number(a) - Number(b));
-
-    // Validasi opsi End Year agar tidak lebih kecil dari Start Year
     if (isEndYear && filters.year_start) {
       return sortedOptions.filter((year) => Number(year) >= Number(filters.year_start));
     }
-
     return sortedOptions;
   };
 
@@ -236,7 +233,6 @@ export default function ResourcesPage() {
     setSnackbar(true);
     setLoading(false);
   };
-
   const handleReset = useCallback(() => {
     setFilters({ year_start: "", year_end: "" });
     setSearchApplied(false);
@@ -252,7 +248,6 @@ export default function ResourcesPage() {
         {FILTER_GRID.map(({ key, label, optionKey, placeholder }) => (
           <div key={key}>
             <label className="text-[14px] font-semibold text-[#1B1C1F] mb-2 block">{label}</label>
-
             {key === "year_range" ? (
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                 <AutocompleteInput
@@ -304,9 +299,49 @@ export default function ResourcesPage() {
         </div>
       )}
 
-      {/* ── Results ── */}
-      <h2 className="text-[20px] font-bold text-[#1B1C1F] mb-6">Resource Results</h2>
+      {/* ── Results Header, Back Button & Summary (Conditional) ── */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[20px] font-bold text-[#1B1C1F]">Resource Results</h2>
 
+          {/* Tombol Back Sejajar Di Kanan */}
+          {fromLevel3 && (
+            <button
+              onClick={() => router.back()} // Kembali persis ke tabel Level 3 P&L
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm group"
+            >
+              <ArrowLeft size={16} className="text-gray-500 group-hover:text-gray-800 transition-colors" />
+              Back to Level 3 P&L
+            </button>
+          )}
+        </div>
+
+        {/* Tampil Eksklusif Jika Berasal Dari Level 3 Menggunakan Warna Bersih/Premium */}
+        {fromLevel3 && searchApplied && (
+          <div className="flex items-center gap-8 bg-[#FCFBFA] px-6 py-4 rounded-xl border border-[#F2EFEA] shadow-sm">
+            {projectNameQuery && (
+              <div>
+                <p className="text-[12px] text-gray-500 font-medium mb-1">Project Name</p>
+                <p className="text-[14px] font-bold text-[#1B1C1F]">{projectNameQuery}</p>
+              </div>
+            )}
+            {categoryQuery && (
+              <div>
+                <p className="text-[12px] text-gray-500 font-medium mb-1">Kategori Resource</p>
+                <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-blue-50 text-blue-700">
+                  {categoryQuery}
+                </div>
+              </div>
+            )}
+            <div className="ml-auto flex flex-col items-end">
+              <p className="text-[12px] text-gray-500 font-medium mb-1">Total Harsat (Dari Level 3)</p>
+              <p className="text-[16px] font-bold text-[#1B1C1F]">{formatCurrency(totalHarsatParam)}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Results Table ── */}
       {!searchApplied ? (
         <div className="py-16 text-center text-gray-400 text-[14px]">
           {loading ? "Fetching data..." : "Apply filters and click Search to view resources"}

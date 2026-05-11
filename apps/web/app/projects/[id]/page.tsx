@@ -133,7 +133,11 @@ export default function ProfitLossPage() {
               <tr
                 key={item.label}
                 className="group hover:bg-blue-50/50 transition-all duration-200 cursor-pointer"
-                onClick={() => router.push(`/data-management/resource?resource_category=${item.label}`)}
+                onClick={() =>
+                  router.push(
+                    `/data-management/resource?from_level3=true&resource_category=${item.label}&project_name=${encodeURIComponent(data.project_name)}&total_harsat=${item.val}&project_id=${projectId}`,
+                  )
+                }
               >
                 <td className="px-6 py-3" />
                 <td className="px-4 py-3 text-[14px] font-medium text-gray-700 group-hover:text-primary-blue flex items-center gap-2">
