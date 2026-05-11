@@ -6,6 +6,10 @@ export interface Resource {
   project_name: string;
   location?: string;
   year?: string | number;
+  unit: string;
+  quantity: number;
+  price: number;
+  total: number;
 }
 
 export interface ResourceListResponse {
