@@ -34,6 +34,9 @@ class Project extends Model
         'consultant_name',
         'funding_source',
         'location',
+        'unit',
+        'volume',
+        'harsat',
         'contract_value',
         'addendum_value',
         'bq_external',
@@ -56,6 +59,8 @@ class Project extends Model
 
     protected $casts = [
         'contract_value'   => 'decimal:2',
+        'volume'           => 'decimal:4',
+        'harsat'           => 'decimal:2',
         'addendum_value'   => 'decimal:2',
         'bq_external'      => 'decimal:2',
         'planned_cost'     => 'decimal:2',

@@ -384,18 +384,28 @@ class ProjectApiTest extends TestCase
     #[Test]
     public function it_returns_project_detail(): void
     {
-        $project = $this->makeProject();
+        $project = $this->makeProject([
+            'unit' => 'm2',
+            'volume' => 1000,
+            'harsat' => 250000,
+        ]);
 
         $response = $this->getJson("/api/projects/{$project->id}");
 
         $response->assertOk()
             ->assertJsonPath('data.project_code', 'TST-01')
             ->assertJsonPath('data.project_name', 'Test Project')
+            ->assertJsonPath('data.unit', 'm2')
+            ->assertJsonPath('data.volume', '1000.0000')
+            ->assertJsonPath('data.harsat', '250000.00')
             ->assertJsonStructure(['data' => [
                 'id',
                 'project_code',
                 'project_name',
                 'division',
+                'unit',
+                'volume',
+                'harsat',
                 'cpi',
                 'spi',
                 'status',
@@ -415,6 +425,9 @@ class ProjectApiTest extends TestCase
             'project_code' => 'NEW-01',
             'project_name' => 'New Project',
             'division' => 'Building',
+            'unit' => 'm3',
+            'volume' => 125.5,
+            'harsat' => 750000,
             'contract_value' => 300,
             'planned_cost' => 270,
             'actual_cost' => 255,
@@ -426,9 +439,17 @@ class ProjectApiTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.project_code', 'NEW-01')
+            ->assertJsonPath('data.unit', 'm3')
+            ->assertJsonPath('data.volume', '125.5000')
+            ->assertJsonPath('data.harsat', '750000.00')
             ->assertJsonPath('data.status', 'good');
 
-        $this->assertDatabaseHas('projects', ['project_code' => 'NEW-01']);
+        $this->assertDatabaseHas('projects', [
+            'project_code' => 'NEW-01',
+            'unit' => 'm3',
+            'volume' => 125.5,
+            'harsat' => 750000,
+        ]);
     }
 
     #[Test]
@@ -499,6 +520,9 @@ class ProjectApiTest extends TestCase
             'project_code' => 'TST-01',
             'project_name' => 'Test Project',
             'division' => 'Infrastructure',
+            'unit' => 'ton',
+            'volume' => 88,
+            'harsat' => 123000,
             'contract_value' => 500,
             'planned_cost' => 400,
             'actual_cost' => 380,
@@ -507,6 +531,9 @@ class ProjectApiTest extends TestCase
         ]);
 
         $response->assertOk();
+        $response->assertJsonPath('data.unit', 'ton')
+            ->assertJsonPath('data.volume', '88.0000')
+            ->assertJsonPath('data.harsat', '123000.00');
         $this->assertGreaterThan(1, (float) $response->json('data.cpi'));
     }
 
