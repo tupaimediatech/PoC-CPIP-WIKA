@@ -54,6 +54,9 @@ class ResourceApiTest extends TestCase
             'item_name' => 'Besi Beton',
             'id_resource' => 'MAT-001',
             'resource_category' => 'Material',
+            'unit' => 'kg',
+            'quantity' => 10,
+            'price' => 25000,
             'sort_order' => 1,
             'is_total_row' => false,
         ], $overrides));
@@ -73,6 +76,10 @@ class ResourceApiTest extends TestCase
             ->assertJsonPath('data.0.resource_id', 'MAT-001')
             ->assertJsonPath('data.0.resource_name', 'Besi Beton')
             ->assertJsonPath('data.0.resource_category', 'Material')
+            ->assertJsonPath('data.0.unit', 'kg')
+            ->assertJsonPath('data.0.quantity', 10)
+            ->assertJsonPath('data.0.price', 25000)
+            ->assertJsonPath('data.0.total', 250000)
             ->assertJsonPath('data.0.project_name', 'Resource Project')
             ->assertJsonPath('data.0.location', 'Jakarta')
             ->assertJsonPath('data.0.year', 2026);
