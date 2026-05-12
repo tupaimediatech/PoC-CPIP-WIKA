@@ -19,6 +19,9 @@ class ProjectWorkItem extends Model
         'item_name',
         'id_resource',
         'resource_category',
+        'unit',
+        'quantity',
+        'price',
         'sort_order',
         'volume',
         'volume_addendum',
@@ -54,6 +57,8 @@ class ProjectWorkItem extends Model
     protected $casts = [
         'level'                 => 'integer',
         'sort_order'            => 'integer',
+        'quantity'              => 'decimal:4',
+        'price'                 => 'decimal:2',
         'volume'                => 'decimal:4',
         'volume_addendum'       => 'decimal:4',
         'harsat_internal'       => 'decimal:4',

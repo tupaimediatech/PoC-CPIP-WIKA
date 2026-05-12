@@ -93,7 +93,7 @@ export default function RiskProjectTable({ projects }: Props) {
       <div className="overflow-hidden bg-white border border-gray-100 rounded-xl shadow-sm">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[#F9FAFB] border-b border-gray-100">
+            <tr className="border-b border-gray-100" style={{ backgroundColor: "#F9FAFB" }}>
               <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Division</th>
@@ -121,7 +121,8 @@ export default function RiskProjectTable({ projects }: Props) {
             {paginatedProjects.map((project, index) => (
               <tr
                 key={project.id}
-                className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                className="hover:transition-colors cursor-pointer"
+                style={{ backgroundColor: "rgba(249,250,251,0.5)" }}
                 onClick={() => router.push(`/projects/${project.id}`)}
               >
                 <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{startIdx + index + 1}</td>

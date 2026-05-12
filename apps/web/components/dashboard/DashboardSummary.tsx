@@ -1,3 +1,7 @@
+// ==========================
+// DashboardSummary.tsx
+// ==========================
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -18,7 +22,11 @@ export type ActiveFilters = {
   contract_type: string;
   partnership: string;
   division: string;
-  year: string;
+
+  // UPDATED
+  startYear: string;
+  endYear: string;
+
   location: string;
   funding_source: string;
   contractRange: string;
@@ -30,7 +38,11 @@ const EMPTY_FILTERS: ActiveFilters = {
   contract_type: "",
   partnership: "",
   division: "",
-  year: "",
+
+  // UPDATED
+  startYear: "",
+  endYear: "",
+
   location: "",
   funding_source: "",
   contractRange: "",
@@ -38,27 +50,46 @@ const EMPTY_FILTERS: ActiveFilters = {
 
 function computeSummary(projects: DashboardProject[]): DashboardSummaryData {
   const total = projects.length;
+
   const overbudgetCount = projects.filter((p) => parseFloat(p.cpi) < 1).length;
+
   const delayCount = projects.filter((p) => parseFloat(p.spi) < 1).length;
+
   const avgCpi = total > 0 ? projects.reduce((acc, p) => acc + parseFloat(p.cpi ?? "0"), 0) / total : 0;
+
   const avgSpi = total > 0 ? projects.reduce((acc, p) => acc + parseFloat(p.spi ?? "0"), 0) / total : 0;
 
   const byDivision: DashboardSummaryData["by_division"] = {};
+
   projects.forEach((p) => {
     const div = p.division ?? "";
-    if (!byDivision[div]) byDivision[div] = { total: 0, avg_cpi: 0, avg_spi: 0, overbudget_count: 0, delay_count: 0 };
+
+    if (!byDivision[div]) {
+      byDivision[div] = {
+        total: 0,
+        avg_cpi: 0,
+        avg_spi: 0,
+        overbudget_count: 0,
+        delay_count: 0,
+      };
+    }
+
     byDivision[div].total++;
     byDivision[div].avg_cpi += parseFloat(p.cpi ?? "0");
     byDivision[div].avg_spi += parseFloat(p.spi ?? "0");
+
     if (parseFloat(p.cpi) < 1) byDivision[div].overbudget_count++;
+
     if (parseFloat(p.spi) < 1) byDivision[div].delay_count++;
   });
+
   Object.keys(byDivision).forEach((k) => {
     byDivision[k].avg_cpi /= byDivision[k].total;
     byDivision[k].avg_spi /= byDivision[k].total;
   });
 
   const statusBreakdown: Record<string, number> = {};
+
   projects.forEach((p) => {
     statusBreakdown[p.status] = (statusBreakdown[p.status] ?? 0) + 1;
   });
@@ -80,7 +111,10 @@ function computeSummary(projects: DashboardProject[]): DashboardSummaryData {
     .filter((p) => overrunPct(p) > 0)
     .sort((a, b) => overrunPct(b) - overrunPct(a))
     .slice(0, 10)
-    .map((p) => ({ name: p.project_name, pct: `${overrunPct(p).toFixed(1)}%` }));
+    .map((p) => ({
+      name: p.project_name,
+      pct: `${overrunPct(p).toFixed(1)}%`,
+    }));
 
   return {
     total_projects: total,
@@ -99,8 +133,11 @@ function computeSummary(projects: DashboardProject[]): DashboardSummaryData {
 
 export default function DashboardSummary() {
   const [apiData, setApiData] = useState<DashboardApiResponse | null>(null);
+
   const [loading, setLoading] = useState(true);
+
   const [searchApplied, setSearchApplied] = useState(false);
+
   const [snackbar, setSnackbar] = useState(false);
 
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>(EMPTY_FILTERS);
@@ -115,41 +152,71 @@ export default function DashboardSummary() {
 
   const filteredProjects: DashboardProject[] = useMemo(() => {
     if (!apiData) return [];
+
     return apiData.projects.data.filter((p) => {
       if (activeFilters.division && (p.division ?? "") !== activeFilters.division) return false;
+
       if (activeFilters.sbu && (p.sbu ?? "") !== activeFilters.sbu) return false;
+
       if (activeFilters.owner && p.owner !== activeFilters.owner) return false;
+
       if (activeFilters.contract_type && (p.contract_type ?? "") !== activeFilters.contract_type) return false;
+
       if (activeFilters.partnership && (p.partnership ?? "") !== activeFilters.partnership) return false;
+
       if (activeFilters.funding_source && (p.funding_source ?? "") !== activeFilters.funding_source) return false;
+
       if (activeFilters.location && (p.location ?? "") !== activeFilters.location) return false;
-      if (activeFilters.year && String(p.project_year) !== activeFilters.year) return false;
+
+      // UPDATED YEAR RANGE
+      const projectYear = Number(p.project_year);
+
+      if (activeFilters.startYear && projectYear < Number(activeFilters.startYear)) {
+        return false;
+      }
+
+      if (activeFilters.endYear && projectYear > Number(activeFilters.endYear)) {
+        return false;
+      }
+
       if (activeFilters.contractRange) {
         const valueInBillions = parseFloat(p.contract_value || "0") / 1e9;
+
         const [minStr, maxStr] = activeFilters.contractRange.split("-");
+
         const min = parseFloat(minStr);
+
         const max = maxStr?.endsWith("+") ? Infinity : parseFloat(maxStr || "0");
+
         if (valueInBillions < min || valueInBillions >= max) return false;
       }
+
       return true;
     });
   }, [apiData, activeFilters]);
 
   const summary: DashboardSummaryData | null = useMemo(() => {
     if (!apiData) return null;
+
     return computeSummary(filteredProjects);
   }, [filteredProjects, apiData]);
 
   const contractOptions = useMemo(() => {
     if (!apiData) return [{ v: "", l: "All" }];
+
     const values = apiData.projects.data
       .map((p) => parseFloat(p.contract_value || "0") / 1e9)
       .filter((v) => !isNaN(v) && v > 0)
       .sort((a, b) => a - b);
+
     if (values.length === 0) return [{ v: "", l: "All" }];
+
     const min = Math.floor(values[0] * 10) / 10;
+
     const max = Math.ceil(values[values.length - 1] * 10) / 10;
+
     const range = max - min;
+
     if (range === 0)
       return [
         { v: "", l: "All" },
@@ -157,17 +224,29 @@ export default function DashboardSummary() {
       ];
       
     const numRanges = 4;
+
     const step = range / numRanges;
+
     const ranges = [{ v: "", l: "All" }];
+
     for (let i = 0; i < numRanges; i++) {
       const start = min + i * step;
+
       const end = min + (i + 1) * step;
+
       if (i === numRanges - 1) {
-        ranges.push({ v: `${start.toFixed(1)}+`, l: `≥ ${start.toFixed(1)} B` });
+        ranges.push({
+          v: `${start.toFixed(1)}+`,
+          l: `≥ ${start.toFixed(1)} B`,
+        });
       } else {
-        ranges.push({ v: `${start.toFixed(1)}-${end.toFixed(1)}`, l: `${start.toFixed(1)} - ${end.toFixed(1)} B` });
+        ranges.push({
+          v: `${start.toFixed(1)}-${end.toFixed(1)}`,
+          l: `${start.toFixed(1)} - ${end.toFixed(1)} B`,
+        });
       }
     }
+
     return ranges;
   }, [apiData]);
 
@@ -197,13 +276,20 @@ export default function DashboardSummary() {
 
   if (!summary || !apiData) return null;
 
-  const kpiFilters = { division: activeFilters.division, contractRange: activeFilters.contractRange, year: activeFilters.year };
+  const kpiFilters = {
+    division: activeFilters.division,
+    contractRange: activeFilters.contractRange,
+
+    // UPDATED
+    startYear: activeFilters.startYear,
+    endYear: activeFilters.endYear,
+  };
 
   return (
-    <div className="bg-[#F9FAFB] min-h-screen">
-      <QuickFilterPreview filterOptions={apiData.filter_options} onSearch={handleSearch} onReset={handleReset} onExport={() => {}} />
+    <div className="min-h-screen" style={{ backgroundColor: "#F9FAFB" }}>
+      <div id="Dashboard-export">
+        <QuickFilterPreview filterOptions={apiData.filter_options} onSearch={handleSearch} onReset={handleReset} onExport={() => {}} />
 
-      <div id="dashboard-export-root">
         <KpiCards
           data={summary}
           filters={kpiFilters}
@@ -214,7 +300,11 @@ export default function DashboardSummary() {
             setActiveFilters((prev) => ({
               ...prev,
               division: f.division,
-              year: f.year,
+
+              // UPDATED
+              startYear: f.startYear,
+              endYear: f.endYear,
+
               contractRange: f.contractRange,
             }))
           }
@@ -224,6 +314,7 @@ export default function DashboardSummary() {
 
         <div className="bg-white flex gap-8 w-full items-stretch" style={{ padding: "18px 32px" }}>
           <TrendHarsatUtama harsatTrend={apiData.harsat_trend} />
+
           <SebaranSBUChart sbuDistribution={apiData.sbu_distribution} />
         </div>
 

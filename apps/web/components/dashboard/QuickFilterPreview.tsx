@@ -5,6 +5,8 @@ import { CaretDownIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import type { DashboardFilterOptions } from "@/types/dashboard";
 import type { ActiveFilters } from "@/components/dashboard/DashboardSummary";
+import PageHeader from "../analytics/PageHeader";
+import { exportElementToPdf } from "@/lib/exporter";
 
 type FilterState = {
   sbu: string;
@@ -42,22 +44,6 @@ export default function QuickFilterPreview({ filterOptions, onSearch, onReset, o
 
   const updateFilter = (key: keyof FilterState, value: string) => setFilters((prev) => ({ ...prev, [key]: value }));
 
-  // --- EXPORT AS PDF: screenshot seluruh halaman dashboard ---
-  const handleExport = async () => {
-    try {
-      setIsExporting(true);
-
-      // Dynamically import agar tidak membebani bundle
-      const { exportDashboardToPdf } = await import("@/lib/exportPdf");
-      await exportDashboardToPdf("dashboard-export-root");
-    } catch (error) {
-      console.error("Export PDF error:", error);
-      alert("Gagal mengekspor PDF. Silakan coba lagi.");
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const handleReset = () => {
     setFilters(EMPTY_FILTERS);
     router.push(window.location.pathname);
@@ -91,31 +77,21 @@ export default function QuickFilterPreview({ filterOptions, onSearch, onReset, o
   ];
 
   return (
-    // data-pdf-ignore="true" agar filter bar tidak ikut tereksport di PDF
     <div className="bg-white w-full" style={{ padding: "18px 32px" }} data-pdf-ignore="true">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[18px] font-bold text-[#1B1C1F]">Quick Filter Preview</h2>
-        <button
-          onClick={handleExport}
-          disabled={isExporting}
-          className={`flex items-center gap-2 bg-primary-blue text-white text-[13px] font-bold rounded-lg px-4 hover:brightness-110 transition-all ${
-            isExporting ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          style={{ height: "38px" }}
-        >
-          {isExporting ? (
-            <>
-              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Exporting...
-            </>
-          ) : (
-            <>
-              Export PDF
-              <DownloadSimpleIcon size={16} weight="bold" />
-            </>
-          )}
-        </button>
-      </div>
+      <PageHeader
+        title="Quick Filter Preview"
+        onExport={async () => {
+          try {
+            await exportElementToPdf("Dashboard-export", {
+              filename: "Dashboard_Report",
+              backgroundColor: "#FFFFFF",
+              quality: 2,
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+      />
 
       <div className="flex items-center gap-4 mb-4">
         {filterDefs.map(({ key, label, options }) => (

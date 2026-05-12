@@ -1,27 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
+
 import PageHeader from "@/components/analytics/PageHeader";
 import BackButton from "@/components/analytics/BackButton";
+
+import DataTable, { Column } from "@/components/ui/DataTable";
+
 import { periodApi } from "@/lib/api";
+
 import type { WorkItemLevel4, WorkItemLevel4ListResponse } from "@/types/project";
+
 import { formatCurrency } from "@/lib/utils";
 
 function formatSatuan(s: string | null | undefined): React.ReactNode {
   if (!s) return "-";
+
   const parts = s.split(/(\d+)/);
+
   return parts.map((part, i) => (/^\d+$/.test(part) ? <sup key={i}>{part}</sup> : part));
 }
 
 export default function Level4Page() {
   const router = useRouter();
   const params = useParams();
+
   const projectId = params.id;
   const tahapId = Number(params.tahapId);
 
   const [data, setData] = useState<WorkItemLevel4ListResponse["data"] | null>(null);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,79 +43,141 @@ export default function Level4Page() {
       .finally(() => setLoading(false));
   }, [tahapId]);
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center py-24 gap-3 text-gray-400">
-        <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        Loading...
-      </div>
-    );
+  const items = data?.items || [];
 
-  if (!data) return <div className="p-8 text-gray-400">No data found</div>;
+  /**
+   * TOTAL
+   */
+  const totalBiaya = items.reduce((sum, item) => sum + item.totalBiaya, 0);
 
-  const totalBiaya = data.items.reduce((sum, i) => sum + i.totalBiaya, 0);
+  /**
+   * COLUMNS
+   */
+  const columns: Column<WorkItemLevel4>[] = useMemo(
+    () => [
+      {
+        key: "id_resource",
+        title: "ID Resource",
+        sortable: true,
+        searchable: true,
+        className: "font-medium text-gray-600",
+      },
+
+      {
+        key: "name",
+        title: "Item Sumber Daya",
+        sortable: true,
+        searchable: true,
+        className: "font-semibold text-[#1B1C1F]",
+
+        render: (value) => value || "-",
+      },
+
+      {
+        key: "volume",
+        title: "Volume",
+        sortable: true,
+
+        render: (value) => (value ? Number(value).toLocaleString("id-ID") : "-"),
+      },
+
+      {
+        key: "unit",
+        title: "Satuan",
+        sortable: true,
+        searchable: true,
+
+        render: (_, row) => formatSatuan(row.unit || row.satuan),
+      },
+
+      {
+        key: "resource_category",
+        title: "Kategori Resource",
+        sortable: true,
+        searchable: true,
+
+        render: (value) => value || "-",
+      },
+
+      {
+        key: "harsatInternal",
+        title: "Harsat Internal",
+        sortable: true,
+
+        render: (_, row) => {
+          const value = row.harsatInternal ?? row.internalPrice;
+
+          return value ? formatCurrency(value) : "-";
+        },
+      },
+
+      {
+        key: "totalBiaya",
+        title: "Total Biaya",
+        sortable: true,
+
+        render: (value) => formatCurrency(value),
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
       <PageHeader
-        title={`Level 5 Harsat Per Sumber Daya - Tahap ${data.tahap}`}
+        title={`Level 5 Harsat Per Sumber Daya - Tahap ${data?.tahap ?? "-"}`}
         pills={[
-          { label: "Tahap", value: data.tahap },
-          { label: "Realisasi Biaya", value: formatCurrency(data.rabInternal) },
+          {
+            label: "Tahap",
+            value: data?.tahap ?? "-",
+          },
+
+          {
+            label: "Realisasi Biaya",
+            value: formatCurrency(data?.rabInternal ?? 0),
+          },
         ]}
         onExport={() => {}}
       />
 
-      <div className="overflow-hidden border border-gray-100 rounded-xl mb-8">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-[#F9FAFB] border-b border-gray-100">
-              <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Resource</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Item Sumber Daya</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Volume</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Satuan</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Resource</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Harsat Internal</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Total Biaya</th>
-              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Detail</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {data.items.map((item: any, idx: number) => (
-              <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{item.id_resource}</td>
-                <td className="px-4 py-4 text-[14px] font-semibold text-[#1B1C1F]">{item.name || "-"}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700">{item.volume ? Number(item.volume).toLocaleString("id-ID") : "-"}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700">{formatSatuan(item.unit || item.satuan)}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700">{item.resource_category || "-"}</td>
-                <td className="px-4 py-4 text-[14px] text-gray-700">
-                  {item.harsatInternal || item.internalPrice ? formatCurrency(item.harsatInternal ?? item.internalPrice) : "-"}
-                </td>
-                <td className="px-4 py-4 text-[14px] text-gray-700">{formatCurrency(item.totalBiaya)}</td>
-                <td className="px-4 py-4">
-                  <button
-                    onClick={() => router.push(`/projects/${projectId}/${tahapId}/direct-cost/${item.id}`)}
-                    className="flex items-center gap-1 text-primary-blue text-[13px] font-medium hover:underline"
-                  >
-                    Details <ArrowSquareOutIcon size={14} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="bg-[#F9FAFB] border-t border-gray-200">
-              <td className="px-6 py-4" />
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">TOTAL</td>
-              <td colSpan={3} />
-              <td className="px-4 py-4 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalBiaya)}</td>
-              <td />
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        data={items}
+        loading={loading}
+        emptyMessage="No data found"
+        actions={(row) => (
+          <button
+            onClick={() => router.push(`/projects/${projectId}/${tahapId}/direct-cost/${row.id}`)}
+            className="
+              inline-flex
+              items-center
+              gap-1
+              text-[13px]
+              font-medium
+              text-blue-600
+              hover:underline
+            "
+          >
+            Details
+            <ArrowSquareOutIcon size={14} />
+          </button>
+        )}
+        footer={{
+          id_resource: "",
+          name: "TOTAL",
+          volume: "",
+          unit: "",
+          resource_category: "",
 
-      <BackButton label="Back to Level 4" href={`/projects/${projectId}/wbs`} />
+          harsatInternal: <span className="font-bold">{formatCurrency(totalBiaya)}</span>,
+
+          totalBiaya: "",
+        }}
+      />
+
+      <div className="mt-8">
+        <BackButton label="Back to Level 4" href={`/projects/${projectId}/wbs`} />
+      </div>
     </div>
   );
 }
