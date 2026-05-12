@@ -9,7 +9,7 @@ import { resourceApi, dashboardApi } from "@/lib/api";
 import TrendHarsatUtama from "@/components/dashboard/TrendHarsatUtama";
 import type { Resource, ResourceFilterOptionsResponse } from "@/types/resource";
 import { formatCurrency } from "@/lib/utils";
-import { exportElementToPdf } from "@/lib/exportPdf";
+import { exportElementToPdf } from "@/lib/exporter";
 
 // --- Types & Components (AutocompleteInput, FILTER_GRID sama seperti sebelumnya) ---
 interface FilterState {
@@ -364,7 +364,7 @@ export default function ResourcesPage() {
           <div className="py-16 text-center text-gray-400 text-[14px]">No resources found</div>
         ) : (
           <div className="overflow-x-auto border border-gray-100 rounded-xl">
-            <table className="w-full border-collapse min-w-max">
+            <table className="border-collapse min-w-max w-max">
               <thead>
                 <tr className="border-b border-gray-100" style={{ backgroundColor: "#F9FAFB" }}>
                   <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">ID Resource</th>
