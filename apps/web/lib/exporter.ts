@@ -11,7 +11,7 @@ interface ExportOptions {
 }
 
 export async function exportElementToPdf(elementId: string, options: ExportOptions = {}) {
-  const { filename = `Export_${Date.now()}`, quality = 3, backgroundColor = "#FFFFFF", padding = 8 } = options;
+  const { filename = `Export_${Date.now()}`, quality = 3, backgroundColor = "#FFFFFF", padding = 12 } = options;
 
   const source = document.getElementById(elementId);
 
@@ -23,17 +23,14 @@ export async function exportElementToPdf(elementId: string, options: ExportOptio
 
   try {
     // =====================================
-    // CLONE ELEMENT
+    // 1. CLONE ELEMENT
     // =====================================
-
     const clonedNode = source.cloneNode(true) as HTMLElement;
 
     // =====================================
-    // CREATE HIDDEN EXPORT AREA
+    // 2. CREATE HIDDEN EXPORT AREA
     // =====================================
-
     exportContainer = document.createElement("div");
-
     exportContainer.style.position = "fixed";
     exportContainer.style.left = "-999999px";
     exportContainer.style.top = "0";
@@ -44,15 +41,12 @@ export async function exportElementToPdf(elementId: string, options: ExportOptio
     exportContainer.style.pointerEvents = "none";
 
     document.body.appendChild(exportContainer);
-
     exportContainer.appendChild(clonedNode);
 
     // =====================================
-    // FIX OKLAB / LAB
+    // 3. FIX RENDERING & STYLING
     // =====================================
-
     const allElements = clonedNode.querySelectorAll<HTMLElement>("*");
-
     allElements.forEach((el) => {
       try {
         const computed = window.getComputedStyle(el);
@@ -60,17 +54,9 @@ export async function exportElementToPdf(elementId: string, options: ExportOptio
         const invalid = (value: string) =>
           value?.includes("oklab(") || value?.includes("oklch(") || value?.includes("lab(") || value?.includes("lch(");
 
-        if (invalid(computed.color)) {
-          el.style.color = "#000000";
-        }
-
-        if (invalid(computed.backgroundColor)) {
-          el.style.backgroundColor = "#FFFFFF";
-        }
-
-        if (invalid(computed.borderColor)) {
-          el.style.borderColor = "#D1D5DB";
-        }
+        if (invalid(computed.color)) el.style.color = "#000000";
+        if (invalid(computed.backgroundColor)) el.style.backgroundColor = "#FFFFFF";
+        if (invalid(computed.borderColor)) el.style.borderColor = "#D1D5DB";
 
         el.style.boxShadow = "none";
         el.style.textShadow = "none";
@@ -78,171 +64,90 @@ export async function exportElementToPdf(elementId: string, options: ExportOptio
     });
 
     // =====================================
-    // REMOVE STICKY
+    // 4. FIX TABLE & BARIS TERAKHIR (PENTING)
     // =====================================
-
-    const stickyElements = clonedNode.querySelectorAll<HTMLElement>('[class*="sticky"]');
-
-    stickyElements.forEach((el) => {
-      el.style.position = "static";
-      el.style.left = "auto";
-      el.style.right = "auto";
-      el.style.top = "auto";
-      el.style.bottom = "auto";
-      el.style.boxShadow = "none";
+    const scrollContainers = clonedNode.querySelectorAll<HTMLElement>("*");
+    scrollContainers.forEach((el) => {
+      const style = window.getComputedStyle(el);
+      // Cek apakah elemen ini adalah kontainer yang bisa scroll
+      if (style.overflow !== "visible" || style.overflowX !== "visible") {
+        el.style.overflow = "visible";
+        el.style.overflowX = "visible";
+        el.style.maxHeight = "none"; // Hapus limit tinggi jika ada
+        el.style.maxWidth = "none"; // Hapus limit lebar jika ada
+      }
     });
-
-    // =====================================
-    // FIX OVERFLOW TABLE
-    // =====================================
-
-    const overflowWrappers = clonedNode.querySelectorAll<HTMLElement>(".overflow-x-auto, .overflow-auto");
-
-    overflowWrappers.forEach((wrapper) => {
-      wrapper.style.overflow = "visible";
-      wrapper.style.maxWidth = "none";
-      wrapper.style.width = "100%";
-    });
-
-    // =====================================
-    // GET TRUE TABLE WIDTH
-    // =====================================
-
-    let widestTable = 0;
 
     const tables = clonedNode.querySelectorAll<HTMLTableElement>("table");
+    tables.forEach((table) => {
+      table.style.marginBottom = "50px"; // Menghilangkan margin luar yang tidak perlu
 
+      // Ambil baris terakhir dari tabel
+      const rows = table.querySelectorAll("tr");
+      if (rows.length > 0) {
+        const lastRow = rows[rows.length - 1];
+        const cells = lastRow.querySelectorAll("td, th");
+
+        // Berikan padding bawah pada setiap cell di baris terakhir
+        // agar teks tidak mepet ke border tabel
+        cells.forEach((cell) => {
+          (cell as HTMLElement).style.paddingBottom = "15px";
+        });
+      }
+    });
+
+    // Berikan padding bawah tambahan pada container utama kloning
+    clonedNode.style.paddingBottom = "10px";
+
+    // =====================================
+    // 5. CALCULATE DIMENSIONS
+    // =====================================
+    let widestTable = 0;
     tables.forEach((table) => {
       widestTable = Math.max(widestTable, table.scrollWidth);
     });
 
-    // =====================================
-    // EXPAND WHOLE LAYOUT
-    // AGAR SECTION IKUT SELARAS
-    // =====================================
-
-    const finalWidth = Math.max(widestTable, clonedNode.scrollWidth, 1400);
-
+    const finalWidth = Math.max(widestTable, clonedNode.scrollWidth, 1200);
     clonedNode.style.width = `${finalWidth}px`;
     clonedNode.style.minWidth = `${finalWidth}px`;
-    clonedNode.style.maxWidth = "none";
-    clonedNode.style.overflow = "visible";
 
-    // Semua direct section ikut melebar
-    const sections = clonedNode.querySelectorAll<HTMLElement>(":scope > *");
-
-    sections.forEach((section) => {
-      section.style.width = "100%";
-      section.style.maxWidth = "100%";
-    });
-
-    // =====================================
-    // FIX TABLE
-    // =====================================
-
-    tables.forEach((table) => {
-      table.style.width = "100%";
-      table.style.minWidth = `${widestTable}px`;
-      table.style.tableLayout = "auto";
-      table.style.borderCollapse = "collapse";
-    });
-
-    // =====================================
-    // WAIT REFLOW
-    // =====================================
-
+    // Tunggu render selesai agar kalkulasi scrollHeight akurat
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-    // =====================================
-    // FINAL SIZE
-    // =====================================
-
     const width = Math.ceil(clonedNode.scrollWidth);
-
-    const height = Math.ceil(clonedNode.scrollHeight);
+    // Tambahkan buffer 5px ekstra pada height untuk keamanan render
+    const height = Math.ceil(clonedNode.scrollHeight) + 5;
 
     // =====================================
-    // EXPORT PNG
+    // 6. EXPORT TO IMAGE
     // =====================================
-
     const dataUrl = await toPng(clonedNode, {
       cacheBust: true,
-
-      pixelRatio: Math.max(quality, 3),
-
+      pixelRatio: quality,
       backgroundColor,
-
-      width,
-
-      height,
-
-      canvasWidth: width,
-
-      canvasHeight: height,
-
-      style: {
-        margin: "0",
-        padding: "0",
-        background: backgroundColor,
-      },
+      width: width,
+      height: height,
     });
 
     // =====================================
-    // PDF
+    // 7. GENERATE PDF (DYNAMIC SIZE)
     // =====================================
-
     const pdf = new jsPDF({
-      orientation: width > height ? "landscape" : "portrait",
-
+      orientation: width > height ? "l" : "p",
       unit: "px",
-
-      format: "a4",
-
+      // Ukuran halaman = ukuran konten + padding sekeliling
+      format: [width + padding * 2, height + padding * 2],
       compress: true,
     });
 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    // padding kecil agar tidak banyak gap kosong
-    const safePadding = 6;
-
-    const usableWidth = pageWidth - safePadding * 2;
-
-    const scaledHeight = (height * usableWidth) / width;
-
-    let remainingHeight = scaledHeight;
-
-    let currentPosition = 0;
-
-    // PAGE 1
-    pdf.addImage(dataUrl, "PNG", safePadding, currentPosition + safePadding, usableWidth, scaledHeight, undefined, "FAST");
-
-    remainingHeight -= pageHeight;
-
-    // NEXT PAGES
-    while (remainingHeight > 0) {
-      currentPosition = remainingHeight - scaledHeight;
-
-      pdf.addPage();
-
-      pdf.addImage(dataUrl, "PNG", safePadding, currentPosition + safePadding, usableWidth, scaledHeight, undefined, "FAST");
-
-      remainingHeight -= pageHeight;
-    }
+    pdf.addImage(dataUrl, "PNG", padding, padding, width, height, undefined, "FAST");
 
     pdf.save(`${filename}.pdf`);
-
     return true;
   } catch (error) {
     console.error("Export failed:", error);
     throw error;
   } finally {
-    // =====================================
-    // REMOVE CLONE
-    // =====================================
-
     if (exportContainer) {
       document.body.removeChild(exportContainer);
     }
