@@ -11,68 +11,145 @@ interface ExportOptions {
 }
 
 export async function exportElementToPdf(elementId: string, options: ExportOptions = {}) {
-  const { filename = `Export_${Date.now()}`, quality = 2, backgroundColor = "#FFFFFF", padding = 24 } = options;
+  const { filename = `Export_${Date.now()}`, quality = 3, backgroundColor = "#FFFFFF", padding = 12 } = options;
 
-  const element = document.getElementById(elementId);
+  const source = document.getElementById(elementId);
 
-  if (!element) {
+  if (!source) {
     throw new Error(`Element "${elementId}" not found`);
   }
 
+  let exportContainer: HTMLDivElement | null = null;
+
   try {
-    // simpan style asli
-    const originalOverflow = document.body.style.overflow;
+    // =====================================
+    // 1. CLONE ELEMENT
+    // =====================================
+    const clonedNode = source.cloneNode(true) as HTMLElement;
 
-    // pastikan seluruh halaman terlihat
-    document.body.style.overflow = "visible";
+    // =====================================
+    // 2. CREATE HIDDEN EXPORT AREA
+    // =====================================
+    exportContainer = document.createElement("div");
+    exportContainer.style.position = "fixed";
+    exportContainer.style.left = "-999999px";
+    exportContainer.style.top = "0";
+    exportContainer.style.zIndex = "-1";
+    exportContainer.style.background = backgroundColor;
+    exportContainer.style.padding = `${padding}px`;
+    exportContainer.style.overflow = "visible";
+    exportContainer.style.pointerEvents = "none";
 
-    // tunggu render settle
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    document.body.appendChild(exportContainer);
+    exportContainer.appendChild(clonedNode);
 
-    const rect = element.getBoundingClientRect();
+    // =====================================
+    // 3. FIX RENDERING & STYLING
+    // =====================================
+    const allElements = clonedNode.querySelectorAll<HTMLElement>("*");
+    allElements.forEach((el) => {
+      try {
+        const computed = window.getComputedStyle(el);
 
-    const width = rect.width;
-    const height = element.scrollHeight;
+        const invalid = (value: string) =>
+          value?.includes("oklab(") || value?.includes("oklch(") || value?.includes("lab(") || value?.includes("lch(");
 
-    const dataUrl = await toPng(element, {
-      cacheBust: true,
+        if (invalid(computed.color)) el.style.color = "#000000";
+        if (invalid(computed.backgroundColor)) el.style.backgroundColor = "#FFFFFF";
+        if (invalid(computed.borderColor)) el.style.borderColor = "#D1D5DB";
 
-      pixelRatio: quality,
-
-      backgroundColor,
-
-      width,
-
-      height,
-
-      style: {
-        padding: `${padding}px`,
-        background: backgroundColor,
-      },
+        el.style.boxShadow = "none";
+        el.style.textShadow = "none";
+      } catch {}
     });
 
-    const pdfWidth = width + padding * 2;
-    const pdfHeight = height + padding * 2;
+    // =====================================
+    // 4. FIX TABLE & BARIS TERAKHIR (PENTING)
+    // =====================================
+    const scrollContainers = clonedNode.querySelectorAll<HTMLElement>("*");
+    scrollContainers.forEach((el) => {
+      const style = window.getComputedStyle(el);
+      // Cek apakah elemen ini adalah kontainer yang bisa scroll
+      if (style.overflow !== "visible" || style.overflowX !== "visible") {
+        el.style.overflow = "visible";
+        el.style.overflowX = "visible";
+        el.style.maxHeight = "none"; // Hapus limit tinggi jika ada
+        el.style.maxWidth = "none"; // Hapus limit lebar jika ada
+      }
+    });
 
+    const tables = clonedNode.querySelectorAll<HTMLTableElement>("table");
+    tables.forEach((table) => {
+      table.style.marginBottom = "50px"; // Menghilangkan margin luar yang tidak perlu
+
+      // Ambil baris terakhir dari tabel
+      const rows = table.querySelectorAll("tr");
+      if (rows.length > 0) {
+        const lastRow = rows[rows.length - 1];
+        const cells = lastRow.querySelectorAll("td, th");
+
+        // Berikan padding bawah pada setiap cell di baris terakhir
+        // agar teks tidak mepet ke border tabel
+        cells.forEach((cell) => {
+          (cell as HTMLElement).style.paddingBottom = "15px";
+        });
+      }
+    });
+
+    // Berikan padding bawah tambahan pada container utama kloning
+    clonedNode.style.paddingBottom = "10px";
+
+    // =====================================
+    // 5. CALCULATE DIMENSIONS
+    // =====================================
+    let widestTable = 0;
+    tables.forEach((table) => {
+      widestTable = Math.max(widestTable, table.scrollWidth);
+    });
+
+    const finalWidth = Math.max(widestTable, clonedNode.scrollWidth, 1200);
+    clonedNode.style.width = `${finalWidth}px`;
+    clonedNode.style.minWidth = `${finalWidth}px`;
+
+    // Tunggu render selesai agar kalkulasi scrollHeight akurat
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const width = Math.ceil(clonedNode.scrollWidth);
+    // Tambahkan buffer 5px ekstra pada height untuk keamanan render
+    const height = Math.ceil(clonedNode.scrollHeight) + 5;
+
+    // =====================================
+    // 6. EXPORT TO IMAGE
+    // =====================================
+    const dataUrl = await toPng(clonedNode, {
+      cacheBust: true,
+      pixelRatio: quality,
+      backgroundColor,
+      width: width,
+      height: height,
+    });
+
+    // =====================================
+    // 7. GENERATE PDF (DYNAMIC SIZE)
+    // =====================================
     const pdf = new jsPDF({
-      orientation: pdfWidth > pdfHeight ? "landscape" : "portrait",
-
+      orientation: width > height ? "l" : "p",
       unit: "px",
-
-      format: [pdfWidth, pdfHeight],
-
+      // Ukuran halaman = ukuran konten + padding sekeliling
+      format: [width + padding * 2, height + padding * 2],
       compress: true,
     });
 
-    pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.addImage(dataUrl, "PNG", padding, padding, width, height, undefined, "FAST");
 
     pdf.save(`${filename}.pdf`);
-
-    document.body.style.overflow = originalOverflow;
-
     return true;
   } catch (error) {
     console.error("Export failed:", error);
     throw error;
+  } finally {
+    if (exportContainer) {
+      document.body.removeChild(exportContainer);
+    }
   }
 }
