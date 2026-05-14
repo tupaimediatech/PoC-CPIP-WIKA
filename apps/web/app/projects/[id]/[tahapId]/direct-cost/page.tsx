@@ -137,7 +137,7 @@ export default function Level4Page() {
             value: formatCurrency(data?.rabInternal ?? 0),
           },
         ]}
-        onExport={() => {}}
+        onExport={async () => {}}
       />
 
       <DataTable

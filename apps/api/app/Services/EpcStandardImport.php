@@ -149,6 +149,9 @@ class EpcStandardImport
         $plannedEndDate  = $this->date($get(['planned end date', 'tanggal selesai rencana']));
         $plannedDuration = $this->numeric($get(['planned duration (bulan)', 'planned duration', 'durasi rencana (bulan)']));
         $actualDuration  = $this->numeric($get(['actual duration sd. periode (bulan)', 'actual duration (bulan)', 'actual duration']));
+        $unit            = $this->stringOrNull($get(['unit', 'satuan', 'unit pekerjaan', 'satuan pekerjaan']));
+        $volume          = $this->numeric($get(['volume', 'volume pekerjaan', 'quantity']));
+        $harsat          = $this->numeric($get(['harsat', 'harga satuan', 'harga satuan pekerjaan', 'unit rate']));
 
         $project = Project::updateOrCreate(
             ['project_code' => $code],
@@ -167,6 +170,9 @@ class EpcStandardImport
                 'consultant_name'   => $this->stringOrNull($get(['consultant name'])),
                 'funding_source'    => $this->stringOrNull($get(['funding source'])),
                 'location'          => $this->stringOrNull($get(['location', 'lokasi'])),
+                'unit'              => $unit,
+                'volume'            => $volume,
+                'harsat'            => $harsat,
                 'division'          => $this->stringOrNull($get(['division']))
                                        ?? DivisionResolver::fromCode($code),
                 'contract_value'    => $contractValue,
@@ -177,7 +183,7 @@ class EpcStandardImport
                 'planned_end_date'  => $plannedEndDate,
                 'planned_duration'  => $plannedDuration !== null ? (int) $plannedDuration : null,
                 'actual_duration'   => $actualDuration !== null ? (int) $actualDuration : null,
-                'progress_pct'      => $this->percent($get(['progress total (%) - project level', 'progress total (%)', 'progress total'])),
+                'progress_pct'      => $this->percent($get(['progress total (%) - project level', 'progress total (%)', 'progress total'])) ?? 100.0,
             ]
         );
 
@@ -303,6 +309,9 @@ class EpcStandardImport
                 'id_resource'           => $nomor ?: null,
                 'resource_category'     => $subCategory,
                 'sort_order'            => $sortOrder++,
+                'unit'                  => $this->stringOrNull($row[$cols['satuan']] ?? null),
+                'quantity'              => $vol,
+                'price'                 => $harsat,
                 'volume'                => $vol,
                 'volume_addendum'       => $volAdd,
                 'satuan'                => $this->stringOrNull($row[$cols['satuan']] ?? null),

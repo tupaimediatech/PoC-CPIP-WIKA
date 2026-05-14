@@ -82,6 +82,9 @@ class PolaBImport
                 'project_name'      => $meta['project_name'] ?? $meta['project_code'],
                 'division'          => $meta['division'] ?? \App\Services\DivisionResolver::fromCode($meta['project_code'] ?? null),
                 'owner'             => $meta['client_name'] ?? null,
+                'unit'              => $meta['unit'] ?? null,
+                'volume'            => $meta['volume'] ?? null,
+                'harsat'            => $meta['harsat'] ?? null,
                 'contract_value'    => $meta['contract_value'] ?? null,
                 'planned_cost'      => $meta['planned_cost'] ?? null,
                 'actual_cost'       => $meta['actual_cost'] ?? null,
@@ -249,6 +252,9 @@ class PolaBImport
                 case 'owner':
                 case 'client_name':        $meta['client_name']        = trim((string) $val); break;
                 case 'project_manager':    $meta['project_manager']    = trim((string) $val); break;
+                case 'unit':               $meta['unit']               = trim((string) $val); break;
+                case 'volume':             $meta['volume']             = $this->mapper->parseNumeric($val); break;
+                case 'harsat':             $meta['harsat']             = $this->mapper->parseNumeric($val); break;
                 case 'contract_value':     $meta['contract_value']     = $this->mapper->parseNumeric($val); break;
                 case 'addendum_value':     $meta['addendum_value']     = $this->mapper->parseNumeric($val); break;
                 case 'planned_cost':       $meta['planned_cost']       = $this->mapper->parseNumeric($val); break;
@@ -324,6 +330,9 @@ class PolaBImport
                 'item_no'      => $itemNo ?: null,
                 'item_name'    => $itemName,
                 'sort_order'   => $sortOrder++,
+                'unit'         => trim((string) ($data['unit'] ?? $data['satuan'] ?? '')) ?: null,
+                'quantity'     => $this->mapper->parseNumeric($data['quantity'] ?? $data['volume'] ?? null),
+                'price'        => $this->mapper->parseNumeric($data['price'] ?? $data['harsat_internal'] ?? null),
                 'budget_awal'  => $this->mapper->parseNumeric($data['budget_awal'] ?? null),
                 'addendum'     => $this->mapper->parseNumeric($data['addendum'] ?? null) ?? 0,
                 'total_budget' => $this->mapper->parseNumeric($data['total_budget'] ?? null),
@@ -475,6 +484,9 @@ class PolaBImport
                 'id_resource'           => $itemNo ?: null,
                 'resource_category'     => $subCategory,
                 'sort_order'            => $sortOrder++,
+                'unit'                  => trim((string) ($wi['unit'] ?? $wi['satuan'] ?? '')) ?: null,
+                'quantity'              => $this->mapper->parseNumeric($wi['quantity'] ?? null) ?? $volumeBudget,
+                'price'                 => $this->mapper->parseNumeric($wi['price'] ?? null) ?? $hargaSatuan,
                 'volume'                => $volumeBudget,
                 'satuan'                => trim((string) ($wi['satuan'] ?? '')) ?: null,
                 'harsat_internal'       => $hargaSatuan,
