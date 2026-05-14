@@ -101,7 +101,7 @@ export default function Level5Page() {
           { label: "Item", value: item.item_name },
           { label: "Volume", value: `${item.volume.toLocaleString("id-ID")} ${item.satuan ?? ""}`.trim() },
         ]}
-        onExport={() => {}}
+        onExport={async () => {}}
       />
 
       <div className="grid grid-cols-2 gap-6 mb-8 mt-6">
