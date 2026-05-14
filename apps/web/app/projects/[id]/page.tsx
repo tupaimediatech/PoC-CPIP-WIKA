@@ -81,7 +81,7 @@ export default function ProfitLossPage() {
           { label: "Project Owner", value: data.owner ?? "-" },
           { label: "Contract Type", value: data.contract_type ?? "-" },
         ]}
-        onExport={() => {}}
+        onExport={async () => {}}
       />
 
       <div className="overflow-hidden border border-gray-100 rounded-xl mb-8">

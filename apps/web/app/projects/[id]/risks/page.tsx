@@ -413,7 +413,7 @@ export default function Level7Page() {
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
-      <PageHeader title="Level 7A Kamus Risiko (Historical Risk Register)" onExport={() => {}}>
+      <PageHeader title="Level 7A Kamus Risiko (Historical Risk Register)" onExport={async () => {}}>
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 bg-blue-600 text-white text-[13px] font-bold rounded-lg px-4 h-[38px] hover:bg-blue-700 transition-colors"

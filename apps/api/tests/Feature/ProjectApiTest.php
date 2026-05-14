@@ -413,6 +413,20 @@ class ProjectApiTest extends TestCase
     }
 
     #[Test]
+    public function it_derives_harsat_from_contract_value_and_volume_when_missing(): void
+    {
+        $project = $this->makeProject([
+            'contract_value' => 1000000,
+            'volume' => 250,
+            'harsat' => null,
+        ]);
+
+        $this->getJson("/api/projects/{$project->id}")
+            ->assertOk()
+            ->assertJsonPath('data.harsat', '4000.00');
+    }
+
+    #[Test]
     public function it_returns_404_for_nonexistent_project(): void
     {
         $this->getJson('/api/projects/9999')->assertNotFound();
