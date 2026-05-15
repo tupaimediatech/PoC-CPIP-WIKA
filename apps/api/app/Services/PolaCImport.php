@@ -195,6 +195,9 @@ class PolaCImport
                     case 'actual_cost':        $meta['actual_cost']        = $this->mapper->parseNumeric($val); break;
                     case 'planned_duration':   $meta['planned_duration']   = $this->parseDuration($val); break;
                     case 'actual_duration':    $meta['actual_duration']    = $this->parseDuration($val); break;
+                    case 'unit':               $meta['unit']               = trim((string) $val); break;
+                    case 'volume':             $meta['volume']             = $this->mapper->parseNumeric($val); break;
+                    case 'harsat':             $meta['harsat']             = $this->mapper->parseNumeric($val); break;
                     case 'project_year':       $meta['project_year']       = (int) $val; break;
                     case 'sbu':                $meta['sbu']                = trim((string) $val); break;
                     case 'division':           $meta['division']           = trim((string) $val); break;

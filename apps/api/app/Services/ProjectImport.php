@@ -197,6 +197,8 @@ class ProjectImport
             'contract_value'   => 'nullable|numeric|min:0',
             'planned_cost'     => 'nullable|numeric|min:0',
             'actual_cost'      => 'nullable|numeric|min:0',
+            'volume'           => 'nullable|numeric|min:0',
+            'harsat'           => 'nullable|numeric|min:0',
             'planned_duration' => 'nullable|integer|min:1',
             'actual_duration'  => 'nullable|integer|min:1',
             'progress_pct'     => 'nullable|numeric|min:0|max:100',

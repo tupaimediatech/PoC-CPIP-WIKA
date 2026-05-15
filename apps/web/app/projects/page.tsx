@@ -8,6 +8,7 @@ import Snackbar from "@/components/ui/Snackbar";
 import { projectApi } from "@/lib/api";
 import type { Project, FilterOptionsResponse } from "@/types/project";
 import { formatCurrency, formatKpi, kpiColor } from "@/lib/utils";
+import { exportElementToPdf } from "@/lib/exporter";
 
 const AutocompleteInput = ({
   value,
@@ -334,7 +335,16 @@ export default function ProjectsPage() {
 
   return (
     <div className="bg-white min-h-screen" style={{ padding: "24px 32px" }}>
-      <PageHeader title="Projects Filter" onExport={() => {}} />
+      <PageHeader
+        title="Projects Filter"
+        onExport={async () => {
+          await exportElementToPdf("projects-export", {
+            filename: "Projects_Report",
+            backgroundColor: "#FFFFFF",
+            quality: 2,
+          });
+        }}
+      />
 
       <div className="grid grid-cols-3 gap-x-6 gap-y-4 mb-6">
         {FILTER_GRID.map(({ key, label, optionKey, placeholder }) => (
@@ -366,17 +376,18 @@ export default function ProjectsPage() {
         </button>
       </div>
 
-      <h2 className="text-[20px] font-bold text-[#1B1C1F] mb-6">Project Results</h2>
+      <div id="projects-export">
+        <h2 className="text-[20px] font-bold text-[#1B1C1F] mb-6">Project Results</h2>
 
-      {!searchApplied ? (
-        <div className="py-16 text-center text-gray-400 text-[14px]">
-          {loading ? "Fetching data..." : "Apply filters and click Search to view projects"}
-        </div>
-      ) : projects.length === 0 ? (
-        <div className="py-16 text-center text-gray-400 text-[14px]">No projects found</div>
-      ) : (
-        <div className="overflow-x-auto border border-gray-100 rounded-xl">
-          <table className="w-full border-collapse min-w-max">
+        {!searchApplied ? (
+          <div className="py-16 text-center text-gray-400 text-[14px]">
+            {loading ? "Fetching data..." : "Apply filters and click Search to view projects"}
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="py-16 text-center text-gray-400 text-[14px]">No projects found</div>
+        ) : (
+          <div className="overflow-x-auto border border-gray-100 rounded-xl">
+            <table className="w-full border-collapse min-w-max">
             <thead>
               <tr className="border-b border-gray-100" style={{ backgroundColor: "#F9FAFB" }}>
                 <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Profit Center</th>
@@ -443,9 +454,10 @@ export default function ProjectsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      )}
+            </table>
+          </div>
+        )}
+      </div>
 
       <Snackbar title="Success!" message={`Filters applied. Showing ${projects.length} projects`} visible={snackbar} onClose={handleSnackbarClose} />
     </div>

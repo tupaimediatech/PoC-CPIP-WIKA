@@ -183,7 +183,7 @@ class EpcStandardImport
                 'planned_end_date'  => $plannedEndDate,
                 'planned_duration'  => $plannedDuration !== null ? (int) $plannedDuration : null,
                 'actual_duration'   => $actualDuration !== null ? (int) $actualDuration : null,
-                'progress_pct'      => $this->percent($get(['progress total (%) - project level', 'progress total (%)', 'progress total'])),
+                'progress_pct'      => $this->percent($get(['progress total (%) - project level', 'progress total (%)', 'progress total'])) ?? 100.0,
             ]
         );
 
@@ -312,6 +312,9 @@ class EpcStandardImport
                 'quantity'              => $vol,
                 'price'                 => $harsat,
                 'sort_order'            => $sortOrder++,
+                'unit'                  => $this->stringOrNull($row[$cols['satuan']] ?? null),
+                'quantity'              => $vol,
+                'price'                 => $harsat,
                 'volume'                => $vol,
                 'volume_addendum'       => $volAdd,
                 'satuan'                => $this->stringOrNull($row[$cols['satuan']] ?? null),

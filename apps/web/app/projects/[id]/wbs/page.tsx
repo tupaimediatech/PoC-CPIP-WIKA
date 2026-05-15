@@ -125,7 +125,7 @@ export default function Level3Page() {
             value: data?.contract_type ?? "-",
           },
         ]}
-        onExport={() => {}}
+        onExport={async () => {}}
       />
 
       <DataTable

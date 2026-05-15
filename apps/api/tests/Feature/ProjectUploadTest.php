@@ -246,6 +246,100 @@ class ProjectUploadTest extends TestCase
     }
 
     #[Test]
+    public function it_imports_project_level_unit_volume_and_harsat_from_flat_excel(): void
+    {
+        $headers = [
+            'project_code',
+            'project_name',
+            'division',
+            'unit',
+            'volume',
+            'harsat',
+            'contract_value',
+            'planned_cost',
+            'actual_cost',
+            'planned_duration',
+            'actual_duration',
+        ];
+        $rows = [
+            ['UNIT-01', 'Project Unit Rate', 'Infrastructure', 'm2', 1500, 750000, 300, 270, 255, 14, 14],
+        ];
+
+        $path = $this->makeExcelFile($headers, $rows);
+
+        $this->postJson('/api/projects/upload', [
+            'files' => [$this->makeUploadedFile($path)],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('projects', [
+            'project_code' => 'UNIT-01',
+            'unit' => 'm2',
+            'volume' => 1500,
+            'harsat' => 750000,
+        ]);
+
+        @unlink($path);
+    }
+
+    #[Test]
+    public function it_imports_resource_display_fields_from_epc_wbs_data(): void
+    {
+        $path = $this->makeMultiSheetExcelFile([
+            'Project Metadata' => [
+                ['Kode Proyek', 'EPC-UNIT-01'],
+                ['Nama Proyek', 'EPC Unit Rate Project'],
+                ['Division', 'Infrastructure'],
+                ['Unit', 'm3'],
+                ['Volume', 2500],
+                ['Harsat', 1250000],
+                ['Nilai Kontrak', 5000000000],
+                ['RAP', 4000000000],
+                ['Planned Duration', 12],
+                ['Actual Duration', 12],
+            ],
+            'WBS Data' => [
+                [
+                    'Nomor',
+                    'Item Pekerjaan',
+                    'Kategori Biaya',
+                    'Sub Kategori',
+                    'Satuan',
+                    'Volume Budget',
+                    'Volume Addendum',
+                    'Harga Satuan',
+                    'Volume Aktual',
+                    'Harsat Aktual',
+                    'Bobot Pekerjaan',
+                    'Progress Plan',
+                    'Actual Progress',
+                ],
+                ['I', 'Pekerjaan Tanah', 'Langsung', 'Material', '', '', '', '', '', '', '', '', ''],
+                ['I.1', 'Galian Tanah', 'Langsung', 'Material', 'm3', 100, 0, 50000, 90, 52000, '10%', '100%', '90%'],
+            ],
+        ]);
+
+        $this->postJson('/api/projects/upload', [
+            'files' => [$this->makeUploadedFile($path)],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('projects', [
+            'project_code' => 'EPC-UNIT-01',
+            'unit' => 'm3',
+            'volume' => 2500,
+            'harsat' => 1250000,
+        ]);
+
+        $this->assertDatabaseHas('project_work_items', [
+            'item_name' => 'Galian Tanah',
+            'unit' => 'm3',
+            'quantity' => 100,
+            'price' => 50000,
+        ]);
+
+        @unlink($path);
+    }
+
+    #[Test]
     public function it_accepts_excel_headers_with_spaces_and_units(): void
     {
         $headers = [
