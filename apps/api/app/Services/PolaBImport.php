@@ -483,6 +483,9 @@ class PolaBImport
                 // resource_category: reuse the Excel's "Sub Kategori" value.
                 'id_resource'           => $itemNo ?: null,
                 'resource_category'     => $subCategory,
+                'unit'                  => trim((string) ($wi['unit'] ?? $wi['satuan'] ?? '')) ?: null,
+                'quantity'              => $this->mapper->parseNumeric($wi['quantity'] ?? $wi['volume'] ?? null),
+                'price'                 => $this->mapper->parseNumeric($wi['price'] ?? $wi['harsat_internal'] ?? null),
                 'sort_order'            => $sortOrder++,
                 'unit'                  => trim((string) ($wi['unit'] ?? $wi['satuan'] ?? '')) ?: null,
                 'quantity'              => $this->mapper->parseNumeric($wi['quantity'] ?? null) ?? $volumeBudget,

@@ -149,9 +149,9 @@ class EpcStandardImport
         $plannedEndDate  = $this->date($get(['planned end date', 'tanggal selesai rencana']));
         $plannedDuration = $this->numeric($get(['planned duration (bulan)', 'planned duration', 'durasi rencana (bulan)']));
         $actualDuration  = $this->numeric($get(['actual duration sd. periode (bulan)', 'actual duration (bulan)', 'actual duration']));
-        $unit            = $this->stringOrNull($get(['unit', 'satuan', 'unit pekerjaan', 'satuan pekerjaan']));
-        $volume          = $this->numeric($get(['volume', 'volume pekerjaan', 'quantity']));
-        $harsat          = $this->numeric($get(['harsat', 'harga satuan', 'harga satuan pekerjaan', 'unit rate']));
+        $projectUnit     = $this->stringOrNull($get(['unit', 'satuan', 'unit pekerjaan', 'satuan pekerjaan']));
+        $projectVolume   = $this->numeric($get(['volume pekerjaan', 'volume', 'quantity', 'qty']));
+        $projectHarsat   = $this->numeric($get(['harga satuan pekerjaan', 'harga satuan', 'harsat']));
 
         $project = Project::updateOrCreate(
             ['project_code' => $code],
@@ -170,9 +170,9 @@ class EpcStandardImport
                 'consultant_name'   => $this->stringOrNull($get(['consultant name'])),
                 'funding_source'    => $this->stringOrNull($get(['funding source'])),
                 'location'          => $this->stringOrNull($get(['location', 'lokasi'])),
-                'unit'              => $unit,
-                'volume'            => $volume,
-                'harsat'            => $harsat,
+                'unit'              => $projectUnit,
+                'volume'            => $projectVolume,
+                'harsat'            => $projectHarsat,
                 'division'          => $this->stringOrNull($get(['division']))
                                        ?? DivisionResolver::fromCode($code),
                 'contract_value'    => $contractValue,
@@ -308,6 +308,9 @@ class EpcStandardImport
                 'item_name'             => $name,
                 'id_resource'           => $nomor ?: null,
                 'resource_category'     => $subCategory,
+                'unit'                  => $this->stringOrNull($row[$cols['satuan']] ?? null),
+                'quantity'              => $vol,
+                'price'                 => $harsat,
                 'sort_order'            => $sortOrder++,
                 'unit'                  => $this->stringOrNull($row[$cols['satuan']] ?? null),
                 'quantity'              => $vol,

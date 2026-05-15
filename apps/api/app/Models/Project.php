@@ -84,12 +84,14 @@ class Project extends Model
                 $project->project_year = (int) now()->format('Y');
             }
 
-            if ($project->harsat === null) {
-                $contractValue = $project->contract_value !== null ? (float) $project->contract_value : 0.0;
+            $rawHarsat = $project->getAttributes()['harsat'] ?? null;
+
+            if ($rawHarsat === null) {
+                $contract = $project->contract_value !== null ? (float) $project->contract_value : 0.0;
                 $volume = $project->volume !== null ? (float) $project->volume : 0.0;
 
-                if ($contractValue > 0 && $volume > 0) {
-                    $project->harsat = $contractValue / $volume;
+                if ($contract > 0 && $volume > 0) {
+                    $project->harsat = $contract / $volume;
                 }
             }
 
