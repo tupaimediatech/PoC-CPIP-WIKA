@@ -144,6 +144,75 @@ class ProjectUploadTest extends TestCase
     }
 
     #[Test]
+    public function it_imports_project_level_unit_volume_and_harsat(): void
+    {
+        $headers = [
+            'project_code',
+            'project_name',
+            'division',
+            'unit',
+            'volume pekerjaan',
+            'harga satuan pekerjaan',
+            'contract_value',
+        ];
+        $rows = [
+            ['PRJ-HSP-01', 'Proyek Harga Satuan', 'Infrastructure', 'm2', 1250, 400000, 500000000],
+        ];
+
+        $path = $this->makeExcelFile($headers, $rows);
+        $response = $this->postJson('/api/projects/upload', [
+            'files' => [$this->makeUploadedFile($path)],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('skipped', 0);
+
+        $this->assertDatabaseHas('projects', [
+            'project_code' => 'PRJ-HSP-01',
+            'unit' => 'm2',
+            'volume' => 1250,
+            'harsat' => 400000,
+        ]);
+
+        @unlink($path);
+    }
+
+    #[Test]
+    public function it_derives_project_harsat_when_uploaded_file_has_contract_value_and_volume(): void
+    {
+        $headers = [
+            'project_code',
+            'project_name',
+            'division',
+            'unit',
+            'volume pekerjaan',
+            'contract_value',
+        ];
+        $rows = [
+            ['PRJ-HSP-02', 'Proyek Derived Harsat', 'Infrastructure', 'm3', 200, 1000000],
+        ];
+
+        $path = $this->makeExcelFile($headers, $rows);
+        $response = $this->postJson('/api/projects/upload', [
+            'files' => [$this->makeUploadedFile($path)],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('skipped', 0);
+
+        $this->assertDatabaseHas('projects', [
+            'project_code' => 'PRJ-HSP-02',
+            'unit' => 'm3',
+            'volume' => 200,
+            'harsat' => 5000,
+        ]);
+
+        @unlink($path);
+    }
+
+    #[Test]
     public function it_calculates_kpi_after_import(): void
     {
         $headers = [

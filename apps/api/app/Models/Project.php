@@ -84,6 +84,17 @@ class Project extends Model
                 $project->project_year = (int) now()->format('Y');
             }
 
+            $rawHarsat = $project->getAttributes()['harsat'] ?? null;
+
+            if ($rawHarsat === null) {
+                $contract = $project->contract_value !== null ? (float) $project->contract_value : 0.0;
+                $volume = $project->volume !== null ? (float) $project->volume : 0.0;
+
+                if ($contract > 0 && $volume > 0) {
+                    $project->harsat = $contract / $volume;
+                }
+            }
+
             $kpi = (new KpiCalculatorService())->calculate(
                 $project->planned_cost  !== null ? (float) $project->planned_cost  : null,
                 $project->actual_cost   !== null ? (float) $project->actual_cost   : null,
@@ -207,6 +218,22 @@ class Project extends Model
         if ($contract <= 0) return null;
 
         return number_format(($actual / $contract) * 100, 2, '.', '');
+    }
+
+    public function getHarsatAttribute($value): ?string
+    {
+        if ($value !== null) {
+            return number_format((float) $value, 2, '.', '');
+        }
+
+        $contract = (float) ($this->attributes['contract_value'] ?? 0);
+        $volume = (float) ($this->attributes['volume'] ?? 0);
+
+        if ($contract <= 0 || $volume <= 0) {
+            return null;
+        }
+
+        return number_format($contract / $volume, 2, '.', '');
     }
 
     /**

@@ -184,6 +184,9 @@ class PolaCImport
                     case 'client_name':
                     case 'owner':              $meta['client_name']        = trim((string) $val); break;
                     case 'project_manager':    $meta['project_manager']    = trim((string) $val); break;
+                    case 'unit':               $meta['unit']               = trim((string) $val); break;
+                    case 'volume':             $meta['volume']             = $this->mapper->parseNumeric($val); break;
+                    case 'harsat':             $meta['harsat']             = $this->mapper->parseNumeric($val); break;
                     case 'contract_value':     $meta['contract_value']     = $this->mapper->parseNumeric($val); break;
                     case 'addendum_value':     $meta['addendum_value']     = $this->mapper->parseNumeric($val); break;
                     case 'progress_pct':
@@ -229,6 +232,9 @@ class PolaCImport
                 'division'          => $meta['division'] ?? \App\Services\DivisionResolver::fromCode($meta['project_code'] ?? null),
                 'sbu'               => $meta['sbu'] ?? null,
                 'owner'             => $meta['client_name'] ?? null,
+                'unit'              => $meta['unit'] ?? null,
+                'volume'            => $meta['volume'] ?? null,
+                'harsat'            => $meta['harsat'] ?? null,
                 'contract_value'    => $meta['contract_value'] ?? null,
                 'planned_cost'      => $meta['planned_cost'] ?? null,
                 'actual_cost'       => $meta['actual_cost'] ?? null,
@@ -393,7 +399,15 @@ class PolaCImport
                 'level'        => $level,
                 'item_no'      => $itemNo ?: null,
                 'item_name'    => $itemName,
+                'id_resource'  => $data['id_resource'] ?? ($itemNo ?: null),
+                'resource_category' => $data['resource_category'] ?? $data['cost_subcategory'] ?? null,
+                'unit'         => $data['unit'] ?? $data['satuan'] ?? null,
+                'quantity'     => $this->mapper->parseNumeric($data['quantity'] ?? $data['volume'] ?? null),
+                'price'        => $this->mapper->parseNumeric($data['price'] ?? $data['harsat_internal'] ?? null),
                 'sort_order'   => $sortOrder++,
+                'volume'       => $this->mapper->parseNumeric($data['volume'] ?? null),
+                'satuan'       => $data['satuan'] ?? null,
+                'harsat_internal' => $this->mapper->parseNumeric($data['harsat_internal'] ?? null),
                 'budget_awal'  => $this->mapper->parseNumeric($data['budget_awal'] ?? null),
                 'addendum'     => $this->mapper->parseNumeric($data['addendum'] ?? null) ?? 0,
                 'total_budget' => $this->mapper->parseNumeric($data['total_budget'] ?? null),
