@@ -208,15 +208,12 @@ function buildFilteredTrend(resources: Resource[]) {
 
   categories.forEach((category) => {
     data[category.key] = years.map((year) => {
-      const filtered = resources.filter((r) => String(r.year) === year && (r.resource_category || "Unknown") === category.key);
-
-      if (filtered.length === 0) return 0;
-
-      // Menghitung rata-rata Harga Satuan (price)
-      const avgPrice = filtered.reduce((sum, r) => sum + Number(r.price || 0), 0) / filtered.length;
-
-      // Jika harga satuan tidak dalam skala Miliar, hapus pembagi 10^9 atau sesuaikan labelnya
-      return avgPrice;
+      const sumRaw = resources
+        .filter((resource) => String(resource.year) === year && (resource.resource_category || "Unknown") === category.key)
+        .reduce((sum, resource) => {
+          return sum + Number(resource.total || 0);
+        }, 0);
+      return sumRaw / 1_000_000_000;
     });
   });
 
