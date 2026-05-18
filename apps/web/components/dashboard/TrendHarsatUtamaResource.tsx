@@ -92,7 +92,7 @@ export default function TrendHarsatUtama({ harsatTrend }: Props) {
     const rect = chartRef.current?.getBoundingClientRect();
     if (!rect || YEARS.length === 0) return;
     const relX = e.clientX - rect.left;
-    const svgLeft = 38;
+    const svgLeft = 52; // Disesuaikan: Lebar label 42px + gap 8px + buffer 2px
     const svgRight = rect.width - 16;
     const pct = Math.max(0, Math.min(1, (relX - svgLeft) / (svgRight - svgLeft)));
     const idx = Math.round(pct * (YEARS.length - 1));
@@ -121,7 +121,12 @@ export default function TrendHarsatUtama({ harsatTrend }: Props) {
   const getX = (idx: number) => PADDING.left + (YEARS.length > 1 ? (idx / (YEARS.length - 1)) * chartW : chartW / 2);
   const getY = (val: number) => PADDING.top + chartH - (val / maxValue) * chartH;
 
-  const formatTick = (n: number) => (Number.isInteger(n) ? n.toString() : n.toFixed(1));
+  const formatTick = (n: number) => {
+    return n.toLocaleString("id-ID", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    });
+  };
 
   // ── JSX identik 100% dengan kode asli ────────────────────────────────────
   return (
@@ -169,7 +174,7 @@ export default function TrendHarsatUtama({ harsatTrend }: Props) {
             )}
 
             <div className="flex gap-2 h-full">
-              <div className="relative shrink-0" style={{ width: "28px", height: `${svgH}px` }}>
+              <div className="relative shrink-0" style={{ width: "42px", height: `${svgH}px` }}>
                 {yTicks.map((tick) => (
                   <span
                     key={tick}
