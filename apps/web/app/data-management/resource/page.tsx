@@ -6,7 +6,7 @@ import { ArrowSquareOutIcon, ArrowLeft } from "@phosphor-icons/react";
 import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { resourceApi, harsatApi } from "@/lib/api";
-import TrendHarsatUtama from "@/components/dashboard/TrendHarsatUtama";
+import TrendHarsatUtama from "@/components/dashboard/TrendHarsatUtamaResource";
 import type { Resource, ResourceFilterOptionsResponse } from "@/types/resource";
 import { formatCurrency } from "@/lib/utils";
 import { exportElementToPdf } from "@/lib/exporter";
@@ -208,11 +208,15 @@ function buildFilteredTrend(resources: Resource[]) {
 
   categories.forEach((category) => {
     data[category.key] = years.map((year) => {
-      return resources
-        .filter((resource) => String(resource.year) === year && (resource.resource_category || "Unknown") === category.key)
-        .reduce((sum, resource) => {
-          return sum + Number(resource.total || 0);
-        }, 0);
+      const filtered = resources.filter((r) => String(r.year) === year && (r.resource_category || "Unknown") === category.key);
+
+      if (filtered.length === 0) return 0;
+
+      // Menghitung rata-rata Harga Satuan (price)
+      const avgPrice = filtered.reduce((sum, r) => sum + Number(r.price || 0), 0) / filtered.length;
+
+      // Jika harga satuan tidak dalam skala Miliar, hapus pembagi 10^9 atau sesuaikan labelnya
+      return avgPrice;
     });
   });
 
