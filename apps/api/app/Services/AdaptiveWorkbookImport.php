@@ -639,6 +639,12 @@ class AdaptiveWorkbookImport
             $numeric = fn($key) => isset($data[$key]) && $data[$key] !== '' ? (float) $data[$key] : null;
             $integer = fn($key) => isset($data[$key]) && $data[$key] !== '' ? (int)   $data[$key] : null;
 
+            app(ProjectReplacementService::class)->replaceExistingProject(
+                trim((string) $data['project_code']),
+                trim((string) $data['project_name']),
+                $ingestionFileId,
+            );
+
             $project = Project::updateOrCreate(
                 ['project_code' => trim((string) $data['project_code'])],
                 [

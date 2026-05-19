@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
+use App\Models\ProjectWbs;
+use App\Models\ProjectWorkItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -100,9 +103,9 @@ class ProjectUploadTest extends TestCase
     }
 
     #[Test]
-    public function it_rejects_file_over_5mb(): void
+    public function it_rejects_file_over_10mb(): void
     {
-        $file = UploadedFile::fake()->create('large.xlsx', 6000, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $file = UploadedFile::fake()->create('large.xlsx', 11000, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
         $this->postJson('/api/projects/upload', ['file' => $file])
             ->assertUnprocessable()
@@ -406,6 +409,198 @@ class ProjectUploadTest extends TestCase
         $project = Project::where('project_code', 'INF-01')->first();
         $this->assertEquals('Tol Semarang Updated', $project->project_name);
         $this->assertEqualsWithDelta(0.9176, (float) $project->cpi, 0.0001);
+    }
+
+    #[Test]
+    public function it_replaces_existing_project_row_and_children_when_project_code_matches(): void
+    {
+        $oldProject = Project::create([
+            'project_code' => 'REP-01',
+            'project_name' => 'Replacement Project',
+            'division' => 'Building',
+            'contract_value' => 100,
+            'planned_cost' => 90,
+            'actual_cost' => 95,
+            'planned_duration' => 10,
+            'actual_duration' => 11,
+            'project_year' => 2024,
+        ]);
+        $oldWbs = ProjectWbs::create([
+            'project_id' => $oldProject->id,
+            'name_of_work_phase' => 'OLD WBS',
+        ]);
+        ProjectWorkItem::create([
+            'period_id' => $oldWbs->id,
+            'item_name' => 'Old Work Item',
+            'id_resource' => 'OLD-01',
+            'resource_category' => 'Material',
+            'is_total_row' => false,
+        ]);
+
+        $path = $this->makeExcelFile(
+            ['project_code', 'project_name', 'division', 'contract_value', 'planned_cost', 'actual_cost', 'planned_duration', 'actual_duration'],
+            [['REP-01', 'Replacement Project Updated', 'Building', 200, 150, 125, 12, 10]],
+        );
+
+        $this->postJson('/api/projects/upload', [
+            'files' => [$this->makeUploadedFile($path)],
+        ])->assertOk();
+        @unlink($path);
+
+        $this->assertDatabaseMissing('projects', ['id' => $oldProject->id]);
+        $this->assertDatabaseMissing('project_wbs', ['id' => $oldWbs->id]);
+        $this->assertDatabaseMissing('project_work_items', ['item_name' => 'Old Work Item']);
+        $this->assertDatabaseHas('projects', [
+            'project_code' => 'REP-01',
+            'project_name' => 'Replacement Project Updated',
+            'contract_value' => 200,
+        ]);
+
+        $newProject = Project::where('project_code', 'REP-01')->first();
+        $this->assertNotNull($newProject);
+        $this->assertNotSame($oldProject->id, $newProject->id);
+    }
+
+    #[Test]
+    public function it_replaces_existing_project_by_name_when_project_code_is_new(): void
+    {
+        $oldProject = Project::create([
+            'project_code' => 'OLD-CODE',
+            'project_name' => 'Same Name Project',
+            'division' => 'Infrastructure',
+            'contract_value' => 100,
+            'planned_cost' => 90,
+            'actual_cost' => 95,
+            'planned_duration' => 10,
+            'actual_duration' => 11,
+            'project_year' => 2024,
+        ]);
+
+        $path = $this->makeExcelFile(
+            ['project_code', 'project_name', 'division', 'contract_value', 'planned_cost', 'actual_cost', 'planned_duration', 'actual_duration'],
+            [['NEW-CODE', '  same   name project  ', 'Infrastructure', 300, 250, 200, 12, 12]],
+        );
+
+        $this->postJson('/api/projects/upload', [
+            'files' => [$this->makeUploadedFile($path)],
+        ])->assertOk();
+        @unlink($path);
+
+        $this->assertDatabaseMissing('projects', ['id' => $oldProject->id]);
+        $this->assertDatabaseMissing('projects', ['project_code' => 'OLD-CODE']);
+        $this->assertDatabaseHas('projects', [
+            'project_code' => 'NEW-CODE',
+            'project_name' => 'same   name project',
+        ]);
+    }
+
+    #[Test]
+    public function it_fails_safely_when_project_name_matches_multiple_existing_projects(): void
+    {
+        foreach (['DUP-A', 'DUP-B'] as $code) {
+            Project::create([
+                'project_code' => $code,
+                'project_name' => 'Duplicate Name',
+                'division' => 'Building',
+                'contract_value' => 100,
+                'planned_cost' => 90,
+                'actual_cost' => 95,
+                'planned_duration' => 10,
+                'actual_duration' => 11,
+                'project_year' => 2024,
+            ]);
+        }
+
+        $path = $this->makeExcelFile(
+            ['project_code', 'project_name', 'division', 'contract_value', 'planned_cost', 'actual_cost', 'planned_duration', 'actual_duration'],
+            [['DUP-C', 'Duplicate Name', 'Building', 300, 250, 200, 12, 12]],
+        );
+
+        $this->postJson('/api/projects/upload', [
+            'files' => [$this->makeUploadedFile($path)],
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonFragment(['message' => 'Semua file gagal diimport.']);
+        @unlink($path);
+
+        $this->assertDatabaseHas('projects', ['project_code' => 'DUP-A']);
+        $this->assertDatabaseHas('projects', ['project_code' => 'DUP-B']);
+        $this->assertDatabaseMissing('projects', ['project_code' => 'DUP-C']);
+    }
+
+    #[Test]
+    public function it_rolls_back_replacement_when_new_import_fails(): void
+    {
+        $oldProject = Project::create([
+            'project_code' => 'ROLL-01',
+            'project_name' => 'Rollback Project',
+            'division' => 'Building',
+            'contract_value' => 100,
+            'planned_cost' => 90,
+            'actual_cost' => 95,
+            'planned_duration' => 10,
+            'actual_duration' => 11,
+            'project_year' => 2024,
+        ]);
+
+        try {
+            DB::transaction(function (): void {
+                app(\App\Services\ProjectReplacementService::class)->replaceExistingProject(
+                    'ROLL-01',
+                    'Rollback Project Updated',
+                    999,
+                );
+
+                throw new \RuntimeException('Simulated import failure.');
+            });
+        } catch (\RuntimeException) {
+        }
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $oldProject->id,
+            'project_code' => 'ROLL-01',
+            'project_name' => 'Rollback Project',
+        ]);
+    }
+
+    #[Test]
+    public function it_commits_replacement_when_new_import_is_partial(): void
+    {
+        $oldProject = Project::create([
+            'project_code' => 'PART-01',
+            'project_name' => 'Partial Project',
+            'division' => 'Building',
+            'contract_value' => 100,
+            'planned_cost' => 90,
+            'actual_cost' => 95,
+            'planned_duration' => 10,
+            'actual_duration' => 11,
+            'project_year' => 2024,
+        ]);
+
+        $path = $this->makeExcelFile(
+            ['project_code', 'project_name', 'division', 'contract_value', 'planned_cost', 'actual_cost', 'planned_duration', 'actual_duration'],
+            [
+                ['PART-01', 'Partial Project Updated', 'Building', 300, 250, 200, 12, 12],
+                ['BAD-PART', '', 'Building', 300, 250, 200, 12, 12],
+            ],
+        );
+
+        $this->postJson('/api/projects/upload', [
+            'files' => [$this->makeUploadedFile($path)],
+        ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('results.0.status', 'partial');
+        @unlink($path);
+
+        $this->assertDatabaseMissing('projects', ['id' => $oldProject->id]);
+        $this->assertDatabaseHas('projects', [
+            'project_code' => 'PART-01',
+            'project_name' => 'Partial Project Updated',
+        ]);
+        $this->assertDatabaseMissing('projects', ['project_code' => 'BAD-PART']);
     }
 
     #[Test]

@@ -12,6 +12,7 @@ use App\Models\ProjectVendor;
 use App\Models\ProjectWbs;
 use App\Models\ProjectWorkItem;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -95,6 +96,10 @@ class EpcStandardImport
             try {
                 $this->{$method}($sheetMap[$key], $project, $ingestionFileId);
             } catch (\Throwable $e) {
+                if ($this->isDatabaseException($e)) {
+                    throw $e;
+                }
+
                 $this->errors[] = "Sheet '{$key}': " . $e->getMessage();
                 $this->skipped++;
             }
@@ -114,6 +119,17 @@ class EpcStandardImport
             'warnings'             => $this->warnings,
             'unrecognized_columns' => [],
         ];
+    }
+
+    private function isDatabaseException(\Throwable $e): bool
+    {
+        if ($e instanceof QueryException || $e instanceof \PDOException) {
+            return true;
+        }
+
+        $previous = $e->getPrevious();
+
+        return $previous instanceof \Throwable && $this->isDatabaseException($previous);
     }
 
     // ─── Sheet 1: Project Metadata ──────────────────────────────────────────
@@ -138,6 +154,8 @@ class EpcStandardImport
         if ($code === '' || $name === '') {
             throw new \RuntimeException('Kode Proyek atau Nama Proyek kosong di sheet Project Metadata.');
         }
+
+        app(ProjectReplacementService::class)->replaceExistingProject($code, $name, $ingestionFileId);
 
         $contractValue  = $this->numeric($get(['nilai kontrak awal (rp)', 'nilai kontrak (rp)', 'nilai kontrak']));
         $addendumValue  = $this->numeric($get(['addendum value (rp)', 'addendum (rp)', 'addendum']));
