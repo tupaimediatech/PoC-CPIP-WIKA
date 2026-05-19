@@ -346,20 +346,26 @@ class ProjectController extends Controller
             ]);
 
             try {
-                $ingestionFile->markProcessing();
+                $result = DB::transaction(function () use ($ingestionFile) {
+                    $ingestionFile->markProcessing();
 
-                $importer = $this->resolveImporter($ingestionFile->getAbsolutePath());
-                $result   = $importer->import(
-                    $ingestionFile->getAbsolutePath(),
-                    $ingestionFile->id,
-                );
+                    $importer = $this->resolveImporter($ingestionFile->getAbsolutePath());
+                    $result   = $importer->import(
+                        $ingestionFile->getAbsolutePath(),
+                        $ingestionFile->id,
+                    );
 
-                $ingestionFile->markDone(
-                    $result['total'],
-                    $result['imported'],
-                    $result['skipped'],
-                    $result['errors'],
-                );
+                    $this->abortFailedImport($result);
+
+                    $ingestionFile->markDone(
+                        $result['total'],
+                        $result['imported'],
+                        $result['skipped'],
+                        $result['errors'],
+                    );
+
+                    return $result;
+                });
 
             } catch (ImportValidationException $e) {
                 $ingestionFile->markFailed($e->getMessage());
@@ -487,22 +493,28 @@ class ProjectController extends Controller
     {
         abort_unless($ingestionFile->fileExists(), 404, 'File tidak ditemukan di storage.');
 
-        // Reset status
-        $ingestionFile->markProcessing();
-
         try {
-            $importer = $this->resolveImporter($ingestionFile->getAbsolutePath());
-            $result   = $importer->import(
-                $ingestionFile->getAbsolutePath(),
-                $ingestionFile->id,
-            );
+            $result = DB::transaction(function () use ($ingestionFile) {
+                // Reset status
+                $ingestionFile->markProcessing();
 
-            $ingestionFile->markDone(
-                $result['total'],
-                $result['imported'],
-                $result['skipped'],
-                $result['errors'],
-            );
+                $importer = $this->resolveImporter($ingestionFile->getAbsolutePath());
+                $result   = $importer->import(
+                    $ingestionFile->getAbsolutePath(),
+                    $ingestionFile->id,
+                );
+
+                $this->abortFailedImport($result);
+
+                $ingestionFile->markDone(
+                    $result['total'],
+                    $result['imported'],
+                    $result['skipped'],
+                    $result['errors'],
+                );
+
+                return $result;
+            });
 
         } catch (ImportValidationException $e) {
             $ingestionFile->markFailed($e->getMessage());
@@ -538,6 +550,18 @@ class ProjectController extends Controller
             'project_row_trace' => $result['project_row_trace'] ?? [],
             'project_row_conflicts' => $result['project_row_conflicts'] ?? [],
         ]);
+    }
+
+    private function abortFailedImport(array $result): void
+    {
+        $imported = (int) ($result['imported'] ?? 0);
+        $skipped = (int) ($result['skipped'] ?? 0);
+
+        if ($imported === 0 && $skipped > 0) {
+            $message = $result['errors'][0] ?? 'Import gagal tanpa baris yang berhasil.';
+
+            throw new \RuntimeException($message);
+        }
     }
 
     public function exportDashboard(Request $request): JsonResponse
