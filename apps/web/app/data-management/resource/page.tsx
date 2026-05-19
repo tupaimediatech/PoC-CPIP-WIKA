@@ -6,7 +6,7 @@ import { ArrowSquareOutIcon, ArrowLeft } from "@phosphor-icons/react";
 import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { resourceApi, harsatApi } from "@/lib/api";
-import TrendHarsatUtama from "@/components/dashboard/TrendHarsatUtama";
+import TrendHarsatUtama from "@/components/dashboard/TrendHarsatUtamaResource";
 import type { Resource, ResourceFilterOptionsResponse } from "@/types/resource";
 import { formatCurrency } from "@/lib/utils";
 import { exportElementToPdf } from "@/lib/exporter";
@@ -208,11 +208,12 @@ function buildFilteredTrend(resources: Resource[]) {
 
   categories.forEach((category) => {
     data[category.key] = years.map((year) => {
-      return resources
+      const sumRaw = resources
         .filter((resource) => String(resource.year) === year && (resource.resource_category || "Unknown") === category.key)
         .reduce((sum, resource) => {
           return sum + Number(resource.total || 0);
         }, 0);
+      return sumRaw / 1_000_000_000;
     });
   });
 

@@ -11,6 +11,8 @@ class ProjectWbs extends Model
 {
     use HasFactory;
 
+    private const MAX_MONEY_ABS_VALUE = 1.0E28;
+
     protected $fillable = [
         'project_id',
         'ingestion_file_id',
@@ -42,6 +44,42 @@ class ProjectWbs extends Model
         'hpp_deviation'      => 'decimal:2',
         'deviasi_pct'        => 'decimal:4',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (ProjectWbs $wbs): void {
+            foreach ([
+                'contract_value' => 'Nilai kontrak',
+                'addendum_value' => 'Nilai addendum',
+                'bq_external' => 'BQ external',
+                'actual_costs' => 'Actual costs',
+                'realized_costs' => 'Realized costs',
+                'hpp_deviation' => 'HPP deviation',
+            ] as $column => $label) {
+                $wbs->assertMoneyValueIsStorable($column, $label);
+            }
+        });
+    }
+
+    private function assertMoneyValueIsStorable(string $column, string $label): void
+    {
+        $value = $this->getAttribute($column);
+
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        $numeric = (float) $value;
+
+        if (!is_finite($numeric) || abs($numeric) >= self::MAX_MONEY_ABS_VALUE) {
+            $phase = trim((string) ($this->name_of_work_phase ?? ''));
+            $suffix = $phase !== '' ? " pada WBS \"{$phase}\"" : '';
+
+            throw new \RuntimeException(
+                "{$label}{$suffix} terlalu besar atau format Excel tidak valid."
+            );
+        }
+    }
 
     public function project(): BelongsTo
     {

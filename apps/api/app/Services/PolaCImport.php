@@ -227,11 +227,19 @@ class PolaCImport
 
         $this->total++;
 
+        $projectName = $meta['project_name'] ?? $meta['project_code'];
+
+        app(ProjectReplacementService::class)->replaceExistingProject(
+            $meta['project_code'],
+            $projectName,
+            $ingestionFileId,
+        );
+
         // Upsert project
-        $project = Project::firstOrCreate(
+        $project = Project::updateOrCreate(
             ['project_code' => $meta['project_code']],
             [
-                'project_name'      => $meta['project_name'] ?? $meta['project_code'],
+                'project_name'      => $projectName,
                 'division'          => $meta['division'] ?? \App\Services\DivisionResolver::fromCode($meta['project_code'] ?? null),
                 'sbu'               => $meta['sbu'] ?? null,
                 'owner'             => $meta['client_name'] ?? null,

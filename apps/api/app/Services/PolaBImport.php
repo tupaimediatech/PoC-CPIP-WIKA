@@ -75,11 +75,19 @@ class PolaBImport
 
         $this->total++;
 
+        $projectName = $meta['project_name'] ?? $meta['project_code'];
+
+        app(ProjectReplacementService::class)->replaceExistingProject(
+            $meta['project_code'],
+            $projectName,
+            $ingestionFileId,
+        );
+
         // Upsert project — financial/operational fields are nullable when not in file
-        $project = Project::firstOrCreate(
+        $project = Project::updateOrCreate(
             ['project_code' => $meta['project_code']],
             [
-                'project_name'      => $meta['project_name'] ?? $meta['project_code'],
+                'project_name'      => $projectName,
                 'division'          => $meta['division'] ?? \App\Services\DivisionResolver::fromCode($meta['project_code'] ?? null),
                 'owner'             => $meta['client_name'] ?? null,
                 'unit'              => $meta['unit'] ?? null,
