@@ -169,9 +169,9 @@ export default function Level4Page() {
           unit: "",
           resource_category: "",
 
-          harsatInternal: <span className="font-bold">{formatCurrency(totalBiaya)}</span>,
+          harsatInternal: "",
 
-          totalBiaya: "",
+          totalBiaya: <span className="font-bold">{formatCurrency(totalBiaya)}</span>,
         }}
       />
 
