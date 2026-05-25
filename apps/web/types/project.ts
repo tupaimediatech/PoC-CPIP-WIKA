@@ -5,8 +5,9 @@ export type AliasContext = "project" | "work_item" | "resource" | "equipment" | 
 
 export interface Project {
   id: number;
-  project_code: string;
   project_name: string;
+  lingkup: string;
+  project_code: string;
   division: Division;
   sbu: string | null;
   owner: string | null;
