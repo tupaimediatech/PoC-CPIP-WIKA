@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('project_code', 20)->unique();
             $table->string('project_name');
+            $table->string('scope_of_work')->nullable();
             $table->string('division', 100);         // Infrastructure | Building
             $table->string('owner', 100)->nullable();
             $table->decimal('contract_value', 15, 2); // dalam Juta (M)

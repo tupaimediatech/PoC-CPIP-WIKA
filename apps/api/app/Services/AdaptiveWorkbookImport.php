@@ -638,10 +638,14 @@ class AdaptiveWorkbookImport
 
             $numeric = fn($key) => isset($data[$key]) && $data[$key] !== '' ? (float) $data[$key] : null;
             $integer = fn($key) => isset($data[$key]) && $data[$key] !== '' ? (int)   $data[$key] : null;
+            $identity = app(ProjectScopeParser::class)->normalize(
+                $data['project_name'] ?? null,
+                $data['scope_of_work'] ?? null,
+            );
 
             app(ProjectReplacementService::class)->replaceExistingProject(
                 trim((string) $data['project_code']),
-                trim((string) $data['project_name']),
+                $identity['project_name'],
                 $ingestionFileId,
             );
 
@@ -649,7 +653,8 @@ class AdaptiveWorkbookImport
                 ['project_code' => trim((string) $data['project_code'])],
                 [
                     'ingestion_file_id' => $ingestionFileId,
-                    'project_name'      => trim((string) $data['project_name']),
+                    'project_name'      => $identity['project_name'],
+                    'scope_of_work'     => $identity['scope_of_work'],
                     'division'          => !empty($data['division']) ? trim((string) $data['division']) : \App\Services\DivisionResolver::fromCode($data['project_code'] ?? null),
                     'owner'             => !empty($data['owner'])    ? trim((string) $data['owner'])    : null,
                     'unit'              => !empty($data['unit']) ? trim((string) $data['unit']) : null,
@@ -1186,6 +1191,7 @@ class AdaptiveWorkbookImport
         return Validator::make($data, [
             'project_code'     => 'required|string|max:20',
             'project_name'     => 'required|string|max:255',
+            'scope_of_work'    => 'nullable|string|max:255',
             'division'         => ['nullable', Rule::enum(Division::class)],
             'unit'             => 'nullable|string|max:30',
             'volume'           => 'nullable|numeric|min:0',
