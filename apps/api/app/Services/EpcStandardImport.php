@@ -150,12 +150,16 @@ class EpcStandardImport
 
         $code = trim((string) $get(['kode proyek']));
         $name = trim((string) $get(['nama proyek']));
+        $identity = app(ProjectScopeParser::class)->normalize(
+            $name,
+            $this->stringOrNull($get(['lingkup pekerjaan', 'lingkup', 'scope of work', 'scope', 'work scope'])),
+        );
 
         if ($code === '' || $name === '') {
             throw new \RuntimeException('Kode Proyek atau Nama Proyek kosong di sheet Project Metadata.');
         }
 
-        app(ProjectReplacementService::class)->replaceExistingProject($code, $name, $ingestionFileId);
+        app(ProjectReplacementService::class)->replaceExistingProject($code, $identity['project_name'], $ingestionFileId);
 
         $contractValue  = $this->numeric($get(['nilai kontrak awal (rp)', 'nilai kontrak (rp)', 'nilai kontrak']));
         $addendumValue  = $this->numeric($get(['addendum value (rp)', 'addendum (rp)', 'addendum']));
@@ -175,7 +179,8 @@ class EpcStandardImport
             ['project_code' => $code],
             [
                 'ingestion_file_id' => $ingestionFileId,
-                'project_name'      => $name,
+                'project_name'      => $identity['project_name'],
+                'scope_of_work'     => $identity['scope_of_work'],
                 'project_year'      => (int) ($this->numeric($get(['tahun proyek'])) ?? now()->year),
                 'owner'             => $this->stringOrNull($get(['pemberi tugas', 'project owner', 'client name'])),
                 'sbu'               => $this->stringOrNull($get(['sbu'])),

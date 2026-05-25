@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\Division;
+use App\Services\ProjectScopeParser;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,6 +21,7 @@ class ProjectRequest extends FormRequest
         return [
             'project_code'     => 'required|string|max:20|unique:projects,project_code,' . $projectId,
             'project_name'     => 'required|string|max:255',
+            'scope_of_work'    => 'nullable|string|max:255',
             'division'         => ['required', Rule::enum(Division::class)],
             'sbu'              => 'nullable|string|max:100',
             'owner'            => 'nullable|string|max:100',
@@ -41,6 +43,23 @@ class ProjectRequest extends FormRequest
             'project_year'     => 'nullable|integer|min:2000|max:2099',
             'start_date'       => 'nullable|date',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (!$this->has('project_name')) {
+            return;
+        }
+
+        $identity = app(ProjectScopeParser::class)->normalize(
+            $this->input('project_name'),
+            $this->input('scope_of_work'),
+        );
+
+        $this->merge([
+            'project_name' => $identity['project_name'],
+            'scope_of_work' => $identity['scope_of_work'],
+        ]);
     }
 
     public function messages(): array

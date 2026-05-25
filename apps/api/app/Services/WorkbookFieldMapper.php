@@ -33,6 +33,7 @@ class WorkbookFieldMapper
             'project' => [
             'project_code',
             'project_name',
+            'scope_of_work',
             'project_year',
             'division',
             'sbu',
@@ -148,6 +149,11 @@ class WorkbookFieldMapper
             'nama_gedung' => 'project_name',
             'nama_pekerjaan' => 'project_name',
             'deskripsi_proyek' => 'project_name',
+            'lingkup_pekerjaan' => 'scope_of_work',
+            'lingkup' => 'scope_of_work',
+            'scope_of_work' => 'scope_of_work',
+            'scope' => 'scope_of_work',
+            'work_scope' => 'scope_of_work',
             'nama_kontrak' => 'project_code',
             'kode_kontrak' => 'project_code',
             'nomor_kontrak' => 'project_code',
@@ -666,7 +672,7 @@ class WorkbookFieldMapper
             'progress_pct', 'progress_prev_pct', 'progress_this_pct', 'progress_total_pct',
             'deviasi_pct', 'rencana_pct', 'realisasi_pct'
                 => $this->percentageConfidence($normalizedValue),
-            'project_name', 'owner', 'client_name', 'project_manager',
+            'project_name', 'scope_of_work', 'owner', 'client_name', 'project_manager',
             'item_name', 'material_type', 'equipment_name', 'supplier_name', 'vendor_name'
                 => $this->textConfidence((string) $normalizedValue),
             default => 0,
