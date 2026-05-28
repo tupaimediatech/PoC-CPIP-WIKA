@@ -16,6 +16,7 @@ class ProjectRisk extends Model
         'risk_title',
         'risk_description',
         'category',
+        'risk_level',
         'financial_impact_idr',
         'probability',
         'impact',

@@ -261,6 +261,40 @@ class ProjectController extends Controller
             ? (float) $record->{$field}
             : 0.0;
 
+        $biayaLangsung = [
+            'material' => $value($project->directCost, 'material'),
+            'upah'     => $value($project->directCost, 'upah'),
+            'alat'     => $value($project->directCost, 'alat'),
+            'subkon'   => $value($project->directCost, 'subkon'),
+        ];
+        $biayaLangsung['total_biaya'] = array_sum($biayaLangsung);
+
+        $biayaTakLangsung = [
+            'fasilitas'   => $value($project->indirectCost, 'fasilitas'),
+            'sekretariat' => $value($project->indirectCost, 'sekretariat'),
+            'kendaraan'   => $value($project->indirectCost, 'kendaraan'),
+            'personalia'  => $value($project->indirectCost, 'personalia'),
+            'keuangan'    => $value($project->indirectCost, 'keuangan'),
+            'umum'        => $value($project->indirectCost, 'umum'),
+        ];
+        $biayaTakLangsung['total_biaya'] = array_sum($biayaTakLangsung);
+
+        $biayaLainLain = [
+            'biaya_pemeliharaan' => $value($project->otherCost, 'biaya_pemeliharaan'),
+            'risiko'             => $value($project->otherCost, 'risiko'),
+        ];
+        $biayaLainLain['total_biaya'] = array_sum($biayaLainLain);
+
+        $penjualan = $value($project->sales, 'penjualan');
+
+        $pct = fn(float $totalBiaya): float => $penjualan > 0
+            ? round($totalBiaya / $penjualan * 100, 2)
+            : 0.0;
+
+        $biayaLangsung['percentage']    = $pct($biayaLangsung['total_biaya']);
+        $biayaTakLangsung['percentage'] = $pct($biayaTakLangsung['total_biaya']);
+        $biayaLainLain['percentage']    = $pct($biayaLainLain['total_biaya']);
+
         return response()->json([
             'data' => [
                 'project_name'  => $project->project_name,
@@ -268,28 +302,11 @@ class ProjectController extends Controller
                 'owner'         => $project->owner,
                 'contract_type' => $project->contract_type,
 
-                'penjualan' => $value($project->sales, 'penjualan'),
+                'penjualan' => $penjualan,
 
-                'biaya_langsung' => [
-                    'material' => $value($project->directCost, 'material'),
-                    'upah'     => $value($project->directCost, 'upah'),
-                    'alat'     => $value($project->directCost, 'alat'),
-                    'subkon'   => $value($project->directCost, 'subkon'),
-                ],
-
-                'biaya_tak_langsung' => [
-                    'fasilitas'   => $value($project->indirectCost, 'fasilitas'),
-                    'sekretariat' => $value($project->indirectCost, 'sekretariat'),
-                    'kendaraan'   => $value($project->indirectCost, 'kendaraan'),
-                    'personalia'  => $value($project->indirectCost, 'personalia'),
-                    'keuangan'    => $value($project->indirectCost, 'keuangan'),
-                    'umum'        => $value($project->indirectCost, 'umum'),
-                ],
-
-                'biaya_lain_lain' => [
-                    'biaya_pemeliharaan' => $value($project->otherCost, 'biaya_pemeliharaan'),
-                    'risiko'             => $value($project->otherCost, 'risiko'),
-                ],
+                'biaya_langsung'     => $biayaLangsung,
+                'biaya_tak_langsung' => $biayaTakLangsung,
+                'biaya_lain_lain'    => $biayaLainLain,
 
                 'beban_pph_final' => $value($project->profitLoss, 'beban_pph_final'),
                 'laba_kotor'      => $value($project->profitLoss, 'laba_kotor'),
