@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import PageHeader from "@/components/analytics/PageHeader";
 import SCurveChart from "@/components/analytics/SCurveChart";
 import { projectApi } from "@/lib/api";
 import type { ProjectRisk, ProgressCurveResponse } from "@/types/project";
 import { PencilSimple, Trash } from "@phosphor-icons/react";
+import BackButton from "@/components/analytics/BackButton";
 
 const SEVERITY_COLOR: Record<string, string> = {
   critical: "text-red-600",
@@ -147,6 +148,7 @@ interface RiskFormData {
   risk_title: string;
   financial_impact_idr: string;
   status: string;
+  risk_level: string;
 }
 
 const EMPTY_FORM: RiskFormData = {
@@ -154,6 +156,7 @@ const EMPTY_FORM: RiskFormData = {
   risk_title: "",
   financial_impact_idr: "",
   status: "open",
+  risk_level: "low",
 };
 
 // ─── Risk Modal ───────────────────────────────────────────────────────────────
@@ -177,6 +180,7 @@ function RiskModal({
           risk_title: risk.risk_title ?? "",
           financial_impact_idr: risk.financial_impact_idr ? String(risk.financial_impact_idr) : "",
           status: risk.status ?? "open",
+          risk_level: risk.risk_level ?? "low",
         }
       : EMPTY_FORM,
   );
@@ -198,6 +202,7 @@ function RiskModal({
       risk_title: form.risk_title,
       financial_impact_idr: form.financial_impact_idr ? Number(form.financial_impact_idr) : null,
       status: form.status,
+      risk_level: form.risk_level,
     };
 
     setLoading(true);
@@ -276,6 +281,17 @@ function RiskModal({
                 className="w-full border border-gray-200 rounded-lg pl-10 pr-3 py-2.5 text-[14px] text-[#1B1C1F] outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
               />
             </div>
+          </div>
+
+          {/* Risk Level */}
+          <div>
+            <label className="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Risk Level</label>
+            <AutocompleteInput
+              value={form.risk_level}
+              onChange={(val) => setForm((prev) => ({ ...prev, risk_level: val }))}
+              placeholder="Pilih tingkat risiko..."
+              options={Object.keys(SEVERITY_COLOR)}
+            />
           </div>
 
           {/* Status */}
@@ -370,10 +386,30 @@ function DeleteModal({ risk, projectId, onClose, onSuccess }: { risk: ProjectRis
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function Level7Page() {
+export default function Level7PageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24 gap-3 text-gray-400">
+          <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          Loading...
+        </div>
+      }
+    >
+      <Level7Page />
+    </Suspense>
+  );
+}
+
+function Level7Page() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const projectId = Number(params.id);
+
+  // Ambil context tahapId dan itemId dari searchParams agar navigasi kembali berfungsi
+  const tahapId = searchParams.get("tahapId") || "";
+  const itemId = searchParams.get("itemId") || "";
 
   const [risks, setRisks] = useState<ProjectRisk[]>([]);
   const [curve, setCurve] = useState<ProgressCurveResponse["data"] | null>(null);
@@ -431,6 +467,7 @@ export default function Level7Page() {
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Kategori Risiko</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Deskripsi Kejadian</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Realisasi Mitigasi</th>
+              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Risk Level</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
             </tr>
@@ -453,6 +490,11 @@ export default function Level7Page() {
                       <span>↑</span>
                       <span>{risk.financial_impact_idr ? `+Rp${Number(risk.financial_impact_idr).toLocaleString("id-ID")}` : "-"}</span>
                     </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className={`text-[14px] font-bold capitalize ${SEVERITY_COLOR[risk.risk_level as string] || "text-gray-600"}`}>
+                      {risk.risk_level ?? "-"}
+                    </span>
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFF9E6] border border-[#FEF3C7] w-fit">
@@ -529,7 +571,9 @@ export default function Level7Page() {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+        <BackButton label="Kembali ke Level 6" />
+
         <button
           onClick={() => router.push("/projects")}
           className="flex items-center justify-center border border-primary-blue text-primary-blue text-[13px] font-bold rounded-lg px-6 hover:bg-blue-50 transition-colors"
