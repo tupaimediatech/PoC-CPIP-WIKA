@@ -409,6 +409,11 @@ export const columnAliasApi = {
   remove: (id: number): Promise<{ message: string; data: ColumnAlias }> => api.delete(`/column-aliases/${id}`).then((r) => r.data),
 };
 
+export const customReportApi = {
+  data: (filters: any): Promise<any> => api.get("/custom-report/data", { params: filters }).then((r) => r.data),
+  filterOptions: (): Promise<any> => api.get("/custom-report/filter-options").then((r) => r.data),
+};
+
 // Tambahkan setelah interceptors.request
 api.interceptors.response.use(
   (response) => response,
