@@ -37,6 +37,7 @@ const menuGroups = [
           { href: "/data-management/upload", label: "Data Ingestion", Icon: UploadSimpleIcon },
         ],
       },
+      { href: "/custom-report", label: "Custom Report", Icon: ProjectorScreenChartIcon },
     ],
   },
   {
