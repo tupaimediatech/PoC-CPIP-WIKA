@@ -424,7 +424,7 @@ export default function ProjectsPage() {
                     >
                       {project.project_name}
                     </td>
-                    <td className="px-4 py-4 text-[14px] text-gray-600">{project.lingkup || "-"}</td>
+                    <td className="px-4 py-4 text-[14px] text-gray-600">{project.scope_of_work || "-"}</td>
                     <td className="px-4 py-4 text-[14px] text-gray-600 font-medium">{project.project_code}</td>
                     <td className="px-4 py-4 text-[14px] text-gray-600">{formatCurrency(project.contract_value)}</td>
                     <td className="px-4 py-4 text-[14px] text-gray-600">{project.unit || "-"}</td>
