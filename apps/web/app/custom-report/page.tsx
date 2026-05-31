@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatKpi, kpiColor } from "@/lib/utils";
 import { exportElementToPdf } from "@/lib/exporter";
 
 const AutocompleteInput = ({
@@ -243,6 +243,7 @@ export default function CustomReportPage() {
       if (level === 3) {
         mockColumns = [
           { key: 'project_name', label: 'Project Name' },
+          { key: 'scope_of_work', label: 'Lingkup' },
           { key: 'contract_value', label: 'Nilai Kontrak' },
           { key: 'hpp_pct', label: 'HPP (%)' },
           { key: 'gross_profit_pct', label: 'Gross Profit (%)' },
@@ -251,22 +252,24 @@ export default function CustomReportPage() {
           { key: 'status', label: 'Status' },
         ];
         mockData = [
-          { id: 1, project_name: "Project Alpha", contract_value: 5000000000, hpp_pct: 80, gross_profit_pct: 20, spi: 1.05, cpi: 1.02, status: "On Time On Budget" }
+          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", contract_value: 5000000000, hpp_pct: 80, gross_profit_pct: 20, spi: 1.05, cpi: 1.02, status: "On Time On Budget" }
         ];
       } else if (level === 4) {
         mockColumns = [
           { key: 'project_name', label: 'Project Name' },
+          { key: 'scope_of_work', label: 'Lingkup' },
           { key: 'phase', label: 'Tahap Pekerjaan' },
           { key: 'bq_external', label: 'BQ External' },
           { key: 'actual_costs', label: 'Realisasi Biaya' },
           { key: 'deviasi_pct', label: 'Deviasi (%)' },
         ];
         mockData = [
-          { id: 1, project_name: "Project Alpha", phase: "Pekerjaan Persiapan", bq_external: 150000000, actual_costs: 140000000, deviasi_pct: 6.67 }
+          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", phase: "Pekerjaan Persiapan", bq_external: 150000000, actual_costs: 140000000, deviasi_pct: 6.67 }
         ];
       } else if (level === 5) {
         mockColumns = [
           { key: 'project_name', label: 'Project Name' },
+          { key: 'scope_of_work', label: 'Lingkup' },
           { key: 'id_resource', label: 'ID Resource' },
           { key: 'resource_name', label: 'Item Sumber Daya' },
           { key: 'category', label: 'Kategori' },
@@ -276,12 +279,13 @@ export default function CustomReportPage() {
           { key: 'total', label: 'Total Biaya' },
         ];
         mockData = [
-          { id: 1, project_name: "Project Alpha", id_resource: "RSC-001", resource_name: "Semen Portland", category: "Material", volume: 1000, unit: "Zak", harsat: 65000, total: 65000000 },
-          { id: 2, project_name: "Project Alpha", id_resource: "RSC-002", resource_name: "Besi Beton", category: "Material", volume: 5000, unit: "Kg", harsat: 12000, total: 60000000 }
+          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", id_resource: "RSC-001", resource_name: "Semen Portland", category: "Material", volume: 1000, unit: "Zak", harsat: 65000, total: 65000000 },
+          { id: 2, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", id_resource: "RSC-002", resource_name: "Besi Beton", category: "Material", volume: 5000, unit: "Kg", harsat: 12000, total: 60000000 }
         ];
       } else if (level === 6) {
         mockColumns = [
           { key: 'project_name', label: 'Project Name' },
+          { key: 'scope_of_work', label: 'Lingkup' },
           { key: 'resource', label: 'Item Sumber Daya' },
           { key: 'vendor', label: 'Vendor' },
           { key: 'contract_value', label: 'Nilai Kontrak Vendor' },
@@ -289,18 +293,19 @@ export default function CustomReportPage() {
           { key: 'progress', label: 'Progress (%)' },
         ];
         mockData = [
-          { id: 1, project_name: "Project Alpha", resource: "Semen Portland", vendor: "Vendor X", contract_value: 100000000, harsat_internal: 65000, progress: 50 }
+          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", resource: "Semen Portland", vendor: "Vendor X", contract_value: 100000000, harsat_internal: 65000, progress: 50 }
         ];
       } else if (level === 7) {
         mockColumns = [
           { key: 'project_name', label: 'Project Name' },
+          { key: 'scope_of_work', label: 'Lingkup' },
           { key: 'category', label: 'Kategori Risiko' },
           { key: 'title', label: 'Deskripsi Kejadian' },
           { key: 'impact', label: 'Dampak Finansial' },
           { key: 'status', label: 'Status' },
         ];
         mockData = [
-          { id: 1, project_name: "Project Alpha", category: "cost", title: "Kenaikan harga material baja", impact: 10000000, status: "open" }
+          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", category: "cost", title: "Kenaikan harga material baja", impact: 10000000, status: "open" }
         ];
       }
       
@@ -337,11 +342,20 @@ export default function CustomReportPage() {
     }
 
     if (lowerKey === 'spi' || lowerKey === 'cpi') {
-      return <span className="font-bold text-green-600">{value}</span>;
+      return <span className={`font-bold ${kpiColor(value)}`}>{formatKpi(value)}</span>;
     }
     
     if (lowerKey.includes('status')) {
-       return <span className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-full text-[12px] font-medium capitalize">{value}</span>;
+      const statusClasses: Record<string, string> = {
+        "On Time On Budget": "bg-green-50 text-green-700 border-green-200",
+        "On Time Overbudget": "bg-orange-50 text-orange-700 border-orange-200",
+        "Delay On Budget": "bg-yellow-50 text-yellow-700 border-yellow-200",
+        "Delay Overbudget": "bg-red-50 text-red-700 border-red-200",
+        "open": "bg-red-50 text-red-700 border-red-200",
+        "closed": "bg-green-50 text-green-700 border-green-200",
+      };
+      const cls = statusClasses[value] || "bg-gray-50 text-gray-600 border-gray-200";
+      return <span className={`px-3 py-1.5 border rounded-full text-[12px] font-medium whitespace-nowrap inline-block capitalize ${cls}`}>{value}</span>;
     }
 
     return value;
@@ -413,23 +427,53 @@ export default function CustomReportPage() {
             <table className="w-full border-collapse min-w-max">
               <thead>
                 <tr className="border-b border-gray-100" style={{ backgroundColor: "#F9FAFB" }}>
-                  <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-16">#</th>
-                  {tableColumns.map((col) => (
-                    <th key={col.key} className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">
-                      {col.label}
-                    </th>
-                  ))}
+                  <th 
+                    className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-16 sticky left-0 z-20"
+                    style={{ backgroundColor: "#F9FAFB" }}
+                  >
+                    #
+                  </th>
+                  {tableColumns.map((col) => {
+                    const isProjectName = col.key === 'project_name';
+                    return (
+                      <th 
+                        key={col.key} 
+                        className={`px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider ${
+                          isProjectName ? "sticky left-16 z-20 shadow-[4px_0_8px_rgba(0,0,0,0.05)] w-75" : ""
+                        }`}
+                        style={isProjectName ? { backgroundColor: "#F9FAFB" } : undefined}
+                      >
+                        {col.label}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {reportData.map((item, idx) => (
                   <tr key={item.id} className="group hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
-                    <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">{idx + 1}</td>
-                    {tableColumns.map((col) => (
-                      <td key={col.key} className={`px-4 py-4 text-[14px] ${col.key === 'project_name' ? 'font-semibold text-[#1B1C1F]' : 'text-gray-600'}`}>
-                        {renderCellValue(col.key, item[col.key])}
-                      </td>
-                    ))}
+                    <td 
+                      className="px-6 py-4 text-[14px] text-gray-600 font-medium sticky left-0 z-10 group-hover:bg-[#f2f4f7] transition-colors"
+                      style={{ backgroundColor: "#FFFFFF" }}
+                    >
+                      {idx + 1}
+                    </td>
+                    {tableColumns.map((col) => {
+                      const isProjectName = col.key === 'project_name';
+                      return (
+                        <td 
+                          key={col.key} 
+                          className={`px-4 py-4 text-[14px] ${
+                            isProjectName 
+                              ? 'font-semibold text-[#1B1C1F] sticky left-16 z-10 shadow-[4px_0_8px_rgba(0,0,0,0.05)] group-hover:bg-[#f2f4f7] transition-colors' 
+                              : 'text-gray-600'
+                          }`}
+                          style={isProjectName ? { backgroundColor: "#FFFFFF" } : undefined}
+                        >
+                          {renderCellValue(col.key, item[col.key])}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
