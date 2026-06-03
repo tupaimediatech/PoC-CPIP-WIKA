@@ -5,6 +5,7 @@ import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { formatCurrency, formatKpi, kpiColor } from "@/lib/utils";
 import { exportElementToPdf } from "@/lib/exporter";
+import { getToken } from "@/lib/auth";
 
 const AutocompleteInput = ({
   value,
@@ -228,94 +229,95 @@ export default function CustomReportPage() {
     { key: "contract_type", label: "Contract Type", placeholder: "Select Contract Type" },
   ];
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setLoading(true);
     
-    // Determine selected level
-    const levelObj = LEVELS.find(l => l.name === filters["level"]);
-    const level = levelObj ? levelObj.id : 3;
-    setActiveLevel(level);
+  const levelObj = LEVELS.find(l => l.name === filters["level"]);
+  const level = levelObj ? levelObj.id : 5;
+  setActiveLevel(level);
 
-    setTimeout(() => {
-      let mockData: any[] = [];
-      let mockColumns: { key: string; label: string }[] = [];
-
-      if (level === 3) {
-        mockColumns = [
-          { key: 'project_name', label: 'Project Name' },
-          { key: 'scope_of_work', label: 'Lingkup' },
-          { key: 'contract_value', label: 'Nilai Kontrak' },
-          { key: 'hpp_pct', label: 'HPP (%)' },
-          { key: 'gross_profit_pct', label: 'Gross Profit (%)' },
-          { key: 'spi', label: 'SPI' },
-          { key: 'cpi', label: 'CPI' },
-          { key: 'status', label: 'Status' },
-        ];
-        mockData = [
-          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", contract_value: 5000000000, hpp_pct: 80, gross_profit_pct: 20, spi: 1.05, cpi: 1.02, status: "On Time On Budget" }
-        ];
-      } else if (level === 4) {
-        mockColumns = [
-          { key: 'project_name', label: 'Project Name' },
-          { key: 'scope_of_work', label: 'Lingkup' },
-          { key: 'phase', label: 'Tahap Pekerjaan' },
-          { key: 'bq_external', label: 'BQ External' },
-          { key: 'actual_costs', label: 'Realisasi Biaya' },
-          { key: 'deviasi_pct', label: 'Deviasi (%)' },
-        ];
-        mockData = [
-          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", phase: "Pekerjaan Persiapan", bq_external: 150000000, actual_costs: 140000000, deviasi_pct: 6.67 }
-        ];
-      } else if (level === 5) {
-        mockColumns = [
-          { key: 'project_name', label: 'Project Name' },
-          { key: 'scope_of_work', label: 'Lingkup' },
-          { key: 'id_resource', label: 'ID Resource' },
-          { key: 'resource_name', label: 'Item Sumber Daya' },
-          { key: 'category', label: 'Kategori' },
-          { key: 'volume', label: 'Volume' },
-          { key: 'unit', label: 'Satuan' },
-          { key: 'harsat', label: 'Harsat Internal' },
-          { key: 'total', label: 'Total Biaya' },
-        ];
-        mockData = [
-          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", id_resource: "RSC-001", resource_name: "Semen Portland", category: "Material", volume: 1000, unit: "Zak", harsat: 65000, total: 65000000 },
-          { id: 2, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", id_resource: "RSC-002", resource_name: "Besi Beton", category: "Material", volume: 5000, unit: "Kg", harsat: 12000, total: 60000000 }
-        ];
-      } else if (level === 6) {
-        mockColumns = [
-          { key: 'project_name', label: 'Project Name' },
-          { key: 'scope_of_work', label: 'Lingkup' },
-          { key: 'resource', label: 'Item Sumber Daya' },
-          { key: 'vendor', label: 'Vendor' },
-          { key: 'contract_value', label: 'Nilai Kontrak Vendor' },
-          { key: 'harsat_internal', label: 'Harsat Internal' },
-          { key: 'progress', label: 'Progress (%)' },
-        ];
-        mockData = [
-          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", resource: "Semen Portland", vendor: "Vendor X", contract_value: 100000000, harsat_internal: 65000, progress: 50 }
-        ];
-      } else if (level === 7) {
-        mockColumns = [
-          { key: 'project_name', label: 'Project Name' },
-          { key: 'scope_of_work', label: 'Lingkup' },
-          { key: 'category', label: 'Kategori Risiko' },
-          { key: 'title', label: 'Deskripsi Kejadian' },
-          { key: 'impact', label: 'Dampak Finansial' },
-          { key: 'status', label: 'Status' },
-        ];
-        mockData = [
-          { id: 1, project_name: "Project Alpha", scope_of_work: "Pembangunan Jalan Tol Seksi 1", category: "cost", title: "Kenaikan harga material baja", impact: 10000000, status: "open" }
-        ];
-      }
-      
-      setTableColumns(mockColumns);
-      setReportData(mockData);
-      setSearchApplied(true);
-      setSnackbar(true);
-      setLoading(false);
-    }, 1000);
+  // Set columns based on level
+  const columnsMap: Record<number, {key: string, label: string}[]> = {
+    3: [
+      { key: 'project_name', label: 'Project Name' },
+      { key: 'scope_of_work', label: 'Lingkup' },
+      { key: 'contract_value', label: 'Nilai Kontrak' },
+      { key: 'hpp_pct', label: 'HPP (%)' },
+      { key: 'gross_profit_pct', label: 'Gross Profit (%)' },
+      { key: 'spi', label: 'SPI' },
+      { key: 'cpi', label: 'CPI' },
+      { key: 'status', label: 'Status' },
+    ],
+    4: [
+      { key: 'project_name', label: 'Project Name' },
+      { key: 'scope_of_work', label: 'Lingkup' },
+      { key: 'phase', label: 'Tahap Pekerjaan' },
+      { key: 'bq_external', label: 'BQ External' },
+      { key: 'actual_costs', label: 'Realisasi Biaya' },
+      { key: 'deviasi_pct', label: 'Deviasi (%)' },
+    ],
+    5: [
+      { key: 'project_name', label: 'Project Name' },
+      { key: 'scope_of_work', label: 'Lingkup' },
+      { key: 'id_resource', label: 'ID Resource' },
+      { key: 'resource_name', label: 'Item Sumber Daya' },
+      { key: 'category', label: 'Kategori' },
+      { key: 'volume', label: 'Volume' },
+      { key: 'unit', label: 'Satuan' },
+      { key: 'harsat', label: 'Harsat Internal' },
+      { key: 'total', label: 'Total Biaya' },
+    ],
+    6: [
+      { key: 'project_name', label: 'Project Name' },
+      { key: 'scope_of_work', label: 'Lingkup' },
+      { key: 'resource', label: 'Item Sumber Daya' },
+      { key: 'vendor', label: 'Vendor' },
+      { key: 'contract_value', label: 'Nilai Kontrak Vendor' },
+      { key: 'harsat_internal', label: 'Harsat Internal' },
+      { key: 'progress', label: 'Progress (%)' },
+    ],
+    7: [
+      { key: 'project_name', label: 'Project Name' },
+      { key: 'scope_of_work', label: 'Lingkup' },
+      { key: 'category', label: 'Kategori Risiko' },
+      { key: 'title', label: 'Deskripsi Kejadian' },
+      { key: 'impact', label: 'Dampak Finansial' },
+      { key: 'status', label: 'Status' },
+    ],
   };
+
+  try {
+    const params = new URLSearchParams();
+    params.append('level', String(level));
+    if (filters.project_name) params.append('project_name', filters.project_name);
+    if (filters.vendor) params.append('vendor', filters.vendor);
+    if (filters.year_from) params.append('year_from', filters.year_from);
+    if (filters.year_to) params.append('year_to', filters.year_to);
+    if (filters.location) params.append('location', filters.location);
+    if (filters.sbu) params.append('sbu', filters.sbu);
+    if (filters.contract_type) params.append('contract_type', filters.contract_type);
+
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
+    const token = getToken();
+
+    const res = await fetch(`${apiBase}/api/custom-report?${params.toString()}`, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const json = await res.json();
+    setTableColumns(columnsMap[level] ?? []);
+    setReportData(json.data ?? []);
+    setSearchApplied(true);
+    setSnackbar(true);
+  } catch (err) {
+    console.error('Failed to fetch custom report:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleReset = () => {
     setFilters({ level: "Level 5 - Harsat per Sumber Daya" });
@@ -451,7 +453,7 @@ export default function CustomReportPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {reportData.map((item, idx) => (
-                  <tr key={item.id} className="group hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
+                  <tr key={idx} className="group hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
                     <td 
                       className="px-6 py-4 text-[14px] text-gray-600 font-medium sticky left-0 z-10 group-hover:bg-[#f2f4f7] transition-colors"
                       style={{ backgroundColor: "#FFFFFF" }}
