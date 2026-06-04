@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ColumnAliasController;
+use App\Http\Controllers\CustomReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipmentLogController;
 use App\Http\Controllers\HarsatController;
@@ -56,6 +57,7 @@ Route::get('/harsat/trend',                        [HarsatController::class, 'tr
 // Protected read endpoints (scoped to authenticated user)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/projects/export-dashboard',           [ProjectController::class, 'exportDashboard']);
+    Route::get('/custom-report', [CustomReportController::class, 'index']);
     Route::get('/projects/{project}/profit-loss',      [ProjectController::class, 'financial']);
 
     Route::get('/projects/{project}/wbs-phases',                    [ProjectWbsController::class, 'index']);

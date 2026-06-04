@@ -5,8 +5,9 @@ export type AliasContext = "project" | "work_item" | "resource" | "equipment" | 
 
 export interface Project {
   id: number;
-  project_code: string;
   project_name: string;
+  scope_of_work: string;
+  project_code: string;
   division: Division;
   sbu: string | null;
   owner: string | null;
@@ -382,6 +383,7 @@ export interface ResourceLogLevel5ListResponse {
 
 // Level 7 — risks
 export interface ProjectRisk {
+  risk_level: string;
   id: number;
   risk_code: string | null;
   risk_title: string;

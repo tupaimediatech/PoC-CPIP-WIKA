@@ -91,6 +91,7 @@ export default function ProfitLossPage() {
               <th className="px-6 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Uraian</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Realisasi</th>
+              <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">%</th>
               <th className="px-4 py-4 text-left text-[12px] font-bold text-gray-500 uppercase tracking-wider">Action</th>
             </tr>
           </thead>
@@ -100,13 +101,15 @@ export default function ProfitLossPage() {
             <tr className="bg-[#F3F6FD]">
               <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">I</td>
               <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">Penjualan</td>
-              <td className="px-4 py-3" />
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">{formatCurrency(penjualan).replace("Rp", "RP ")}</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">100.00 %</td>
               <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
             <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Penjualan</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(penjualan)}</td>
+              <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
               <td className="px-4 py-3" />
             </tr>
 
@@ -114,7 +117,8 @@ export default function ProfitLossPage() {
             <tr className="bg-[#F3F6FD]">
               <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">II</td>
               <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">Biaya Langsung</td>
-              <td className="px-4 py-3" />
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">{formatCurrency(totalBiayaLangsung).replace("Rp", "RP ")}</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">{biayaLangsung.percentage?.toFixed(2) ?? "0.00"} %</td>
               <td className="px-4 py-3">
                 <button
                   onClick={() => router.push(`/projects/${projectId}/wbs`)}
@@ -145,6 +149,7 @@ export default function ProfitLossPage() {
                   <ArrowSquareOutIcon size={14} className="opacity-0 group-hover:opacity-100 text-primary-blue transition-all" />
                 </td>
                 <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(item.val)}</td>
+                <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
                 <td className="px-4 py-3 text-[12px] text-primary-blue font-medium opacity-0 group-hover:opacity-100 text-right">View Resource</td>
               </tr>
             ))}
@@ -153,7 +158,8 @@ export default function ProfitLossPage() {
             <tr className="bg-[#F3F6FD]">
               <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">III</td>
               <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">Biaya Tak Langsung</td>
-              <td className="px-4 py-3" />
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">{formatCurrency(totalBiayaTakLangsung).replace("Rp", "RP ")}</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">{biayaTakLangsung.percentage?.toFixed(2) ?? "0.00"} %</td>
               <td className="px-4 py-3">
                 <button
                   onClick={() => router.push(`/projects/${projectId}/${phaseId}/indirect-cost-eval`)}
@@ -167,36 +173,42 @@ export default function ProfitLossPage() {
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Fasilitas</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(fasilitas)}</td>
+              <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
               <td className="px-4 py-3" />
             </tr>
             <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Sekretariat</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(sekretariat)}</td>
+              <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
               <td className="px-4 py-3" />
             </tr>
             <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Kendaraan</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(kendaraan)}</td>
+              <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
               <td className="px-4 py-3" />
             </tr>
             <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Personalia</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(personalia)}</td>
+              <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
               <td className="px-4 py-3" />
             </tr>
             <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Keuangan</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(keuangan)}</td>
+              <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
               <td className="px-4 py-3" />
             </tr>
             <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Umum</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(umum)}</td>
+              <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
               <td className="px-4 py-3" />
             </tr>
 
@@ -204,19 +216,22 @@ export default function ProfitLossPage() {
             <tr className="bg-[#F3F6FD]">
               <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">IV</td>
               <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">Biaya Lain-Lain</td>
-              <td className="px-4 py-3" />
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">{formatCurrency(totalBiayaLainLain).replace("Rp", "RP ")}</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">{biayaLainLain.percentage?.toFixed(2) ?? "0.00"} %</td>
               <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
             <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Biaya Pemeliharaan</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(biayaPemeliharaan)}</td>
+              <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
               <td className="px-4 py-3" />
             </tr>
             <tr className="hover:transition-colors" style={{ backgroundColor: "rgba(249,250,251,0.5)" }}>
               <td className="px-6 py-3" />
               <td className="px-4 py-3 text-[14px] font-medium text-gray-700">Risiko</td>
               <td className="px-4 py-3 text-[14px] text-gray-700">{formatCurrency(risiko)}</td>
+              <td className="px-4 py-3 text-[14px] text-gray-400">-</td>
               <td className="px-4 py-3" />
             </tr>
           </tbody>
@@ -227,7 +242,10 @@ export default function ProfitLossPage() {
             <tr className="bg-[#F3F6FD]">
               <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">V</td>
               <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">TOTAL BIAYA (II+III+IV)</td>
-              <td className="px-4 py-3 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalBiaya)}</td>
+              <td className="px-4 py-3 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(totalBiaya).replace("Rp", "RP ")}</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">
+                {penjualan > 0 ? ((totalBiaya / penjualan) * 100).toFixed(2) : "0.00"} %
+              </td>
               <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
 
@@ -236,7 +254,12 @@ export default function ProfitLossPage() {
               <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">VI</td>
               <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">LABA KOTOR (I-V)</td>
               <td className="px-4 py-3">
-                <span className={`text-[14px] font-bold ${labaKotor >= 0 ? "text-green-600" : "text-red-600"}`}>{formatCurrency(labaKotor)}</span>
+                <span className={`text-[14px] font-bold ${labaKotor >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  {formatCurrency(labaKotor).replace("Rp", "RP ")}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">
+                {penjualan > 0 ? ((labaKotor / penjualan) * 100).toFixed(2) : "0.00"} %
               </td>
               <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
@@ -245,7 +268,10 @@ export default function ProfitLossPage() {
             <tr className="bg-[#F3F6FD]">
               <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">VII</td>
               <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">BEBAN PPH FINAL</td>
-              <td className="px-4 py-3 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(bebanPphFinal)}</td>
+              <td className="px-4 py-3 text-[14px] font-bold text-[#1B1C1F]">{formatCurrency(bebanPphFinal).replace("Rp", "RP ")}</td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">
+                {penjualan > 0 ? ((bebanPphFinal / penjualan) * 100).toFixed(2) : "0.00"} %
+              </td>
               <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
 
@@ -254,8 +280,11 @@ export default function ProfitLossPage() {
               <td className="px-6 py-3 text-[13px] font-bold text-[#1B1C1F]">VIII</td>
               <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F] uppercase tracking-wide">LSP</td>
               <td className="px-4 py-3">
-                <span className={`text-[14px] font-bold ${lsp >= 0 ? "text-green-600" : "text-red-600"}`}>{formatCurrency(lsp)}</span>
+                <span className={`text-[14px] font-bold ${lsp >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  {formatCurrency(lsp).replace("Rp", "RP ")}
+                </span>
               </td>
+              <td className="px-4 py-3 text-[13px] font-bold text-[#1B1C1F]">{penjualan > 0 ? ((lsp / penjualan) * 100).toFixed(2) : "0.00"} %</td>
               <td className="px-4 py-3 text-[13px] font-semibold text-gray-400">-</td>
             </tr>
           </tfoot>

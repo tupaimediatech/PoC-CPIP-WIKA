@@ -75,11 +75,14 @@ class PolaBImport
 
         $this->total++;
 
-        $projectName = $meta['project_name'] ?? $meta['project_code'];
+        $identity = app(ProjectScopeParser::class)->normalize(
+            $meta['project_name'] ?? $meta['project_code'],
+            $meta['scope_of_work'] ?? null,
+        );
 
         app(ProjectReplacementService::class)->replaceExistingProject(
             $meta['project_code'],
-            $projectName,
+            $identity['project_name'],
             $ingestionFileId,
         );
 
@@ -87,7 +90,8 @@ class PolaBImport
         $project = Project::updateOrCreate(
             ['project_code' => $meta['project_code']],
             [
-                'project_name'      => $projectName,
+                'project_name'      => $identity['project_name'],
+                'scope_of_work'     => $identity['scope_of_work'],
                 'division'          => $meta['division'] ?? \App\Services\DivisionResolver::fromCode($meta['project_code'] ?? null),
                 'owner'             => $meta['client_name'] ?? null,
                 'unit'              => $meta['unit'] ?? null,
@@ -256,6 +260,7 @@ class PolaBImport
             switch ($key) {
                 case 'project_code':       $meta['project_code']       = trim((string) $val); break;
                 case 'project_name':       $meta['project_name']       = trim((string) $val); break;
+                case 'scope_of_work':      $meta['scope_of_work']      = trim((string) $val); break;
                 case 'project_year':       $meta['project_year']       = (int) $val; break;
                 case 'owner':
                 case 'client_name':        $meta['client_name']        = trim((string) $val); break;
