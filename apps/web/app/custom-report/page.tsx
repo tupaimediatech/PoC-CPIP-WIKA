@@ -297,17 +297,9 @@ export default function CustomReportPage() {
     if (filters.sbu) params.append('sbu', filters.sbu);
     if (filters.contract_type) params.append('contract_type', filters.contract_type);
 
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
-    const token = getToken();
-
-    const res = await fetch(`${apiBase}/api/custom-report?${params.toString()}`, {
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    const json = await res.json();
+    const { default: api } = await import('@/lib/api');
+    const res = await api.get('/custom-report', { params: Object.fromEntries(params) });
+    const json = res.data;
     setTableColumns(columnsMap[level] ?? []);
     setReportData(json.data ?? []);
     setSearchApplied(true);
