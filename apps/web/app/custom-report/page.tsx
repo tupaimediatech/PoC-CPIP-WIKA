@@ -5,7 +5,6 @@ import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { formatCurrency, formatKpi, kpiColor } from "@/lib/utils";
 import { exportElementToPdf } from "@/lib/exporter";
-import { getToken } from "@/lib/auth";
 
 const AutocompleteInput = ({
   value,
@@ -297,20 +296,9 @@ export default function CustomReportPage() {
     if (filters.sbu) params.append('sbu', filters.sbu);
     if (filters.contract_type) params.append('contract_type', filters.contract_type);
 
-    const token = getToken();
-    const headers: HeadersInit = {
-      'Accept': 'application/json',
-    };
-
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    const res = await fetch(`/api/custom-report?${params.toString()}`, {
-      headers,
-    });
-
-    const json = await res.json();
+    const { default: api } = await import('@/lib/api');
+    const res = await api.get('/custom-report', { params: Object.fromEntries(params) });
+    const json = res.data;
     setTableColumns(columnsMap[level] ?? []);
     setReportData(json.data ?? []);
     setSearchApplied(true);
