@@ -297,14 +297,17 @@ export default function CustomReportPage() {
     if (filters.sbu) params.append('sbu', filters.sbu);
     if (filters.contract_type) params.append('contract_type', filters.contract_type);
 
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
     const token = getToken();
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
 
-    const res = await fetch(`${apiBase}/api/custom-report?${params.toString()}`, {
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`/api/custom-report?${params.toString()}`, {
+      headers,
     });
 
     const json = await res.json();
