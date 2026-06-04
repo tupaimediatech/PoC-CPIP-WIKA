@@ -5,7 +5,6 @@ import PageHeader from "@/components/analytics/PageHeader";
 import Snackbar from "@/components/ui/Snackbar";
 import { formatCurrency, formatKpi, kpiColor } from "@/lib/utils";
 import { exportElementToPdf } from "@/lib/exporter";
-import { getToken } from "@/lib/auth";
 
 const AutocompleteInput = ({
   value,
