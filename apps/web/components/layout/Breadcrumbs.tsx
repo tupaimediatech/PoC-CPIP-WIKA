@@ -64,9 +64,9 @@ const STATIC_BREADCRUMBS: Record<string, BreadcrumbItem[]> = {
     { Icon: CalendarBlankIcon, label: "SPI Infrastructure" },
   ],
   "/custom-report": [
-  { Icon: ProjectorScreenChartIcon, label: "Custom Report", href: "/custom-report" },
-  { Icon: FileTextIcon, label: "Report Builder" },
-],
+    { Icon: HouseIcon, label: "Home", href: "/" },
+    { Icon: FileTextIcon, label: "Generated Report" },
+  ],
   "/data-management/upload": [
     { Icon: HouseIcon, label: "Home", href: "/" },
     { Icon: UploadIcon, label: "Data Management" },
