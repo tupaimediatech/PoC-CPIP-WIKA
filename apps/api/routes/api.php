@@ -58,6 +58,7 @@ Route::get('/harsat/trend',                        [HarsatController::class, 'tr
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/projects/export-dashboard',           [ProjectController::class, 'exportDashboard']);
     Route::get('/custom-report', [CustomReportController::class, 'index']);
+    Route::get('/custom-report/vendors', [CustomReportController::class, 'vendors']);
     Route::get('/projects/{project}/profit-loss',      [ProjectController::class, 'financial']);
 
     Route::get('/projects/{project}/wbs-phases',                    [ProjectWbsController::class, 'index']);

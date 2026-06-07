@@ -20,6 +20,7 @@ import {
   CalendarBlankIcon,
   FileArrowUpIcon,
   PackageIcon,
+  ProjectorScreenChartIcon,
 } from "@phosphor-icons/react";
 import { projectApi, periodApi } from "@/lib/api";
 
@@ -61,6 +62,10 @@ const STATIC_BREADCRUMBS: Record<string, BreadcrumbItem[]> = {
     { Icon: PresentationChartIcon, label: "Infographic Summary", href: "/" },
     { Icon: SpeedometerIcon, label: "Division Performance Comparison", href: "/projects" }, // Sesuaikan href jika perlu
     { Icon: CalendarBlankIcon, label: "SPI Infrastructure" },
+  ],
+  "/custom-report": [
+    { Icon: HouseIcon, label: "Home", href: "/" },
+    { Icon: FileTextIcon, label: "Generated Report" },
   ],
   "/data-management/upload": [
     { Icon: HouseIcon, label: "Home", href: "/" },
