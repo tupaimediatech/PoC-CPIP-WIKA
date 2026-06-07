@@ -20,6 +20,7 @@ import {
   CalendarBlankIcon,
   FileArrowUpIcon,
   PackageIcon,
+  ProjectorScreenChartIcon,
 } from "@phosphor-icons/react";
 import { projectApi, periodApi } from "@/lib/api";
 
