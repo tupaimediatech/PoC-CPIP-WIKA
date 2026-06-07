@@ -143,7 +143,7 @@ const LEVELS = [
 
 export default function CustomReportPage() {
   const [filters, setFilters] = useState<Record<string, string>>({
-    level: "Level 5 - Harsat per Sumber Daya",
+    level: "",
   });
   
   const [reportData, setReportData] = useState<any[]>([]);
@@ -157,16 +157,21 @@ export default function CustomReportPage() {
   const [resourceFilterOptions, setResourceFilterOptions] = useState<any>(null);
   const [allProjects, setAllProjects] = useState<any[]>([]);
   const [tableColumns, setTableColumns] = useState<{key: string, label: string}[]>([]);
+  const [vendorOptions, setVendorOptions] = useState<string[]>([]);
 
   useEffect(() => {
-    import("@/lib/api").then(({ projectApi, resourceApi }) => {
+    import("@/lib/api").then(({ projectApi, resourceApi , default: api}) => {
       Promise.all([projectApi.list(), projectApi.filterOptions(), resourceApi.filterOptions()])
         .then(([projectsRes, projOpts, resOpts]) => {
           setAllProjects(projectsRes.data);
-          setProjectFilterOptions(projOpts);
+          setProjectFilterOptions(projOpts); 
           setResourceFilterOptions(resOpts);
         })
         .catch(console.error);
+
+    api.get('/custom-report/vendors').then((res) => {
+      setVendorOptions(res.data.data ?? []);
+    }).catch(console.error);
     });
   }, []);
 
@@ -183,7 +188,7 @@ export default function CustomReportPage() {
 
     if (type === "vendor") {
       // Vendor usually from Level 6 monitoring, we don't have a direct list in these APIs.
-      return ["Vendor X", "Vendor Y"]; 
+      return vendorOptions; 
     }
 
     if (type === "year_from" || type === "year_to") {
@@ -311,7 +316,7 @@ export default function CustomReportPage() {
 };
 
   const handleReset = () => {
-    setFilters({ level: "Level 5 - Harsat per Sumber Daya" });
+    setFilters({ level: "" });
     setSearchApplied(false);
     setReportData([]);
     setTableColumns([]);

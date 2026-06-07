@@ -37,9 +37,9 @@ class CustomReportController extends Controller
             default =>response()->json(['error' => 'Invalid Level'], 422),
         };
     }
-     // Level 3 - Profit & Loss Summary
-     private function level3($projectQuery)
-     {
+    // Level 3 - Profit & Loss Summary
+    private function level3($projectQuery)
+    {
         $data = $projectQuery->get()->map(fn($p) => [
             'project_name'     => $p->project_name,
             'scope_of_work'    => $p->scope_of_work,
@@ -51,18 +51,19 @@ class CustomReportController extends Controller
             'status'           => $p->delivery_budget_status,
         ]);
         return response()->json(['data' => $data]);
-     }
+    }
 
     // Level 4 - WBS Overview
     private function level4($projectQuery)
     {
         $projects = $projectQuery->with('wbsPhases')->get();
 
-        $data = $projects->flatMap(fn($p) =>
+        $data = $projects->flatMap(
+            fn($p) =>
             $p->wbsPhases->map(fn($wbs) => [
                 'project_name'  => $p->project_name,
                 'scope_of_work' => $p->scope_of_work,
-                'phase'         => $wbs->phase_name ?? $wbs->name ?? '-',
+                'phase'         => $wbs->name_of_work_phase ?? '-',
                 'bq_external'   => $wbs->bq_external ?? $wbs->budget_awal ?? 0,
                 'actual_costs'  => $wbs->actual_cost ?? $wbs->realisasi ?? 0,
                 'deviasi_pct'   => $wbs->deviasi_pct ?? 0,
@@ -71,7 +72,7 @@ class CustomReportController extends Controller
         return response()->json(['data' => $data]);
     }
 
-     // Level 5 - Harsat per Sumber Daya
+    // Level 5 - Harsat per Sumber Daya
     private function level5($projectQuery, ?string $vendor)
     {
         $projectIds = $projectQuery->pluck('id');
@@ -96,7 +97,7 @@ class CustomReportController extends Controller
         return response()->json(['data' => $data]);
     }
 
-     // Level 6 - Monitoring Kontrak Vendor
+    // Level 6 - Monitoring Kontrak Vendor
     private function level6($projectQuery, ?string $vendor)
     {
         $projectIds = $projectQuery->pluck('id');
@@ -125,7 +126,8 @@ class CustomReportController extends Controller
     {
         $projects = $projectQuery->with('risks')->get();
 
-        $data = $projects->flatMap(fn($p) =>
+        $data = $projects->flatMap(
+            fn($p) =>
             $p->risks->map(fn($risk) => [
                 'project_name'  => $p->project_name,
                 'scope_of_work' => $p->scope_of_work,
@@ -137,5 +139,14 @@ class CustomReportController extends Controller
         );
 
         return response()->json(['data' => $data]);
+    }
+    public function vendors()
+    {
+        $vendors = \App\Models\ProjectWorkItem::whereNotNull('vendor_name')
+            ->where('vendor_name', '!=', '')
+            ->distinct()
+            ->pluck('vendor_name');
+
+        return response()->json(['data' => $vendors]);
     }
 }
