@@ -164,7 +164,7 @@ class EpcStandardImport
         $contractValue  = $this->numeric($get(['nilai kontrak awal (rp)', 'nilai kontrak (rp)', 'nilai kontrak']));
         $addendumValue  = $this->numeric($get(['addendum value (rp)', 'addendum (rp)', 'addendum']));
         $bqExternal     = $this->numeric($get(['bq external (rp)', 'bq external']))
-                          ?? (($contractValue !== null && $addendumValue !== null) ? $contractValue + $addendumValue : null);
+            ?? (($contractValue !== null && $addendumValue !== null) ? $contractValue + $addendumValue : null);
         $rapPlannedCost = $this->numeric($get(['rap / planned cost (rp)', 'rap (rp)', 'planned cost (rp)', 'rap']));
 
         $startDate       = $this->date($get(['start date', 'tanggal mulai']));
@@ -197,7 +197,7 @@ class EpcStandardImport
                 'volume'            => $projectVolume,
                 'harsat'            => $projectHarsat,
                 'division'          => $this->stringOrNull($get(['division']))
-                                       ?? DivisionResolver::fromCode($code),
+                    ?? DivisionResolver::fromCode($code),
                 'contract_value'    => $contractValue,
                 'addendum_value'    => $addendumValue,
                 'bq_external'       => $bqExternal,
@@ -275,7 +275,9 @@ class EpcStandardImport
             $deviasi     = $realisasi - $totalBudget;
             $deviasiPct  = $totalBudget > 0 ? round((($totalBudget - $realisasi) / $totalBudget) * 100, 2) : null;
 
-            $isTopLevel = !str_contains($nomor, '.');
+            $romanParents = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+            $isTopLevel = !str_contains($nomor, '.') && in_array($nomor, $romanParents);
+            $isLeafParent = !str_contains($nomor, '.') && !in_array($nomor, $romanParents);
 
             if ($isTopLevel) {
                 $wbs = ProjectWbs::create([
@@ -291,6 +293,77 @@ class EpcStandardImport
                     'deviasi_pct'        => $deviasiPct,
                 ]);
                 $phaseByNomor[$nomor] = $wbs->id;
+                continue;
+            }
+
+            if ($isLeafParent) {
+                // Buat phase dulu
+                $wbs = ProjectWbs::create([
+                    'project_id'         => $project->id,
+                    'ingestion_file_id'  => $ingestionFileId,
+                    'name_of_work_phase' => trim($name),
+                    'progress_total_pct' => $this->numeric($row[$cols['progress_actual']] ?? null),
+                    'contract_value'     => $totalBudget,
+                    'bq_external'        => $totalBudget,
+                    'actual_costs'       => $realisasi,
+                    'realized_costs'     => $realisasi,
+                    'hpp_deviation'      => $deviasi,
+                    'deviasi_pct'        => $deviasiPct,
+                ]);
+                $phaseByNomor[$nomor] = $wbs->id;
+                $phaseId = $wbs->id;
+
+                // Lalu langsung buat work item juga
+                $bobot = (float) ($this->percent($row[$cols['bobot']] ?? null) ?? 0);
+                $progressPlanPct   = $this->percent($row[$cols['progress_plan']] ?? null);
+                $progressActualPct = $this->percent($row[$cols['progress_actual']] ?? null);
+                $nilaiBudget  = ($vol ?? 0) * ($harsat ?? 0);
+                $nilaiAktual  = ($volAct ?? 0) * ($harsatAct ?? 0);
+                $plannedValue = $nilaiBudget * (($progressPlanPct ?? 0) / 100);
+                $earnedValue  = $nilaiBudget * (($progressActualPct ?? 0) / 100);
+                $kontrakVendor = $this->numeric($row[$cols['kontrak_vendor']] ?? null);
+                $terminPaid    = $this->numeric($row[$cols['termin']] ?? null);
+                $retention     = $kontrakVendor !== null ? $kontrakVendor * 0.05 : null;
+                $outstanding   = $kontrakVendor !== null ? $kontrakVendor * 0.95 - ($terminPaid ?? 0) : null;
+
+                ProjectWorkItem::create([
+                    'period_id'             => $phaseId,
+                    'parent_id'             => null,
+                    'level'                 => 1,
+                    'item_no'               => $nomor,
+                    'item_name'             => $name,
+                    'id_resource'           => $nomor,
+                    'resource_category'     => $this->stringOrNull($row[$cols['sub_kategori']] ?? null),
+                    'unit'                  => $this->stringOrNull($row[$cols['satuan']] ?? null),
+                    'quantity'              => $vol,
+                    'price'                 => $harsat,
+                    'sort_order'            => $sortOrder++,
+                    'volume'                => $vol,
+                    'volume_addendum'       => $volAdd,
+                    'satuan'                => $this->stringOrNull($row[$cols['satuan']] ?? null),
+                    'harsat_internal'       => $harsat,
+                    'volume_actual'         => $volAct,
+                    'harsat_actual'         => $harsatAct,
+                    'cost_category'         => $this->stringOrNull($row[$cols['kategori']] ?? null),
+                    'cost_subcategory'      => $this->stringOrNull($row[$cols['sub_kategori']] ?? null),
+                    'bobot_pct'             => $bobot,
+                    'progress_plan_pct'     => $progressPlanPct,
+                    'progress_actual_pct'   => $progressActualPct,
+                    'planned_value'         => $plannedValue,
+                    'earned_value'          => $earnedValue,
+                    'actual_cost_item'      => $nilaiAktual,
+                    'vendor_name'           => $this->stringOrNull($row[$cols['vendor']] ?? null),
+                    'po_number'             => $this->stringOrNull($row[$cols['po']] ?? null),
+                    'vendor_contract_value' => $kontrakVendor,
+                    'termin_paid'           => $terminPaid,
+                    'retention'             => $retention,
+                    'outstanding_debt'      => $outstanding,
+                    'total_budget'          => $totalBudget,
+                    'realisasi'             => $realisasi,
+                    'deviasi'               => $deviasi,
+                    'deviasi_pct'           => $deviasiPct,
+                    'is_total_row'          => false,
+                ]);
                 continue;
             }
 
@@ -648,7 +721,10 @@ class EpcStandardImport
             $line = implode(' | ', $cells);
             $hit = true;
             foreach ($req as $needle) {
-                if (!str_contains($line, $needle)) { $hit = false; break; }
+                if (!str_contains($line, $needle)) {
+                    $hit = false;
+                    break;
+                }
             }
             if ($hit) return $i;
         }

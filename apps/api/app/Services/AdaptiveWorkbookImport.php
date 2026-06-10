@@ -28,8 +28,7 @@ class AdaptiveWorkbookImport
 
     public function __construct(
         private readonly ?WorkbookFieldMapper $mapper = null,
-    ) {
-    }
+    ) {}
 
     public function supports(string $filePath): bool
     {
@@ -137,8 +136,7 @@ class AdaptiveWorkbookImport
         string $sheetName,
         array &$metadataCandidates,
         array &$metadataCandidateLog,
-    ): void
-    {
+    ): void {
         foreach ($raw as $rowIndex => $row) {
             $nonEmpty = array_values(array_filter($row, fn($cell) => $cell !== null && trim((string) $cell) !== ''));
 
@@ -166,11 +164,10 @@ class AdaptiveWorkbookImport
         int $rowIndex,
         array &$metadataCandidates,
         array &$metadataCandidateLog,
-    ): void
-    {
+    ): void {
         $segments = array_values(array_filter(
             array_map('trim', preg_split('/\s*\|\s*/', $cell) ?: []),
-            static fn ($segment) => $segment !== ''
+            static fn($segment) => $segment !== ''
         ));
 
         if (empty($segments)) {
@@ -196,8 +193,7 @@ class AdaptiveWorkbookImport
         int $rowIndex,
         array &$metadataCandidates,
         array &$metadataCandidateLog,
-    ): void
-    {
+    ): void {
         for ($index = 0; $index < count($cells) - 1; $index += 2) {
             $label = (string) $cells[$index];
             $value = $cells[$index + 1];
@@ -227,8 +223,7 @@ class AdaptiveWorkbookImport
         int $rowIndex,
         array &$metadataCandidates,
         array &$metadataCandidateLog,
-    ): void
-    {
+    ): void {
         if (!str_contains($cell, ':')) {
             return;
         }
@@ -258,8 +253,7 @@ class AdaptiveWorkbookImport
         int $rowIndex,
         array &$metadataCandidates,
         array &$metadataCandidateLog,
-    ): void
-    {
+    ): void {
         if (str_contains($segment, ':')) {
             return;
         }
@@ -297,8 +291,7 @@ class AdaptiveWorkbookImport
         int $rowIndex,
         array &$metadataCandidates,
         array &$metadataCandidateLog,
-    ): void
-    {
+    ): void {
         foreach ($segments as $segment) {
             if (!str_contains($segment, ':')) {
                 continue;
@@ -353,8 +346,14 @@ class AdaptiveWorkbookImport
             $rawLabel = trim((string) $value);
             if ($rawLabel !== '' && $rawLabel !== $normalized) {
                 $this->storeMetadataCandidate(
-                    $metadataCandidates, $metadataCandidateLog,
-                    'period_label', $rawLabel, $sheetName, $rowIndex, $baseScore, $strategy
+                    $metadataCandidates,
+                    $metadataCandidateLog,
+                    'period_label',
+                    $rawLabel,
+                    $sheetName,
+                    $rowIndex,
+                    $baseScore,
+                    $strategy
                 );
             }
         }
@@ -686,7 +685,7 @@ class AdaptiveWorkbookImport
                 'Adaptive scanner menemukan data, tetapi semua kandidat proyek gagal divalidasi.',
                 array_values(array_unique($this->unrecognized)),
                 'Pastikan workbook memiliki project_code dan project_name yang dapat terbaca. ' .
-                'Cek bagian errors untuk detail baris yang gagal.'
+                    'Cek bagian errors untuk detail baris yang gagal.'
             );
         }
 
@@ -897,8 +896,8 @@ class AdaptiveWorkbookImport
             $realisasi = $row['realisasi_pct'] ?? null;
             $deviasi = $row['deviasi_pct'] ?? (
                 $rencana !== null && $realisasi !== null
-                    ? $realisasi - $rencana
-                    : null
+                ? $realisasi - $rencana
+                : null
             );
 
             ProjectProgressCurve::updateOrCreate(
@@ -965,7 +964,8 @@ class AdaptiveWorkbookImport
 
         // Check if top-level items use Roman numeral numbering
         $romanPattern = '/^[IVXLCDM]+$/';
-        $romanCount = $topItems->filter(fn($item) =>
+        $romanCount = $topItems->filter(
+            fn($item) =>
             $item->item_no && preg_match($romanPattern, trim($item->item_no))
         )->count();
 
@@ -1013,6 +1013,40 @@ class AdaptiveWorkbookImport
                 'period_id' => $newPhase->id,
                 'parent_id' => null,
             ]);
+            // If no children exist, create a detail row from the top item itself
+            $hasChildren = ProjectWorkItem::where('period_id', $newPhase->id)
+                ->where('parent_id', $topItem->id)
+                ->exists();
+
+            if (!$hasChildren) {
+                ProjectWorkItem::create([
+                    'period_id'          => $newPhase->id,
+                    'parent_id'          => $topItem->id,
+                    'level'              => 1,
+                    'item_no'            => $topItem->item_no . '.1',
+                    'item_name'          => $topItem->item_name,
+                    'cost_category'      => $topItem->cost_category,
+                    'cost_subcategory'   => $topItem->cost_subcategory,
+                    'unit'               => $topItem->unit ?? $topItem->satuan,
+                    'quantity'           => $topItem->quantity ?? $topItem->volume ?? 1,
+                    'volume'             => $topItem->volume ?? 1,
+                    'satuan'             => $topItem->satuan ?? $topItem->unit,
+                    'price'              => $topItem->price ?? $topItem->harsat_internal,
+                    'harsat_internal'    => $topItem->harsat_internal ?? $topItem->price,
+                    'budget_awal'        => $topItem->budget_awal ?? $topItem->total_budget,
+                    'total_budget'       => $topItem->total_budget ?? $topItem->budget_awal,
+                    'realisasi'          => $topItem->realisasi,
+                    'deviasi_pct'        => $topItem->deviasi_pct,
+                    'bobot_pct'          => $topItem->bobot_pct,
+                    'progress_plan_pct'  => $topItem->progress_plan_pct,
+                    'progress_actual_pct' => $topItem->progress_actual_pct,
+                    'vendor_name'        => $topItem->vendor_name,
+                    'po_number'          => $topItem->po_number,
+                    'vendor_contract_value' => $topItem->vendor_contract_value,
+                    'is_total_row'       => false,
+                    'sort_order'         => 0,
+                ]);
+            }
 
             // Calculate totals for this phase from its child items
             $childBudget = ProjectWorkItem::where('period_id', $newPhase->id)
@@ -1025,8 +1059,8 @@ class AdaptiveWorkbookImport
                 ->sum('realisasi');
 
             // Use child sums if available, otherwise use the parent row values
-            $phaseBudget = $childBudget ?: (float) $topItem->total_budget;
-            $phaseActual = $childActual ?: (float) $topItem->realisasi;
+            $phaseBudget = $childBudget ?: (float) ($topItem->total_budget ?? $topItem->budget_awal ?? $topItem->planned_value ?? 0);
+            $phaseActual = $childActual ?: (float) ($topItem->realisasi ?? $topItem->actual_cost_item ?? 0);
 
             $newPhase->update([
                 'bq_external' => $phaseBudget,
